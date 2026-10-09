@@ -1,1 +1,231 @@
-<!DOCTYPE html>...Shop Board Standalone Application (17KB)...</html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Shop Board</title>
+<style>
+:root{--bg:#F4F3EF;--card:#FFF;--b:#1F2421;--t:#191C1A;--m:#5E635F;--brand:#E65100;--g:#2E7D32;--font:-apple-system,BlinkMacSystemFont,sans-serif;}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{background:var(--bg);color:var(--t);font-family:var(--font);padding-bottom:80px;}
+.bar{background:#202422;color:#FFF;padding:14px 16px;position:sticky;top:0;z-index:90;border-bottom:3px solid var(--brand);display:flex;justify-content:space-between;align-items:center;}
+.brand{font-size:22px;font-weight:900;text-transform:uppercase;cursor:pointer;}
+.badge{background:#343A37;color:#A3E635;font-size:11px;padding:3px 6px;border-radius:4px;font-weight:700;margin-left:6px;}
+.pill{background:#2D3330;border:1px solid #4B554F;padding:6px 12px;border-radius:20px;font-size:13px;font-weight:700;color:#E2E8F0;cursor:pointer;}
+.strip{background:#EFECE6;border-bottom:1px solid #D8D5CD;padding:6px 16px;font-size:12px;font-weight:700;color:#49504C;display:flex;justify-content:space-between;}
+.wrap{max-width:600px;margin:0 auto;padding:16px;}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:12px;}
+.tile{background:var(--card);border:3px solid var(--b);border-radius:12px;padding:22px 14px;min-height:140px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;cursor:pointer;box-shadow:3px 3px 0 var(--b);position:relative;}
+.tile:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--b);}
+.icon{font-size:40px;margin-bottom:6px;line-height:1;}
+.label{font-size:22px;font-weight:900;text-transform:uppercase;}
+.sub{font-size:13px;color:var(--m);font-weight:600;margin-top:2px;}
+.cnt{position:absolute;top:10px;right:10px;background:var(--brand);color:#FFF;font-weight:800;font-size:12px;padding:2px 8px;border-radius:12px;border:1.5px solid var(--b);}
+.btn{width:100%;min-height:50px;background:var(--brand);color:#FFF;border:2px solid var(--b);border-radius:12px;font-size:19px;font-weight:900;text-transform:uppercase;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:3px 3px 0 var(--b);margin-bottom:12px;text-decoration:none;}
+.card{background:var(--card);border:2px solid var(--b);border-radius:12px;padding:16px;margin-bottom:14px;box-shadow:2px 2px 0 var(--b);}
+.hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.back{min-height:42px;min-width:42px;background:#FFF;border:2px solid var(--b);border-radius:8px;font-weight:900;font-size:20px;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:2px 2px 0 var(--b);}
+.title{font-size:24px;font-weight:900;text-transform:uppercase;flex-grow:1;margin-left:12px;}
+.s-wrap{overflow-x:auto;padding-bottom:6px;margin:10px 0;}
+.s-row{display:inline-flex;gap:6px;}
+.s-box{padding:8px 12px;font-size:15px;font-weight:800;text-transform:uppercase;border:2px solid var(--b);background:#FFF;border-radius:8px;cursor:pointer;white-space:nowrap;}
+.s-box.active{background:var(--b);color:#FFF;box-shadow:2px 2px 0 var(--brand);}
+.comm{display:flex;gap:8px;margin-top:10px;}
+.comm a,.comm button{flex:1;min-height:44px;background:#FFF;border:2px solid var(--b);border-radius:8px;font-size:15px;font-weight:800;text-transform:uppercase;display:flex;align-items:center;justify-content:center;text-decoration:none;color:var(--t);box-shadow:1px 1px 0 var(--b);cursor:pointer;}
+.board{background:#FFF;border:2px solid var(--b);border-radius:12px;padding:14px;box-shadow:2px 2px 0 var(--b);margin-top:10px;}
+.note{padding:10px 0;border-bottom:1px dashed #D8D5CD;}
+.note:last-child{border-bottom:none;}
+.meta{display:flex;justify-content:space-between;font-size:13px;font-weight:700;color:var(--m);margin-bottom:3px;}
+.modal{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);display:none;align-items:flex-end;z-index:200;}
+.sheet{background:var(--bg);width:100%;max-height:90vh;overflow-y:auto;border-top:4px solid var(--b);border-radius:18px 18px 0 0;padding:20px 16px 36px 16px;}
+.inp{width:100%;min-height:48px;background:#FFF;border:2px solid var(--b);border-radius:8px;padding:10px 12px;font-size:16px;color:var(--t);margin-bottom:12px;}
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--b);color:#FFF;padding:10px 18px;border-radius:30px;font-weight:700;font-size:13px;z-index:999;display:none;border:2px solid var(--brand);}
+</style>
+</head>
+<body>
+<div class="bar">
+  <div class="brand" onclick="goHome()">SHOP BOARD <span class="badge" id="bTag">GENERATIONS</span></div>
+  <div class="pill" onclick="switchUser()" id="uPill">👑 OWNER (Tap)</div>
+</div>
+<div class="strip">
+  <div>● OFFLINE READY • SAVED ON PHONE</div>
+  <div id="cMoney" style="cursor:pointer;" onclick="toggleCrewMoney()">Crew Money: OFF</div>
+</div>
+<div class="wrap" id="app"></div>
+<div id="toast">Saved on phone</div>
+<div class="modal" id="modal" onclick="if(event.target.id==='modal')closeModal();"><div class="sheet" id="sheet"></div></div>
+
+<script>
+const D={
+  biz:{name:"Generations Custom Homes",owner:"Kenyon Kores",phone:"(207) 555-0192",seeMoney:false},
+  user:{name:"Kenyon Kores",role:"Owner"},
+  clients:[
+    {id:"cl1",name:"Mark & Sarah Stevens",phone:"207-555-4321",email:"mark.stevens@example.com",addr:"44 Harbor Rd, Cherryfield, ME"},
+    {id:"cl2",name:"Bob Higgins",phone:"207-555-7766",email:"bob.higgins@example.com",addr:"12 Ridge Lane, Ellsworth, ME"}
+  ],
+  jobs:[
+    {
+      id:"j1",name:"Stevens Covered Porch",trade:"Carpentry",cid:"cl1",addr:"44 Harbor Rd, Cherryfield, ME",
+      status:"On site",date:new Date().toISOString().split('T')[0],
+      notes:[
+        {id:"n1",author:"Kenyon Kores",text:"Lumber delivery arrived 7:30 AM. Joists look straight.",time:"8:00 AM"},
+        {id:"n2",author:"Dave Miller",text:"Need six more 8-inch Simpson ties for ledger.",time:"11:20 AM"}
+      ],
+      bills:[{id:"b1",desc:"Materials Deposit",amt:3200,paid:true},{id:"b2",desc:"Draw #1",amt:2600,paid:false}]
+    },
+    {
+      id:"j2",name:"Higgins Kitchen Trim",trade:"Remodel",cid:"cl2",addr:"12 Ridge Lane, Ellsworth, ME",
+      status:"Scheduled",date:new Date().toISOString().split('T')[0],
+      notes:[{id:"n3",author:"Kenyon Kores",text:"Stock pre-primed poplar delivered into garage.",time:"Yesterday"}],
+      bills:[{id:"b3",desc:"Full Scope",amt:1950,paid:false}]
+    }
+  ]
+};
+
+function load(){try{const s=localStorage.getItem('SB_DATA');if(s)return JSON.parse(s);}catch(e){}return D;}
+function save(){try{localStorage.setItem('SB_DATA',JSON.stringify(DATA));}catch(e){}toast('Saved on phone');updateH();}
+let DATA=load(),VIEW='HOME',AID=null;
+
+function toast(m){const t=document.getElementById('toast');if(!t)return;t.innerText=m;t.style.display='block';setTimeout(()=>t.style.display='none',1400);}
+function updateH(){
+  document.getElementById('bTag').innerText=DATA.biz.name.toUpperCase();
+  const isO=DATA.user.role==='Owner';
+  document.getElementById('uPill').innerText=isO?`👑 ${DATA.user.name} (OWNER)`:`🔨 ${DATA.user.name} (CREW)`;
+  const cm=document.getElementById('cMoney');cm.style.display=isO?'block':'none';cm.innerText=`Crew Money: ${DATA.biz.seeMoney?'ON':'OFF'}`;
+}
+function switchUser(){
+  if(DATA.user.role==='Owner'){DATA.user={name:"Dave Miller",role:"Crew"};}else{DATA.user={name:DATA.biz.owner,role:"Owner"};}
+  save();render();
+}
+function toggleCrewMoney(){if(DATA.user.role!=='Owner')return;DATA.biz.seeMoney=!DATA.biz.seeMoney;save();render();}
+function goHome(){VIEW='HOME';AID=null;render();}
+function openV(v,id=null){VIEW=v;AID=id;window.scrollTo(0,0);render();}
+function openModal(h){document.getElementById('sheet').innerHTML=h;document.getElementById('modal').style.display='flex';}
+function closeModal(){document.getElementById('modal').style.display='none';}
+
+function render(){
+  updateH();const a=document.getElementById('app');
+  if(VIEW==='HOME'){
+    const tCount=DATA.jobs.filter(j=>j.status==="On site"||j.date===new Date().toISOString().split('T')[0]).length;
+    a.innerHTML=`
+      <div style="margin-bottom:12px;"><h2 style="font-size:24px;font-weight:900;text-transform:uppercase;">THE SHOP BOARD</h2><div style="font-size:14px;color:var(--m);font-weight:600;">Tap a tile with a thumb. Big marks, zero fluff.</div></div>
+      <div class="grid">
+        <div class="tile" onclick="openV('TODAY')"><div class="cnt">${tCount}</div><div class="icon">☀️</div><div class="label">TODAY</div><div class="sub">On site & scheduled</div></div>
+        <div class="tile" onclick="openV('JOBS')"><div class="cnt">${DATA.jobs.length}</div><div class="icon">📋</div><div class="label">JOBS</div><div class="sub">Every project</div></div>
+        <div class="tile" onclick="openV('PHOTOS')"><div class="icon">📷</div><div class="label">PHOTOS</div><div class="sub">Jobsite roll</div></div>
+        <div class="tile" onclick="openV('MONEY')"><div class="icon">💵</div><div class="label">MONEY</div><div class="sub">Bills & paid</div></div>
+        <div class="tile" onclick="openV('PEOPLE')"><div class="icon">👥</div><div class="label">PEOPLE</div><div class="sub">Clients & crew</div></div>
+        <div class="tile" onclick="openV('NOTES')"><div class="icon">📝</div><div class="label">NOTES</div><div class="sub">Shared clipboard</div></div>
+      </div>
+      <div style="margin-top:20px;padding:12px;background:#FFF;border:2px solid var(--b);border-radius:12px;text-align:center;">
+        <button class="btn" style="margin:0;" onclick="openNewJob()">+ Start a New Job</button>
+      </div>
+    `;
+  } else if(VIEW==='TODAY'){
+    const tj=DATA.jobs.filter(j=>j.status==="On site"||j.date===new Date().toISOString().split('T')[0]);
+    a.innerHTML=`
+      <div class="hdr"><button class="back" onclick="goHome()">←</button><div class="title">TODAY'S WORK</div></div>
+      ${tj.map(j=>{
+        const c=DATA.clients.find(x=>x.id===j.cid)||{name:"Client",phone:""};
+        return `
+          <div class="card" onclick="openV('JOB','${j.id}')" style="cursor:pointer;">
+            <div style="display:flex;justify-content:space-between;"><div style="font-size:20px;font-weight:900;">${j.name}</div><div style="background:var(--b);color:#FFF;padding:4px 8px;border-radius:6px;font-weight:800;">${j.status}</div></div>
+            <div style="color:var(--m);font-weight:600;margin:4px 0;">${c.name} • 📍 ${j.addr}</div>
+            <div class="comm" onclick="event.stopPropagation();">
+              ${c.phone?`<a href="tel:${c.phone}" style="background:#E8F5E9;">📞 Call</a>`:''}
+              <button onclick="emailJob('${j.id}')">✉️ Email Update</button>
+            </div>
+          </div>
+        `;
+      }).join('')}
+    `;
+  } else if(VIEW==='JOBS'){
+    a.innerHTML=`
+      <div class="hdr"><button class="back" onclick="goHome()">←</button><div class="title">ALL JOBS</div></div>
+      <button class="btn" onclick="openNewJob()">+ New Job</button>
+      ${DATA.jobs.map(j=>`
+        <div class="card" onclick="openV('JOB','${j.id}')" style="cursor:pointer;">
+          <div style="display:flex;justify-content:space-between;"><div style="font-size:20px;font-weight:900;">${j.name}</div><div style="border:2px solid var(--b);padding:2px 8px;border-radius:6px;font-weight:800;">${j.status}</div></div>
+          <div style="color:var(--m);font-size:14px;margin-top:4px;">📍 ${j.addr}</div>
+        </div>
+      `).join('')}
+    `;
+  } else if(VIEW==='JOB'){
+    const j=DATA.jobs.find(x=>x.id===AID);if(!j)return goHome();
+    const c=DATA.clients.find(x=>x.id===j.cid)||{name:"Client",phone:""};
+    const isO=DATA.user.role==='Owner';const canM=isO||DATA.biz.seeMoney;
+    const stages=["Lead","Quoted","Scheduled","On site","Waiting","Done","Paid"];
+    let billed=0,paid=0;(j.bills||[]).forEach(b=>{billed+=b.amt;if(b.paid)paid+=b.amt;});
+    a.innerHTML=`
+      <div class="hdr"><button class="back" onclick="openV('JOBS')">←</button><div class="title">${j.name}</div></div>
+      <div class="card">
+        <div style="font-weight:700;">${c.name} • 📍 ${j.addr}</div>
+        <div class="comm">
+          ${c.phone?`<a href="tel:${c.phone}">📞 Call</a>`:''}
+          ${c.phone?`<a href="sms:${c.phone}">💬 Text</a>`:''}
+          <button onclick="emailJob('${j.id}')">✉️ Email</button>
+        </div>
+      </div>
+      <div style="font-weight:900;margin-top:8px;">STATUS (TAP TO CHANGE)</div>
+      <div class="s-wrap"><div class="s-row">
+        ${stages.map(st=>`<div class="s-box ${j.status.toLowerCase()===st.toLowerCase()?'active':''}" onclick="setStatus('${j.id}','${st}')">${st}</div>`).join('')}
+      </div></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px;">
+        <div style="font-size:20px;font-weight:900;">NOTES BOARD</div>
+        <button style="background:var(--brand);color:#FFF;border:2px solid var(--b);border-radius:6px;padding:6px 12px;font-weight:800;" onclick="openNoteModal('${j.id}')">+ Post Note</button>
+      </div>
+      <div class="board">
+        ${j.notes.map(n=>`<div class="note"><div class="meta"><span>${n.author}</span><span>${n.time}</span></div><div>${n.text}</div></div>`).join('')}
+      </div>
+      ${canM?`
+        <div style="font-size:20px;font-weight:900;margin-top:20px;">MONEY</div>
+        <div class="card" style="margin-top:8px;">
+          <div style="display:flex;justify-content:space-around;text-align:center;">
+            <div><div style="font-size:13px;font-weight:800;color:var(--m);">BILLED</div><div style="font-size:22px;font-weight:900;">$${billed.toLocaleString()}</div></div>
+            <div><div style="font-size:13px;font-weight:800;color:var(--g);">COLLECTED</div><div style="font-size:22px;font-weight:900;color:var(--g);">$${paid.toLocaleString()}</div></div>
+          </div>
+        </div>
+      `:''}
+    `;
+  } else if(VIEW==='NOTES'){
+    const all=[];DATA.jobs.forEach(j=>(j.notes||[]).forEach(n=>all.push({...n,jname:j.name,jid:j.id})));
+    a.innerHTML=`
+      <div class="hdr"><button class="back" onclick="goHome()">←</button><div class="title">CLIPBOARD</div></div>
+      <div class="board">
+        ${all.map(n=>`<div class="note" onclick="openV('JOB','${n.jid}')" style="cursor:pointer;"><div class="meta"><span style="color:var(--brand);font-weight:800;">${n.jname} • ${n.author}</span><span>${n.time}</span></div><div>${n.text}</div></div>`).join('')}
+      </div>
+    `;
+  } else if(VIEW==='PEOPLE'){
+    a.innerHTML=`
+      <div class="hdr"><button class="back" onclick="goHome()">←</button><div class="title">PEOPLE</div></div>
+      ${DATA.clients.map(c=>`
+        <div class="card">
+          <div style="font-size:20px;font-weight:900;">${c.name}</div><div style="color:var(--m);">${c.addr}</div>
+          <div class="comm">${c.phone?`<a href="tel:${c.phone}">📞 Call</a>`:''}${c.phone?`<a href="sms:${c.phone}">💬 Text</a>`:''}</div>
+        </div>
+      `).join('')}
+    `;
+  } else if(VIEW==='MONEY'){
+    a.innerHTML=`
+      <div class="hdr"><button class="back" onclick="goHome()">←</button><div class="title">MONEY BOARD</div></div>
+      ${DATA.jobs.map(j=>`<div class="card" onclick="openV('JOB','${j.id}')"><div style="font-size:20px;font-weight:900;">${j.name}</div><div style="color:var(--m);">Status: ${j.status}</div></div>`).join('')}
+    `;
+  } else if(VIEW==='PHOTOS'){
+    a.innerHTML=`
+      <div class="hdr"><button class="back" onclick="goHome()">←</button><div class="title">PHOTOS</div></div>
+      <div class="card" style="text-align:center;padding:30px;"><div style="font-weight:800;">Open any job to snap & attach jobsite photos.</div></div>
+    `;
+  }
+}
+
+function setStatus(id,st){const j=DATA.jobs.find(x=>x.id===id);if(j){j.status=st;save();render();}}
+function openNoteModal(id){openModal(`<div style="font-size:20px;font-weight:900;margin-bottom:12px;">POST NOTE</div><input type="text" id="nt" class="inp" placeholder="Type note here..."><button class="btn" onclick="saveNote('${id}')">Post</button>`);}
+function saveNote(id){const t=document.getElementById('nt').value.trim();if(!t)return;const j=DATA.jobs.find(x=>x.id===id);if(j){j.notes.push({id:'n_'+Date.now(),author:DATA.user.name,text:t,time:'Just now'});save();closeModal();render();}}
+function openNewJob(){openModal(`<div style="font-size:20px;font-weight:900;margin-bottom:12px;">NEW JOB</div><input type="text" id="jn" class="inp" placeholder="Job Name"><input type="text" id="ja" class="inp" placeholder="Address"><button class="btn" onclick="saveJob()">Create</button>`);}
+function saveJob(){const n=document.getElementById('jn').value.trim(),a=document.getElementById('ja').value.trim();if(!n)return;const j={id:'j_'+Date.now(),name:n,addr:a||"On Site",status:"Lead",date:new Date().toISOString().split('T')[0],notes:[],bills:[]};DATA.jobs.unshift(j);save();closeModal();openV('JOB',j.id);}
+function emailJob(id){const j=DATA.jobs.find(x=>x.id===id);const c=DATA.clients.find(x=>x.id===j.cid)||{name:"Client",email:""};const sub=encodeURIComponent(`${j.name} update from ${DATA.biz.name}`);const b=encodeURIComponent(`Hi ${c.name},\n\nUpdate on ${j.name} at ${j.addr}.\nStatus: ${j.status}\n\nNote:\n\n${DATA.biz.name}\n${DATA.biz.phone}\nSent from Shop Board`);window.location.href=`mailto:${c.email||''}?subject=${sub}&body=${b}`;}
+
+render();
+</script>
+</body>
+</html>

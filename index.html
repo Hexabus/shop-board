@@ -3,9 +3,1987 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Shop Board — Job</title>
+  <title>Shop Board — Jobsite Pocket Office</title>
+  <style>
+    :root {
+      --bg: #F4F3EF;
+      --card-bg: #FFFFFF;
+      --border: #D8D5CD;
+      --border-dark: #1F2421;
+      --text: #191C1A;
+      --text-muted: #5E635F;
+      --brand: #E65100;
+      --brand-soft: #FFE0B2;
+      --highlight: #2E7D32;
+      --highlight-soft: #E8F5E9;
+      --alert: #C62828;
+      --alert-soft: #FFEBEE;
+      --board-header: #202422;
+      --font-display: -apple-system, "Arial Black", Impact, sans-serif;
+      --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --radius: 12px;
+      --touch-min: 52px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 16px;
+      line-height: 1.4;
+      padding-bottom: 90px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Top Bar */
+    header.shop-bar {
+      background: var(--board-header);
+      color: #FFF;
+      padding: 12px 16px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      border-bottom: 3px solid var(--brand);
+    }
+    .bar-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .brand-title {
+      font-family: var(--font-display);
+      font-size: 24px;
+      font-weight: 900;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+    }
+    .brand-title span.chalk-badge {
+      background: #343A37;
+      color: #A3E635;
+      font-size: 11px;
+      font-family: var(--font-body);
+      padding: 3px 7px;
+      border-radius: 4px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      border: 1px solid #4B554F;
+    }
+    .user-pill {
+      background: #2D3330;
+      border: 1px solid #4B554F;
+      padding: 6px 12px;
+      border-radius: 24px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #E2E8F0;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 38px;
+    }
+    .user-pill:active { background: #3C4440; }
+
+    /* Offline & Status banner */
+    .sync-strip {
+      background: #EFECE6;
+      border-bottom: 1px solid var(--border);
+      padding: 6px 16px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #49504C;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .status-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      background: #2E7D32;
+      border-radius: 50%;
+      margin-right: 6px;
+    }
+
+    /* Container */
+    .container {
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    /* Back button / Screen Header */
+    .screen-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      gap: 12px;
+    }
+    .back-btn {
+      min-height: 44px;
+      min-width: 44px;
+      background: #FFF;
+      border: 2px solid var(--border-dark);
+      border-radius: 8px;
+      font-weight: 800;
+      font-size: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 2px 2px 0 var(--border-dark);
+    }
+    .back-btn:active {
+      transform: translate(1px, 1px);
+      box-shadow: 1px 1px 0 var(--border-dark);
+    }
+    .screen-title {
+      font-family: var(--font-display);
+      font-size: 26px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      flex-grow: 1;
+    }
+
+    /* 6 Big Tiles */
+    .board-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-top: 10px;
+    }
+    .tile {
+      background: var(--card-bg);
+      border: 3px solid var(--border-dark);
+      border-radius: var(--radius);
+      padding: 22px 14px;
+      min-height: 140px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      cursor: pointer;
+      box-shadow: 3px 3px 0 var(--border-dark);
+      position: relative;
+    }
+    .tile:active {
+      transform: translate(2px, 2px);
+      box-shadow: 1px 1px 0 var(--border-dark);
+      background: #FAF8F5;
+    }
+    .tile-icon {
+      font-size: 40px;
+      margin-bottom: 8px;
+      line-height: 1;
+    }
+    .tile-label {
+      font-family: var(--font-display);
+      font-size: 22px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text);
+    }
+    .tile-sub {
+      font-size: 13px;
+      color: var(--text-muted);
+      font-weight: 600;
+      margin-top: 2px;
+    }
+    .tile-badge {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: var(--brand);
+      color: #FFF;
+      font-weight: 800;
+      font-size: 12px;
+      padding: 2px 7px;
+      border-radius: 12px;
+      border: 1.5px solid var(--border-dark);
+    }
+
+    /* Primary Big Buttons */
+    .big-btn {
+      width: 100%;
+      min-height: var(--touch-min);
+      background: var(--brand);
+      color: #FFF;
+      border: 2px solid var(--border-dark);
+      border-radius: var(--radius);
+      font-family: var(--font-display);
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      cursor: pointer;
+      box-shadow: 3px 3px 0 var(--border-dark);
+      margin-bottom: 14px;
+      text-decoration: none;
+    }
+    .big-btn:active {
+      transform: translate(2px, 2px);
+      box-shadow: 1px 1px 0 var(--border-dark);
+    }
+    .big-btn.secondary {
+      background: #FFFFFF;
+      color: var(--text);
+    }
+
+    /* Cards */
+    .card {
+      background: var(--card-bg);
+      border: 2px solid var(--border-dark);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 14px;
+      box-shadow: 2px 2px 0 var(--border-dark);
+    }
+    .card-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 8px;
+    }
+    .card-title {
+      font-family: var(--font-display);
+      font-size: 22px;
+      font-weight: 800;
+      text-transform: uppercase;
+      line-height: 1.15;
+    }
+    .card-sub {
+      font-size: 14px;
+      color: var(--text-muted);
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .card-meta {
+      font-size: 14px;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 6px;
+      font-weight: 500;
+    }
+
+    /* Status Pill Strip */
+    .status-strip-wrapper {
+      overflow-x: auto;
+      padding-bottom: 8px;
+      margin: 12px 0;
+      -webkit-overflow-scrolling: touch;
+    }
+    .status-strip {
+      display: inline-flex;
+      gap: 6px;
+      min-width: 100%;
+    }
+    .status-step {
+      padding: 10px 14px;
+      font-family: var(--font-display);
+      font-size: 16px;
+      font-weight: 800;
+      text-transform: uppercase;
+      border: 2px solid var(--border-dark);
+      background: #FFFFFF;
+      border-radius: 8px;
+      cursor: pointer;
+      white-space: nowrap;
+      text-align: center;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .status-step.active {
+      background: var(--border-dark);
+      color: #FFFFFF;
+      border-color: var(--border-dark);
+      box-shadow: 2px 2px 0 var(--brand);
+    }
+
+    /* Fat Action Button Grid inside Job */
+    .fat-actions-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin: 14px 0;
+    }
+    .fat-btn {
+      background: #FFFFFF;
+      border: 2px solid var(--border-dark);
+      border-radius: 10px;
+      padding: 12px 6px;
+      text-align: center;
+      font-family: var(--font-display);
+      font-size: 16px;
+      font-weight: 800;
+      text-transform: uppercase;
+      cursor: pointer;
+      box-shadow: 2px 2px 0 var(--border-dark);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+    .fat-btn:active, .fat-btn.active {
+      background: #EAE8E1;
+      transform: translate(1px, 1px);
+      box-shadow: 1px 1px 0 var(--border-dark);
+    }
+    .fat-btn .icon { font-size: 22px; }
+
+    /* Photo Strip */
+    .photo-strip {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      padding: 8px 0;
+      margin-bottom: 12px;
+    }
+    .photo-thumb {
+      width: 110px;
+      height: 110px;
+      border-radius: 8px;
+      border: 2px solid var(--border-dark);
+      object-fit: cover;
+      flex-shrink: 0;
+      cursor: pointer;
+      background: #E5E5E5;
+    }
+
+    /* Notes Board (Shared clipboard style) */
+    .notes-board {
+      background: #FFF;
+      border: 2px solid var(--border-dark);
+      border-radius: var(--radius);
+      padding: 14px;
+      margin-top: 10px;
+      box-shadow: 2px 2px 0 var(--border-dark);
+    }
+    .note-item {
+      padding: 12px 0;
+      border-bottom: 1px dashed var(--border);
+    }
+    .note-item:last-child { border-bottom: none; }
+    .note-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+    .note-author {
+      color: var(--border-dark);
+      font-family: var(--font-display);
+      font-size: 16px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+    .note-body {
+      font-size: 15px;
+      color: var(--text);
+      line-height: 1.35;
+    }
+    .note-tag {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid var(--border-dark);
+      margin-right: 6px;
+    }
+    .tag-punch { background: #FFCDD2; color: #B71C1C; }
+    .tag-change { background: #FFE082; color: #E65100; }
+    .tag-waiting { background: #BBDEFB; color: #0D47A1; }
+
+    /* Money Strip */
+    .money-metrics {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .metric-box {
+      background: #FFFFFF;
+      border: 2px solid var(--border-dark);
+      border-radius: 8px;
+      padding: 10px;
+      text-align: center;
+      box-shadow: 1px 1px 0 var(--border-dark);
+    }
+    .metric-label {
+      font-family: var(--font-display);
+      font-size: 14px;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+    .metric-val {
+      font-family: var(--font-display);
+      font-size: 22px;
+      font-weight: 900;
+      color: var(--text);
+      margin-top: 2px;
+    }
+
+    /* Modal / Form Sheet */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.6);
+      display: none;
+      align-items: flex-end;
+      z-index: 200;
+    }
+    .modal-sheet {
+      background: var(--bg);
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      border-top: 4px solid var(--border-dark);
+      border-radius: 18px 18px 0 0;
+      padding: 20px 16px 36px 16px;
+      box-shadow: 0 -4px 20px rgba(0,0,0,0.3);
+    }
+    .input-group {
+      margin-bottom: 14px;
+    }
+    .input-label {
+      display: block;
+      font-family: var(--font-display);
+      font-size: 16px;
+      font-weight: 800;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+      color: var(--text);
+    }
+    .text-input, select.text-input {
+      width: 100%;
+      min-height: var(--touch-min);
+      background: #FFF;
+      border: 2px solid var(--border-dark);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-family: var(--font-body);
+      font-size: 16px;
+      color: var(--text);
+    }
+    textarea.text-input {
+      min-height: 90px;
+      resize: vertical;
+    }
+
+    /* Pills for Trade Types */
+    .trade-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+    .trade-pill {
+      padding: 8px 12px;
+      border: 2px solid var(--border-dark);
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 700;
+      background: #FFF;
+      cursor: pointer;
+    }
+    .trade-pill.selected {
+      background: var(--border-dark);
+      color: #FFF;
+    }
+
+    /* Call / Text / Email Buttons */
+    .comm-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .comm-btn {
+      flex: 1;
+      min-height: 44px;
+      background: #FFFFFF;
+      border: 2px solid var(--border-dark);
+      border-radius: 8px;
+      font-family: var(--font-display);
+      font-size: 15px;
+      font-weight: 800;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      cursor: pointer;
+      text-decoration: none;
+      color: var(--text);
+      box-shadow: 1px 1px 0 var(--border-dark);
+    }
+    .comm-btn:active {
+      transform: translate(1px, 1px);
+      box-shadow: none;
+    }
+
+    /* Empty state */
+    .empty-state {
+      background: #FFF;
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 32px 16px;
+      text-align: center;
+      margin: 16px 0;
+    }
+    .empty-text {
+      font-family: var(--font-display);
+      font-size: 22px;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+
+    /* Toast */
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--border-dark);
+      color: #FFF;
+      padding: 12px 20px;
+      border-radius: 30px;
+      font-weight: 700;
+      font-size: 14px;
+      z-index: 999;
+      display: none;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+      border: 2px solid var(--brand);
+    }
+  </style>
 </head>
 <body>
-<!-- Content to be loaded -->
+
+  <!-- Top Sticky Header -->
+  <header class="shop-bar">
+    <div class="bar-row">
+      <div class="brand-title" onclick="goHome()">
+        SHOP BOARD
+        <span class="chalk-badge" id="businessTag">GENERATIONS</span>
+      </div>
+      <div class="user-pill" onclick="switchUserRole()" title="Tap to switch Owner / Crew view">
+        <span id="roleBadge">👑 OWNER</span>
+        <span style="font-size: 11px; opacity: 0.7;">(Tap)</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Offline / Sync Status -->
+  <div class="sync-strip">
+    <div><span class="status-dot"></span><span id="savedIndicator">SAVED ON PHONE • OFFLINE READY</span></div>
+    <div id="crewVisibilityStatus" style="font-size:11px; cursor:pointer;" onclick="toggleMoneyForCrew()">Crew Money: OFF</div>
+  </div>
+
+  <div class="container" id="appContainer">
+    <!-- HARDCODED INITIAL SCREEN SO IT NEVER RENDERS BLANK -->
+    <div style="margin-bottom: 12px;">
+      <h2 style="font-family: var(--font-display); font-size: 26px; font-weight: 900; text-transform: uppercase;">THE SHOP BOARD</h2>
+      <div style="font-size: 14px; color: var(--text-muted); font-weight: 600;">Tap a tile with a thumb. Big marks, zero fluff.</div>
+    </div>
+
+    <div class="board-grid">
+      <!-- TILE 1: TODAY -->
+      <div class="tile" onclick="openView('TODAY')">
+        <div class="tile-badge" id="initTodayBadge">2</div>
+        <div class="tile-icon">☀️</div>
+        <div class="tile-label">TODAY</div>
+        <div class="tile-sub">On site & scheduled</div>
+      </div>
+
+      <!-- TILE 2: JOBS -->
+      <div class="tile" onclick="openView('JOBS')">
+        <div class="tile-badge" id="initJobsBadge">2</div>
+        <div class="tile-icon">📋</div>
+        <div class="tile-label">JOBS</div>
+        <div class="tile-sub">Every project</div>
+      </div>
+
+      <!-- TILE 3: PHOTOS -->
+      <div class="tile" onclick="openView('PHOTOS')">
+        <div class="tile-icon">📷</div>
+        <div class="tile-label">PHOTOS</div>
+        <div class="tile-sub">Camera & job roll</div>
+      </div>
+
+      <!-- TILE 4: MONEY -->
+      <div class="tile" onclick="openView('MONEY')">
+        <div class="tile-icon">💵</div>
+        <div class="tile-label">MONEY</div>
+        <div class="tile-sub">Quotes, bills, paid</div>
+      </div>
+
+      <!-- TILE 5: PEOPLE -->
+      <div class="tile" onclick="openView('PEOPLE')">
+        <div class="tile-icon">👥</div>
+        <div class="tile-label">PEOPLE</div>
+        <div class="tile-sub">Clients & crew</div>
+      </div>
+
+      <!-- TILE 6: NOTES -->
+      <div class="tile" onclick="openView('NOTES')">
+        <div class="tile-icon">📝</div>
+        <div class="tile-label">NOTES</div>
+        <div class="tile-sub">Shared clipboard</div>
+      </div>
+    </div>
+
+    <div style="margin-top: 24px; padding: 12px; background: #FFF; border: 2px solid var(--border-dark); border-radius: var(--radius); text-align: center; box-shadow: 2px 2px 0 var(--border-dark);">
+      <div style="font-family: var(--font-display); font-size: 16px; font-weight: 800; text-transform: uppercase;">Quick New Job</div>
+      <button class="big-btn" style="margin: 8px 0 0 0;" onclick="openNewJobModal()">+ Start a New Job</button>
+    </div>
+  </div>
+
+  <!-- Toast notification -->
+  <div id="toast">Saved on phone</div>
+
+  <!-- Generic Bottom Modal Sheet -->
+  <div class="modal-overlay" id="modalOverlay" onclick="closeModalOnOutside(event)">
+    <div class="modal-sheet" id="modalSheet">
+      <!-- Injected modal contents -->
+    </div>
+  </div>
+
+  <script>
+    /* Safe Storage Helper for iOS Files / Sandbox environments */
+    const Storage = {
+      isAvailable: function() {
+        try {
+          const test = '__test__';
+          localStorage.setItem(test, test);
+          localStorage.removeItem(test);
+          return true;
+        } catch(e) {
+          return false;
+        }
+      },
+      get: function(key) {
+        try {
+          if (this.isAvailable()) return localStorage.getItem(key);
+        } catch(e) {}
+        return null;
+      },
+      set: function(key, val) {
+        try {
+          if (this.isAvailable()) localStorage.setItem(key, val);
+        } catch(e) {}
+      }
+    };
+
+    const DEFAULT_DATA = {
+      business: {
+        name: "Generations Custom Homes",
+        owner: "Kenyon Kores",
+        phone: "(207) 555-0192",
+        crewSeeMoney: false
+      },
+      currentUser: {
+        name: "Kenyon Kores",
+        role: "Owner"
+      },
+      crewMembers: [
+        { id: "c1", name: "Kenyon Kores", phone: "207-555-0192", email: "kenyon@example.com", role: "Owner" },
+        { id: "c2", name: "Dave Miller", phone: "207-555-0144", email: "dave@example.com", role: "Crew" },
+        { id: "c3", name: "Tyler Brooks", phone: "207-555-0188", email: "tyler@example.com", role: "Crew" }
+      ],
+      clients: [
+        { id: "cl1", name: "Mark & Sarah Stevens", phone: "207-555-4321", email: "mark.stevens@example.com", address: "44 Harbor Rd, Cherryfield, ME" },
+        { id: "cl2", name: "Bob Higgins", phone: "207-555-7766", email: "bob.higgins@example.com", address: "12 Ridge Lane, Ellsworth, ME" }
+      ],
+      jobs: [
+        {
+          id: "j1",
+          name: "Stevens Covered Porch",
+          trade: "Carpentry",
+          clientId: "cl1",
+          address: "44 Harbor Rd, Cherryfield, ME",
+          status: "On site",
+          startDate: new Date().toISOString().split('T')[0],
+          crewAssigned: ["c1", "c2"],
+          photos: [
+            { id: "p1", url: "https://images.unsplash.com/photo-1541888946425-d0fbb18615f7?auto=format&fit=crop&w=400&q=80", tag: "Before", caption: "Framing starts today", author: "Kenyon Kores", timestamp: "Today, 8:15 AM" }
+          ],
+          files: [
+            { id: "f1", name: "Town_Permit_Signed.pdf", author: "Kenyon Kores", date: "Oct 2" }
+          ],
+          notes: [
+            { id: "n1", author: "Kenyon Kores", text: "Lumber delivery arrived 7:30 AM. Joists look straight.", tag: "", timestamp: "Today, 8:00 AM" },
+            { id: "n2", author: "Dave Miller", text: "Need six more 8-inch Simpson ties for the ledger board.", tag: "Waiting on", timestamp: "Today, 11:20 AM" }
+          ],
+          quotes: [
+            { id: "q1", items: [{ desc: "Framing lumber & fasteners", qty: 1, rate: 3200 }, { desc: "Labor (Framing & Decking)", qty: 40, rate: 65 }], status: "Sent" }
+          ],
+          bills: [
+            { id: "b1", desc: "Deposit / Materials", amount: 3200, status: "Paid" },
+            { id: "b2", desc: "Progress Billing #1", amount: 2600, status: "Unpaid" }
+          ],
+          expenses: [
+            { id: "e1", desc: "Hardware store Simpson ties", amount: 78.50, date: "Today" }
+          ]
+        },
+        {
+          id: "j2",
+          name: "Higgins Kitchen Trim & Casing",
+          trade: "Remodel",
+          clientId: "cl2",
+          address: "12 Ridge Lane, Ellsworth, ME",
+          status: "Scheduled",
+          startDate: new Date().toISOString().split('T')[0],
+          crewAssigned: ["c1", "c3"],
+          photos: [],
+          files: [],
+          notes: [
+            { id: "n3", author: "Kenyon Kores", text: "Stock pre-primed poplar delivered into garage yesterday.", tag: "", timestamp: "Yesterday, 4:10 PM" }
+          ],
+          quotes: [
+            { id: "q2", items: [{ desc: "Trim installation & crown", qty: 1, rate: 1950 }], status: "Sent" }
+          ],
+          bills: [
+            { id: "b3", desc: "Full Balance", amount: 1950, status: "Unpaid" }
+          ],
+          expenses: []
+        }
+      ]
+    };
+
+    function loadData() {
+      const stored = Storage.get("SHOP_BOARD_DATA");
+      if (stored) {
+        try { return JSON.parse(stored); } catch (e) {}
+      }
+      Storage.set("SHOP_BOARD_DATA", JSON.stringify(DEFAULT_DATA));
+      return DEFAULT_DATA;
+    }
+
+    let DATA = loadData();
+    let CURRENT_VIEW = "HOME";
+    let ACTIVE_JOB_ID = null;
+
+    function saveData() {
+      Storage.set("SHOP_BOARD_DATA", JSON.stringify(DATA));
+      showToast("Saved on phone");
+      updateHeaderBadges();
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById("toast");
+      if (!t) return;
+      t.innerText = msg;
+      t.style.display = "block";
+      setTimeout(() => { t.style.display = "none"; }, 1800);
+    }
+
+    function updateHeaderBadges() {
+      const bTag = document.getElementById("businessTag");
+      if (bTag) bTag.innerText = DATA.business.name.toUpperCase();
+
+      const badge = document.getElementById("roleBadge");
+      const isOwner = DATA.currentUser.role === "Owner";
+      if (badge) badge.innerText = isOwner ? `👑 ${DATA.currentUser.name} (OWNER)` : `🔨 ${DATA.currentUser.name} (CREW)`;
+
+      const crewStatus = document.getElementById("crewVisibilityStatus");
+      if (crewStatus) {
+        if (isOwner) {
+          crewStatus.style.display = "block";
+          crewStatus.innerText = `Crew Money: ${DATA.business.crewSeeMoney ? "ON" : "OFF"}`;
+        } else {
+          crewStatus.style.display = "none";
+        }
+      }
+    }
+
+    function switchUserRole() {
+      if (DATA.currentUser.role === "Owner") {
+        DATA.currentUser.name = "Dave Miller";
+        DATA.currentUser.role = "Crew";
+        showToast("Switched to Dave Miller (Crew View)");
+      } else {
+        DATA.currentUser.name = DATA.business.owner;
+        DATA.currentUser.role = "Owner";
+        showToast(`Switched to ${DATA.currentUser.name} (Owner View)`);
+      }
+      saveData();
+      renderCurrentView();
+    }
+
+    function toggleMoneyForCrew() {
+      if (DATA.currentUser.role !== "Owner") return;
+      DATA.business.crewSeeMoney = !DATA.business.crewSeeMoney;
+      saveData();
+      renderCurrentView();
+      showToast(`Crew can see money: ${DATA.business.crewSeeMoney ? "YES" : "NO"}`);
+    }
+
+    function goHome() {
+      CURRENT_VIEW = "HOME";
+      ACTIVE_JOB_ID = null;
+      renderCurrentView();
+    }
+
+    function openView(view, jobId = null) {
+      CURRENT_VIEW = view;
+      ACTIVE_JOB_ID = jobId;
+      window.scrollTo(0, 0);
+      renderCurrentView();
+    }
+
+    function openModal(html) {
+      document.getElementById("modalSheet").innerHTML = html;
+      document.getElementById("modalOverlay").style.display = "flex";
+    }
+
+    function closeModal() {
+      document.getElementById("modalOverlay").style.display = "none";
+    }
+
+    function closeModalOnOutside(e) {
+      if (e.target.id === "modalOverlay") closeModal();
+    }
+
+    /* RENDER VIEWS */
+    function renderCurrentView() {
+      updateHeaderBadges();
+      const container = document.getElementById("appContainer");
+      if (!container) return;
+
+      switch (CURRENT_VIEW) {
+        case "HOME":
+          container.innerHTML = renderHome();
+          break;
+        case "TODAY":
+          container.innerHTML = renderToday();
+          break;
+        case "JOBS":
+          container.innerHTML = renderJobs();
+          break;
+        case "JOB_DETAIL":
+          container.innerHTML = renderJobDetail();
+          break;
+        case "PHOTOS":
+          container.innerHTML = renderPhotosView();
+          break;
+        case "MONEY":
+          container.innerHTML = renderMoneyView();
+          break;
+        case "PEOPLE":
+          container.innerHTML = renderPeopleView();
+          break;
+        case "NOTES":
+          container.innerHTML = renderNotesView();
+          break;
+      }
+    }
+
+    function renderHome() {
+      const todayCount = DATA.jobs.filter(j => j.status === "On site" || j.startDate === new Date().toISOString().split('T')[0]).length;
+      const totalJobs = DATA.jobs.length;
+      let totalPhotos = 0;
+      DATA.jobs.forEach(j => totalPhotos += (j.photos ? j.photos.length : 0));
+
+      return `
+        <div style="margin-bottom: 12px;">
+          <h2 style="font-family: var(--font-display); font-size: 26px; font-weight: 900; text-transform: uppercase;">THE SHOP BOARD</h2>
+          <div style="font-size: 14px; color: var(--text-muted); font-weight: 600;">Tap a tile with a thumb. Big marks, zero fluff.</div>
+        </div>
+
+        <div class="board-grid">
+          <div class="tile" onclick="openView('TODAY')">
+            ${todayCount > 0 ? `<div class="tile-badge">${todayCount}</div>` : ''}
+            <div class="tile-icon">☀️</div>
+            <div class="tile-label">TODAY</div>
+            <div class="tile-sub">On site & scheduled</div>
+          </div>
+
+          <div class="tile" onclick="openView('JOBS')">
+            <div class="tile-badge">${totalJobs}</div>
+            <div class="tile-icon">📋</div>
+            <div class="tile-label">JOBS</div>
+            <div class="tile-sub">Every project</div>
+          </div>
+
+          <div class="tile" onclick="openView('PHOTOS')">
+            <div class="tile-badge">${totalPhotos}</div>
+            <div class="tile-icon">📷</div>
+            <div class="tile-label">PHOTOS</div>
+            <div class="tile-sub">Camera & job roll</div>
+          </div>
+
+          <div class="tile" onclick="openView('MONEY')">
+            <div class="tile-icon">💵</div>
+            <div class="tile-label">MONEY</div>
+            <div class="tile-sub">Quotes, bills, paid</div>
+          </div>
+
+          <div class="tile" onclick="openView('PEOPLE')">
+            <div class="tile-icon">👥</div>
+            <div class="tile-label">PEOPLE</div>
+            <div class="tile-sub">Clients & crew</div>
+          </div>
+
+          <div class="tile" onclick="openView('NOTES')">
+            <div class="tile-icon">📝</div>
+            <div class="tile-label">NOTES</div>
+            <div class="tile-sub">Shared clipboard</div>
+          </div>
+        </div>
+
+        <div style="margin-top: 24px; padding: 12px; background: #FFF; border: 2px solid var(--border-dark); border-radius: var(--radius); text-align: center; box-shadow: 2px 2px 0 var(--border-dark);">
+          <div style="font-family: var(--font-display); font-size: 16px; font-weight: 800; text-transform: uppercase;">Quick New Job</div>
+          <button class="big-btn" style="margin: 8px 0 0 0;" onclick="openNewJobModal()">+ Start a New Job</button>
+        </div>
+      `;
+    }
+
+    function renderToday() {
+      const todayDate = new Date().toISOString().split('T')[0];
+      const todayJobs = DATA.jobs.filter(j => j.status === "On site" || j.startDate === todayDate);
+
+      let cardsHtml = '';
+      if (todayJobs.length === 0) {
+        cardsHtml = `
+          <div class="empty-state">
+            <div class="empty-text">Nothing on the board today</div>
+            <button class="big-btn" onclick="openView('JOBS')">Check All Jobs</button>
+          </div>
+        `;
+      } else {
+        cardsHtml = todayJobs.map(job => {
+          const client = DATA.clients.find(c => c.id === job.clientId) || { name: "Direct Client", phone: "" };
+          return `
+            <div class="card" onclick="openView('JOB_DETAIL', '${job.id}')" style="cursor: pointer;">
+              <div class="card-header-row">
+                <div>
+                  <div class="card-title">${job.name}</div>
+                  <div class="card-sub">${client.name}</div>
+                </div>
+                <div style="background: var(--border-dark); color: #FFF; font-family: var(--font-display); font-size: 15px; font-weight: 800; text-transform: uppercase; padding: 4px 10px; border-radius: 6px;">
+                  ${job.status}
+                </div>
+              </div>
+              <div class="card-meta">📍 ${job.address}</div>
+              <div class="card-meta">🔨 ${job.trade || 'General'}</div>
+              <div class="comm-row" onclick="event.stopPropagation();">
+                ${client.phone ? `<a href="tel:${client.phone}" class="comm-btn" style="background: var(--highlight-soft);">📞 Call</a>` : ''}
+                <button class="comm-btn" onclick="openJobEmailModal('${job.id}')">✉️ Email Update</button>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      return `
+        <div class="screen-header">
+          <button class="back-btn" onclick="goHome()">←</button>
+          <div class="screen-title">TODAY'S WORK</div>
+        </div>
+        <div style="font-size: 14px; color: var(--text-muted); font-weight: 600; margin-bottom: 12px;">
+          Boots-on list before leaving the driveway.
+        </div>
+        ${cardsHtml}
+      `;
+    }
+
+    function renderJobs() {
+      let cardsHtml = '';
+      if (DATA.jobs.length === 0) {
+        cardsHtml = `
+          <div class="empty-state">
+            <div class="empty-text">No jobs on the board yet</div>
+            <button class="big-btn" onclick="openNewJobModal()">+ New Job</button>
+          </div>
+        `;
+      } else {
+        cardsHtml = DATA.jobs.map(job => {
+          const client = DATA.clients.find(c => c.id === job.clientId) || { name: "Client" };
+          return `
+            <div class="card" onclick="openView('JOB_DETAIL', '${job.id}')" style="cursor: pointer;">
+              <div class="card-header-row">
+                <div>
+                  <div class="card-title">${job.name}</div>
+                  <div class="card-sub">${client.name} • ${job.trade || 'General'}</div>
+                </div>
+                <div style="border: 2px solid var(--border-dark); font-family: var(--font-display); font-size: 15px; font-weight: 800; text-transform: uppercase; padding: 4px 8px; border-radius: 6px; background: #FFF;">
+                  ${job.status}
+                </div>
+              </div>
+              <div class="card-meta">📍 ${job.address}</div>
+              <div class="card-meta" style="color: var(--text-muted);">
+                📷 ${job.photos.length} photos • 📝 ${job.notes.length} notes
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      return `
+        <div class="screen-header">
+          <button class="back-btn" onclick="goHome()">←</button>
+          <div class="screen-title">ALL JOBS</div>
+        </div>
+        <button class="big-btn" onclick="openNewJobModal()">+ New Job</button>
+        ${cardsHtml}
+      `;
+    }
+
+    function renderJobDetail() {
+      const job = DATA.jobs.find(j => j.id === ACTIVE_JOB_ID);
+      if (!job) return `<div class="container"><button class="big-btn" onclick="goHome()">Back to Home</button></div>`;
+
+      const client = DATA.clients.find(c => c.id === job.clientId) || { name: "Client", phone: "", email: "" };
+      const isOwner = DATA.currentUser.role === "Owner";
+      const canSeeMoney = isOwner || DATA.business.crewSeeMoney;
+
+      const stages = ["Lead", "Quoted", "Scheduled", "On site", "Waiting", "Done", "Paid"];
+      const statusPillsHtml = stages.map(st => `
+        <div class="status-step ${job.status.toLowerCase() === st.toLowerCase() ? 'active' : ''}" onclick="setJobStatus('${job.id}', '${st}')">
+          ${st}
+        </div>
+      `).join('');
+
+      let photoStripHtml = '';
+      if (job.photos && job.photos.length > 0) {
+        photoStripHtml = `
+          <div class="photo-strip">
+            ${job.photos.map(p => `
+              <img src="${p.url}" class="photo-thumb" onclick="openPhotoViewer('${p.url}', '${p.caption || ''}', '${p.author}', '${p.timestamp}')">
+            `).join('')}
+          </div>
+        `;
+      } else {
+        photoStripHtml = `<div style="font-size: 13px; color: var(--text-muted); font-weight: 600; padding: 6px 0;">No photos yet. Tap Add Photo below.</div>`;
+      }
+
+      let quotedTotal = 0;
+      if (job.quotes && job.quotes[0]) {
+        job.quotes[0].items.forEach(it => quotedTotal += (it.qty * it.rate));
+      }
+      let billedTotal = 0;
+      let paidTotal = 0;
+      if (job.bills) {
+        job.bills.forEach(b => {
+          billedTotal += b.amount;
+          if (b.status === "Paid") paidTotal += b.amount;
+        });
+      }
+
+      return `
+        <div class="screen-header">
+          <button class="back-btn" onclick="openView('JOBS')">←</button>
+          <div class="screen-title" style="font-size: 22px;">${job.name}</div>
+        </div>
+
+        <div class="card" style="margin-bottom: 10px;">
+          <div class="card-sub">${client.name} • 📍 ${job.address}</div>
+          <div style="font-family: var(--font-display); font-size: 17px; font-weight: 800; text-transform: uppercase; color: var(--brand); margin-top: 4px;">
+            Trade: ${job.trade || 'General Carpentry'}
+          </div>
+
+          <div class="comm-row">
+            ${client.phone ? `<a href="tel:${client.phone}" class="comm-btn">📞 Call</a>` : ''}
+            ${client.phone ? `<a href="sms:${client.phone}" class="comm-btn">💬 Text</a>` : ''}
+            <button class="comm-btn" onclick="openJobEmailModal('${job.id}')">✉️ Email</button>
+          </div>
+        </div>
+
+        <div style="font-family: var(--font-display); font-size: 16px; font-weight: 800; text-transform: uppercase;">
+          Job Status (Tap to Change)
+        </div>
+        <div class="status-strip-wrapper">
+          <div class="status-strip">
+            ${statusPillsHtml}
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+          <div style="font-family: var(--font-display); font-size: 18px; font-weight: 800; text-transform: uppercase;">Photos (${job.photos.length})</div>
+          <button style="background: var(--board-header); color: #FFF; border: 2px solid var(--border-dark); border-radius: 6px; padding: 6px 12px; font-family: var(--font-display); font-size: 15px; font-weight: 800; text-transform: uppercase; cursor: pointer;" onclick="openAddPhotoModal('${job.id}')">
+            📷 + Add Photo
+          </button>
+        </div>
+        ${photoStripHtml}
+
+        <div class="fat-actions-grid">
+          <div class="fat-btn active" onclick="scrollToSection('notesSection')">
+            <span class="icon">📝</span>
+            <span>Notes (${job.notes.length})</span>
+          </div>
+          <div class="fat-btn" onclick="scrollToSection('moneySection')">
+            <span class="icon">💵</span>
+            <span>Money</span>
+          </div>
+          <div class="fat-btn" onclick="scrollToSection('filesSection')">
+            <span class="icon">📁</span>
+            <span>Files (${job.files.length})</span>
+          </div>
+        </div>
+
+        <!-- MONEY SECTION -->
+        <div id="moneySection" style="margin-top: 14px;">
+          <div style="font-family: var(--font-display); font-size: 20px; font-weight: 900; text-transform: uppercase; margin-bottom: 8px;">
+            Job Money
+          </div>
+          ${canSeeMoney ? `
+            <div class="money-metrics">
+              <div class="metric-box">
+                <div class="metric-label">Quoted</div>
+                <div class="metric-val">$${quotedTotal.toLocaleString()}</div>
+              </div>
+              <div class="metric-box">
+                <div class="metric-label">Billed</div>
+                <div class="metric-val">$${billedTotal.toLocaleString()}</div>
+              </div>
+              <div class="metric-box">
+                <div class="metric-label" style="color: var(--highlight);">Paid</div>
+                <div class="metric-val" style="color: var(--highlight);">$${paidTotal.toLocaleString()}</div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <div style="font-family: var(--font-display); font-size: 17px; font-weight: 800; text-transform: uppercase;">Bills & Invoices</div>
+                <button class="comm-btn" style="min-height: 34px; padding: 4px 10px;" onclick="openAddBillModal('${job.id}')">+ Add Bill</button>
+              </div>
+              ${job.bills.length === 0 ? `<div style="font-size: 13px; color: var(--text-muted);">No bills yet.</div>` : ''}
+              ${job.bills.map(b => `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px dashed var(--border);">
+                  <div>
+                    <div style="font-weight: 700; font-size: 15px;">${b.desc}</div>
+                    <div style="font-size: 13px; color: var(--text-muted);">$${b.amount.toLocaleString()}</div>
+                  </div>
+                  <div>
+                    <button style="border: 2px solid var(--border-dark); padding: 6px 12px; border-radius: 6px; font-family: var(--font-display); font-size: 14px; font-weight: 800; text-transform: uppercase; cursor: pointer; background: ${b.status === 'Paid' ? '#E8F5E9; color: #2E7D32;' : '#FFF;'}" onclick="toggleBillPaid('${job.id}', '${b.id}')">
+                      ${b.status === 'Paid' ? '✓ PAID' : 'MARK PAID'}
+                    </button>
+                  </div>
+                </div>
+              `).join('')}
+
+              ${billedTotal > 0 && billedTotal === paidTotal && job.status === "Done" ? `
+                <button class="big-btn" style="background: var(--highlight); margin-top: 12px;" onclick="setJobStatus('${job.id}', 'Paid')">
+                  ✓ Set Job Status to PAID
+                </button>
+              ` : ''}
+            </div>
+
+            <div class="comm-row" style="margin-bottom: 16px;">
+              <button class="comm-btn" onclick="openQuoteEmailModal('${job.id}')">✉️ Email Quote</button>
+              <button class="comm-btn" onclick="openBillEmailModal('${job.id}')">✉️ Email Bill</button>
+            </div>
+          ` : `
+            <div class="card" style="text-align: center; color: var(--text-muted); padding: 20px;">
+              🔒 Dollar amounts hidden for crew. Owner can enable visibility in top bar.
+            </div>
+          `}
+        </div>
+
+        <!-- NOTES BOARD SECTION -->
+        <div id="notesSection" style="margin-top: 20px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="font-family: var(--font-display); font-size: 20px; font-weight: 900; text-transform: uppercase;">
+              Notes Board
+            </div>
+            <button style="background: var(--brand); color: #FFF; border: 2px solid var(--border-dark); border-radius: 6px; padding: 6px 12px; font-family: var(--font-display); font-size: 15px; font-weight: 800; text-transform: uppercase; cursor: pointer;" onclick="openAddNoteModal('${job.id}')">
+              + Post Note
+            </button>
+          </div>
+          <div style="font-size: 13px; color: var(--text-muted); font-weight: 600; margin-bottom: 8px;">
+            Shared clipboard for the crew. Name and timestamp on every mark.
+          </div>
+
+          <div class="notes-board">
+            ${job.notes.length === 0 ? `<div style="text-align:center; color: var(--text-muted); padding: 12px;">Clipboard is empty. Post the first mark above.</div>` : ''}
+            ${job.notes.map(n => {
+              const tagClass = n.tag === 'Punch' ? 'tag-punch' : n.tag === 'Change' ? 'tag-change' : n.tag === 'Waiting on' ? 'tag-waiting' : '';
+              const canDelete = (n.author === DATA.currentUser.name) || (DATA.currentUser.role === "Owner");
+              return `
+                <div class="note-item">
+                  <div class="note-meta">
+                    <span class="note-author">${n.author}</span>
+                    <span>${n.timestamp}</span>
+                  </div>
+                  <div class="note-body">
+                    ${n.tag ? `<span class="note-tag ${tagClass}">${n.tag}</span>` : ''}
+                    ${n.text}
+                  </div>
+                  ${canDelete ? `
+                    <div style="text-align: right; margin-top: 4px;">
+                      <button style="background: none; border: none; color: var(--alert); font-size: 11px; font-weight: 800; text-transform: uppercase; cursor: pointer;" onclick="deleteNote('${job.id}', '${n.id}')">Delete</button>
+                    </div>
+                  ` : ''}
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+
+        <!-- FILES SECTION -->
+        <div id="filesSection" style="margin-top: 20px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <div style="font-family: var(--font-display); font-size: 20px; font-weight: 900; text-transform: uppercase;">Permits & Files</div>
+            <button class="comm-btn" style="min-height: 34px; padding: 4px 10px;" onclick="openAddFileModal('${job.id}')">+ Add File</button>
+          </div>
+          <div class="card">
+            ${job.files.length === 0 ? `<div style="font-size: 13px; color: var(--text-muted);">No documents or permits attached yet.</div>` : ''}
+            ${job.files.map(f => `
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px dashed var(--border);">
+                <div>
+                  <div style="font-weight: 700; font-size: 15px;">📄 ${f.name}</div>
+                  <div style="font-size: 12px; color: var(--text-muted);">Added by ${f.author} • ${f.date}</div>
+                </div>
+                <button class="comm-btn" style="min-height: 32px; padding: 2px 8px; font-size: 13px;" onclick="showToast('Viewing file: ' + '${f.name}')">View</button>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    function scrollToSection(id) {
+      const el = document.getElementById(id);
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function renderPhotosView() {
+      const allPhotos = [];
+      DATA.jobs.forEach(job => {
+        if (job.photos) {
+          job.photos.forEach(p => {
+            allPhotos.push({ ...p, jobName: job.name, jobId: job.id });
+          });
+        }
+      });
+
+      return `
+        <div class="screen-header">
+          <button class="back-btn" onclick="goHome()">←</button>
+          <div class="screen-title">JOB PHOTOS</div>
+        </div>
+        <div style="font-size: 14px; color: var(--text-muted); font-weight: 600; margin-bottom: 12px;">
+          Jobsite camera roll across all current work.
+        </div>
+
+        ${allPhotos.length === 0 ? `
+          <div class="empty-state">
+            <div class="empty-text">No photos snapped yet</div>
+            <button class="big-btn" onclick="openView('JOBS')">Open a Job to Add Photos</button>
+          </div>
+        ` : `
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            ${allPhotos.map(p => `
+              <div class="card" style="padding: 8px;" onclick="openView('JOB_DETAIL', '${p.jobId}')">
+                <img src="${p.url}" style="width: 100%; height: 130px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border-dark);">
+                <div style="font-family: var(--font-display); font-size: 16px; font-weight: 800; text-transform: uppercase; margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                  ${p.jobName}
+                </div>
+                <div style="font-size: 12px; color: var(--text-muted);">
+                  ${p.tag ? `<strong style="color:var(--brand)">[${p.tag}]</strong> ` : ''}${p.caption || 'Photo'} • ${p.timestamp}
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        `}
+      `;
+    }
+
+    function renderMoneyView() {
+      const isOwner = DATA.currentUser.role === "Owner";
+      const canSeeMoney = isOwner || DATA.business.crewSeeMoney;
+
+      if (!canSeeMoney) {
+        return `
+          <div class="screen-header">
+            <button class="back-btn" onclick="goHome()">←</button>
+            <div class="screen-title">MONEY</div>
+          </div>
+          <div class="card" style="text-align: center; padding: 30px;">
+            <div style="font-family: var(--font-display); font-size: 22px; font-weight: 800;">RESTRICTED TO OWNER</div>
+            <div style="color: var(--text-muted); margin-top: 8px;">Dollar tracking is turned off for crew logins. Tap the role pill in the top header to switch back to Owner view.</div>
+          </div>
+        `;
+      }
+
+      let grandQuoted = 0;
+      let grandBilled = 0;
+      let grandPaid = 0;
+
+      DATA.jobs.forEach(j => {
+        if (j.quotes && j.quotes[0]) {
+          j.quotes[0].items.forEach(it => grandQuoted += (it.qty * it.rate));
+        }
+        if (j.bills) {
+          j.bills.forEach(b => {
+            grandBilled += b.amount;
+            if (b.status === "Paid") grandPaid += b.amount;
+          });
+        }
+      });
+
+      return `
+        <div class="screen-header">
+          <button class="back-btn" onclick="goHome()">←</button>
+          <div class="screen-title">MONEY BOARD</div>
+        </div>
+
+        <div class="money-metrics" style="margin-bottom: 20px;">
+          <div class="metric-box">
+            <div class="metric-label">Quoted</div>
+            <div class="metric-val">$${grandQuoted.toLocaleString()}</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-label">Billed</div>
+            <div class="metric-val">$${grandBilled.toLocaleString()}</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-label" style="color: var(--highlight);">Collected</div>
+            <div class="metric-val" style="color: var(--highlight);">$${grandPaid.toLocaleString()}</div>
+          </div>
+        </div>
+
+        <div style="font-family: var(--font-display); font-size: 20px; font-weight: 900; text-transform: uppercase; margin-bottom: 8px;">
+          Open Balances by Job
+        </div>
+        ${DATA.jobs.map(job => {
+          let jobBilled = 0;
+          let jobPaid = 0;
+          (job.bills || []).forEach(b => {
+            jobBilled += b.amount;
+            if (b.status === "Paid") jobPaid += b.amount;
+          });
+          const unpaid = jobBilled - jobPaid;
+
+          return `
+            <div class="card" onclick="openView('JOB_DETAIL', '${job.id}')" style="cursor: pointer;">
+              <div class="card-header-row">
+                <div class="card-title">${job.name}</div>
+                <div style="font-family: var(--font-display); font-size: 17px; font-weight: 800; color: ${unpaid > 0 ? 'var(--alert)' : 'var(--highlight)'};">
+                  ${unpaid > 0 ? `UNPAID: $${unpaid.toLocaleString()}` : 'ALL PAID'}
+                </div>
+              </div>
+              <div style="font-size: 13px; color: var(--text-muted);">
+                Billed $${jobBilled.toLocaleString()} • Collected $${jobPaid.toLocaleString()}
+              </div>
+            </div>
+          `;
+        }).join('')}
+      `;
+    }
+
+    function renderPeopleView() {
+      return `
+        <div class="screen-header">
+          <button class="back-btn" onclick="goHome()">←</button>
+          <div class="screen-title">PEOPLE</div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <div style="font-family: var(--font-display); font-size: 20px; font-weight: 900; text-transform: uppercase;">Clients</div>
+          <button class="comm-btn" style="min-height: 36px; padding: 4px 12px;" onclick="openNewClientModal()">+ Add Client</button>
+        </div>
+        ${DATA.clients.map(cl => `
+          <div class="card">
+            <div class="card-title">${cl.name}</div>
+            <div class="card-sub">📍 ${cl.address}</div>
+            <div class="comm-row">
+              ${cl.phone ? `<a href="tel:${cl.phone}" class="comm-btn">📞 Call</a>` : ''}
+              ${cl.phone ? `<a href="sms:${cl.phone}" class="comm-btn">💬 Text</a>` : ''}
+              ${cl.email ? `<a href="mailto:${cl.email}" class="comm-btn">✉️ Email</a>` : ''}
+            </div>
+          </div>
+        `).join('')}
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin: 24px 0 8px 0;">
+          <div style="font-family: var(--font-display); font-size: 20px; font-weight: 900; text-transform: uppercase;">Crew Roster</div>
+          ${DATA.currentUser.role === 'Owner' ? `<button class="comm-btn" style="min-height: 36px; padding: 4px 12px;" onclick="openNewCrewModal()">+ Add Crew</button>` : ''}
+        </div>
+        ${DATA.crewMembers.map(cr => `
+          <div class="card">
+            <div class="card-header-row">
+              <div class="card-title">${cr.name}</div>
+              <div style="background: var(--border-dark); color: #FFF; font-family: var(--font-display); font-size: 13px; font-weight: 800; text-transform: uppercase; padding: 2px 8px; border-radius: 4px;">
+                ${cr.role}
+              </div>
+            </div>
+            <div class="comm-row">
+              ${cr.phone ? `<a href="tel:${cr.phone}" class="comm-btn">📞 Call</a>` : ''}
+              ${cr.phone ? `<a href="sms:${cr.phone}" class="comm-btn">💬 Text</a>` : ''}
+            </div>
+          </div>
+        `).join('')}
+      `;
+    }
+
+    function renderNotesView() {
+      const allNotes = [];
+      DATA.jobs.forEach(job => {
+        if (job.notes) {
+          job.notes.forEach(n => {
+            allNotes.push({ ...n, jobName: job.name, jobId: job.id });
+          });
+        }
+      });
+      allNotes.reverse();
+
+      return `
+        <div class="screen-header">
+          <button class="back-btn" onclick="goHome()">←</button>
+          <div class="screen-title">SHOP CLIPBOARD</div>
+        </div>
+        <div style="font-size: 14px; color: var(--text-muted); font-weight: 600; margin-bottom: 12px;">
+          Live feed of job notes, punches, and changes across all sites.
+        </div>
+
+        <div class="notes-board">
+          ${allNotes.length === 0 ? `<div style="text-align: center; color: var(--text-muted); padding: 20px;">No notes posted yet.</div>` : ''}
+          ${allNotes.map(n => {
+            const tagClass = n.tag === 'Punch' ? 'tag-punch' : n.tag === 'Change' ? 'tag-change' : n.tag === 'Waiting on' ? 'tag-waiting' : '';
+            return `
+              <div class="note-item" onclick="openView('JOB_DETAIL', '${n.jobId}')" style="cursor: pointer;">
+                <div class="note-meta">
+                  <span class="note-author" style="color: var(--brand);">${n.jobName} • ${n.author}</span>
+                  <span>${n.timestamp}</span>
+                </div>
+                <div class="note-body">
+                  ${n.tag ? `<span class="note-tag ${tagClass}">${n.tag}</span>` : ''}
+                  ${n.text}
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `;
+    }
+
+    function setJobStatus(jobId, status) {
+      const job = DATA.jobs.find(j => j.id === jobId);
+      if (job) {
+        job.status = status;
+        saveData();
+        renderCurrentView();
+        showToast(`Job status set to ${status.toUpperCase()}`);
+      }
+    }
+
+    function toggleBillPaid(jobId, billId) {
+      const job = DATA.jobs.find(j => j.id === jobId);
+      if (job && job.bills) {
+        const bill = job.bills.find(b => b.id === billId);
+        if (bill) {
+          bill.status = bill.status === "Paid" ? "Unpaid" : "Paid";
+          saveData();
+          renderCurrentView();
+          showToast(`Bill marked as ${bill.status.toUpperCase()}`);
+        }
+      }
+    }
+
+    function deleteNote(jobId, noteId) {
+      const job = DATA.jobs.find(j => j.id === jobId);
+      if (job && job.notes) {
+        job.notes = job.notes.filter(n => n.id !== noteId);
+        saveData();
+        renderCurrentView();
+        showToast("Note deleted");
+      }
+    }
+
+    function openNewJobModal() {
+      const clientsOptions = DATA.clients.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+      const modalHtml = `
+        <div style="font-family: var(--font-display); font-size: 24px; font-weight: 900; text-transform: uppercase; margin-bottom: 12px;">New Job on Board</div>
+        <div class="input-group">
+          <label class="input-label">Job Name</label>
+          <input type="text" id="newJobName" class="text-input" placeholder="e.g. Peterson Deck & Railing">
+        </div>
+        <div class="input-group">
+          <label class="input-label">Trade / Type</label>
+          <div class="trade-pills">
+            <span class="trade-pill selected" onclick="selectTradePill(this)">Carpentry</span>
+            <span class="trade-pill" onclick="selectTradePill(this)">Plumbing</span>
+            <span class="trade-pill" onclick="selectTradePill(this)">Electrical</span>
+            <span class="trade-pill" onclick="selectTradePill(this)">Painting</span>
+            <span class="trade-pill" onclick="selectTradePill(this)">Remodel</span>
+          </div>
+          <input type="hidden" id="newJobTrade" value="Carpentry">
+        </div>
+        <div class="input-group">
+          <label class="input-label">Client</label>
+          <select id="newJobClientId" class="text-input">
+            ${clientsOptions}
+          </select>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Site Address</label>
+          <input type="text" id="newJobAddress" class="text-input" placeholder="e.g. 104 Main St">
+        </div>
+        <button class="big-btn" onclick="saveNewJob()">Create Job</button>
+      `;
+      openModal(modalHtml);
+    }
+
+    function selectTradePill(el) {
+      document.querySelectorAll('.trade-pill').forEach(p => p.classList.remove('selected'));
+      el.classList.add('selected');
+      document.getElementById('newJobTrade').value = el.innerText;
+    }
+
+    function saveNewJob() {
+      const name = document.getElementById("newJobName").value.trim();
+      const trade = document.getElementById("newJobTrade").value;
+      const clientId = document.getElementById("newJobClientId").value;
+      const address = document.getElementById("newJobAddress").value.trim();
+
+      if (!name) { alert("Please enter a job name."); return; }
+
+      const newJob = {
+        id: "j_" + Date.now(),
+        name: name,
+        trade: trade,
+        clientId: clientId,
+        address: address || "On Site",
+        status: "Lead",
+        startDate: new Date().toISOString().split('T')[0],
+        crewAssigned: ["c1"],
+        photos: [],
+        files: [],
+        notes: [
+          { id: "n_" + Date.now(), author: DATA.currentUser.name, text: "Job opened on board.", tag: "", timestamp: "Just now" }
+        ],
+        quotes: [{ items: [{ desc: "Initial Scope", qty: 1, rate: 0 }], status: "Draft" }],
+        bills: [],
+        expenses: []
+      };
+
+      DATA.jobs.unshift(newJob);
+      saveData();
+      closeModal();
+      openView('JOB_DETAIL', newJob.id);
+    }
+
+    function openAddNoteModal(jobId) {
+      const modalHtml = `
+        <div style="font-family: var(--font-display); font-size: 24px; font-weight: 900; text-transform: uppercase; margin-bottom: 12px;">Post Note to Board</div>
+        <div class="input-group">
+          <label class="input-label">Posting As</label>
+          <input type="text" class="text-input" value="${DATA.currentUser.name}" readonly style="background:#EFECE6;">
+        </div>
+        <div class="input-group">
+          <label class="input-label">Flag (Optional)</label>
+          <select id="noteTag" class="text-input">
+            <option value="">No Flag (General Note)</option>
+            <option value="Punch">Punch List</option>
+            <option value="Change">Change Order / Work</option>
+            <option value="Waiting on">Waiting On Material/Decision</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Note Message</label>
+          <textarea id="noteText" class="text-input" placeholder="What's the status or item?"></textarea>
+        </div>
+        <button class="big-btn" onclick="saveNote('${jobId}')">Post Note</button>
+      `;
+      openModal(modalHtml);
+    }
+
+    function saveNote(jobId) {
+      const text = document.getElementById("noteText").value.trim();
+      const tag = document.getElementById("noteTag").value;
+      if (!text) return;
+
+      const job = DATA.jobs.find(j => j.id === jobId);
+      if (job) {
+        const now = new Date();
+        const timeStr = "Today, " + now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        job.notes.push({
+          id: "n_" + Date.now(),
+          author: DATA.currentUser.name,
+          text: text,
+          tag: tag,
+          timestamp: timeStr
+        });
+        saveData();
+        closeModal();
+        renderCurrentView();
+      }
+    }
+
+    function openAddPhotoModal(jobId) {
+      const modalHtml = `
+        <div style="font-family: var(--font-display); font-size: 24px; font-weight: 900; text-transform: uppercase; margin-bottom: 12px;">Add Job Photo</div>
+        <div class="input-group">
+          <label class="input-label">Camera / Roll</label>
+          <input type="file" id="photoInput" accept="image/*" class="text-input" onchange="handlePhotoPick(this)">
+        </div>
+        <div class="input-group">
+          <label class="input-label">Tag</label>
+          <select id="photoTag" class="text-input">
+            <option value="During">During Work</option>
+            <option value="Before">Before</option>
+            <option value="After">After</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Caption (Optional)</label>
+          <input type="text" id="photoCaption" class="text-input" placeholder="e.g. Finished siding north wall">
+        </div>
+        <button class="big-btn" id="savePhotoBtn" onclick="savePhoto('${jobId}')">Save Photo</button>
+      `;
+      openModal(modalHtml);
+    }
+
+    let TEMP_PHOTO_DATA = null;
+    function handlePhotoPick(input) {
+      if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          TEMP_PHOTO_DATA = e.target.result;
+        };
+        reader.readAsDataURL(input.files[0]);
+      }
+    }
+
+    function savePhoto(jobId) {
+      const job = DATA.jobs.find(j => j.id === jobId);
+      if (!job) return;
+
+      const tag = document.getElementById("photoTag").value;
+      const caption = document.getElementById("photoCaption").value.trim();
+      const url = TEMP_PHOTO_DATA || "https://images.unsplash.com/photo-1503387762-592deb58ef4e?auto=format&fit=crop&w=400&q=80";
+
+      const now = new Date();
+      const timeStr = "Today";
+
+      job.photos.unshift({
+        id: "p_" + Date.now(),
+        url: url,
+        tag: tag,
+        caption: caption,
+        author: DATA.currentUser.name,
+        timestamp: timeStr
+      });
+
+      TEMP_PHOTO_DATA = null;
+      saveData();
+      closeModal();
+      renderCurrentView();
+    }
+
+    function openPhotoViewer(url, caption, author, time) {
+      const modalHtml = `
+        <div style="text-align: center;">
+          <img src="${url}" style="width: 100%; max-height: 50vh; object-fit: contain; border-radius: 8px; border: 2px solid var(--border-dark);">
+          <div style="font-family: var(--font-display); font-size: 20px; font-weight: 800; text-transform: uppercase; margin-top: 10px;">${caption || 'Job Photo'}</div>
+          <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">Snapped by ${author} • ${time}</div>
+          <button class="big-btn secondary" onclick="closeModal()">Close</button>
+        </div>
+      `;
+      openModal(modalHtml);
+    }
+
+    function openAddBillModal(jobId) {
+      const modalHtml = `
+        <div style="font-family: var(--font-display); font-size: 24px; font-weight: 900; text-transform: uppercase; margin-bottom: 12px;">Add Bill / Invoice</div>
+        <div class="input-group">
+          <label class="input-label">Description</label>
+          <input type="text" id="billDesc" class="text-input" placeholder="e.g. Framing draw #2">
+        </div>
+        <div class="input-group">
+          <label class="input-label">Amount ($)</label>
+          <input type="number" id="billAmount" class="text-input" placeholder="e.g. 2500">
+        </div>
+        <button class="big-btn" onclick="saveBill('${jobId}')">Add Bill to Job</button>
+      `;
+      openModal(modalHtml);
+    }
+
+    function saveBill(jobId) {
+      const job = DATA.jobs.find(j => j.id === jobId);
+      const desc = document.getElementById("billDesc").value.trim();
+      const amount = parseFloat(document.getElementById("billAmount").value) || 0;
+      if (!desc || amount <= 0) { alert("Enter valid description and amount."); return; }
+
+      if (!job.bills) job.bills = [];
+      job.bills.push({
+        id: "b_" + Date.now(),
+        desc: desc,
+        amount: amount,
+        status: "Unpaid"
+      });
+      saveData();
+      closeModal();
+      renderCurrentView();
+    }
+
+    function openAddFileModal(jobId) {
+      const modalHtml = `
+        <div style="font-family: var(--font-display); font-size: 24px; font-weight: 900; text-transform: uppercase; margin-bottom: 12px;">Add Document or PDF</div>
+        <div class="input-group">
+          <label class="input-label">Document Name</label>
+          <input type="text" id="fileName" class="text-input" placeholder="e.g. Foundation_Inspection_Signed.pdf">
+        </div>
+        <button class="big-btn" onclick="saveFile('${jobId}')">Attach File</button>
+      `;
+      openModal(modalHtml);
+    }
+
+    function saveFile(jobId) {
+      const job = DATA.jobs.find(j => j.id === jobId);
+      const name = document.getElementById("fileName").value.trim();
+      if (!name) return;
+
+      if (!job.files) job.files = [];
+      job.files.push({
+        id: "f_" + Date.now(),
+        name: name,
+        author: DATA.currentUser.name,
+        date: "Today"
+      });
+      saveData();
+      closeModal();
+      renderCurrentView();
+    }
+
+    function openJobEmailModal(jobId) {
+      const job = DATA.jobs.find(j => j.id === jobId);
+      if (!job) return;
+      const client = DATA.clients.find(c => c.id === job.clientId) || { name: "Client", email: "" };
+      const firstName = client.name.split(' ')[0] || "there";
+
+      const subject = encodeURIComponent(`${job.name} update from ${DATA.business.name}`);
+      const bodyText = `Hi ${firstName},
+
+Here is a quick update on ${job.name} at ${job.address}.
+
+Status: ${job.status}
+
+Note:
+
+
+${DATA.business.name}
+${DATA.business.phone}
+Sent from Shop Board`;
+
+      const mailtoUrl = `mailto:${client.email || ''}?subject=${subject}&body=${encodeURIComponent(bodyText)}`;
+
+      const modalHtml = `
+        <div style="font-family: var(--font-display); font-size: 24px; font-weight: 900; text-transform: uppercase; margin-bottom: 8px;">Format Client Email</div>
+        <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">
+          Tapping Send opens your phone's default mail app with everything pre-filled.
+        </div>
+        <div class="input-group">
+          <label class="input-label">To</label>
+          <input type="text" class="text-input" value="${client.email || ''}" readonly>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Subject</label>
+          <input type="text" class="text-input" value="${job.name} update from ${DATA.business.name}" readonly>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Draft Preview</label>
+          <textarea class="text-input" style="height: 120px;" readonly>${bodyText}</textarea>
+        </div>
+        <a href="${mailtoUrl}" class="big-btn" onclick="closeModal()">🚀 Open in Mail App</a>
+      `;
+      openModal(modalHtml);
+    }
+
+    function openQuoteEmailModal(jobId) {
+      const job = DATA.jobs.find(j => j.id === jobId);
+      if (!job) return;
+      const client = DATA.clients.find(c => c.id === job.clientId) || { name: "Client", email: "" };
+      const firstName = client.name.split(' ')[0] || "there";
+
+      let itemsText = "";
+      let total = 0;
+      if (job.quotes && job.quotes[0]) {
+        job.quotes[0].items.forEach(it => {
+          const sub = it.qty * it.rate;
+          total += sub;
+          itemsText += `- ${it.desc}: $${sub.toLocaleString()}
+`;
+        });
+      }
+
+      const subject = encodeURIComponent(`${job.name} quote from ${DATA.business.name}`);
+      const bodyText = `Hi ${firstName},
+
+Here is the quote breakdown for ${job.name}:
+
+${itemsText}
+Total: $${total.toLocaleString()}
+
+Note:
+
+
+${DATA.business.name}
+${DATA.business.phone}
+Sent from Shop Board`;
+
+      const mailtoUrl = `mailto:${client.email || ''}?subject=${subject}&body=${encodeURIComponent(bodyText)}`;
+
+      const modalHtml = `
+        <div style="font-family: var(--font-display); font-size: 24px; font-weight: 900; text-transform: uppercase; margin-bottom: 8px;">Email Quote</div>
+        <div class="input-group">
+          <label class="input-label">Draft Preview</label>
+          <textarea class="text-input" style="height: 150px;" readonly>${bodyText}</textarea>
+        </div>
+        <a href="${mailtoUrl}" class="big-btn" onclick="closeModal()">🚀 Open in Mail App</a>
+      `;
+      openModal(modalHtml);
+    }
+
+    function openBillEmailModal(jobId) {
+      const job = DATA.jobs.find(j => j.id === jobId);
+      if (!job) return;
+      const client = DATA.clients.find(c => c.id === job.clientId) || { name: "Client", email: "" };
+      const firstName = client.name.split(' ')[0] || "there";
+
+      let billsText = "";
+      let total = 0;
+      (job.bills || []).forEach(b => {
+        total += b.amount;
+        billsText += `- ${b.desc}: $${b.amount.toLocaleString()} [${b.status.toUpperCase()}]
+`;
+      });
+
+      const subject = encodeURIComponent(`${job.name} bill from ${DATA.business.name}`);
+      const bodyText = `Hi ${firstName},
+
+Here is the current billing breakdown for ${job.name}:
+
+${billsText}
+Total: $${total.toLocaleString()}
+
+${DATA.business.name}
+${DATA.business.phone}
+Sent from Shop Board`;
+
+      const mailtoUrl = `mailto:${client.email || ''}?subject=${subject}&body=${encodeURIComponent(bodyText)}`;
+
+      const modalHtml = `
+        <div style="font-family: var(--font-display); font-size: 24px; font-weight: 900; text-transform: uppercase; margin-bottom: 8px;">Email Bill</div>
+        <div class="input-group">
+          <label class="input-label">Draft Preview</label>
+          <textarea class="text-input" style="height: 150px;" readonly>${bodyText}</textarea>
+        </div>
+        <a href="${mailtoUrl}" class="big-btn" onclick="closeModal()">🚀 Open in Mail App</a>
+      `;
+      openModal(modalHtml);
+    }
+
+    function openNewClientModal() {
+      const modalHtml = `
+        <div style="font-family: var(--font-display); font-size: 24px; font-weight: 900; text-transform: uppercase; margin-bottom: 12px;">New Client</div>
+        <div class="input-group">
+          <label class="input-label">Client Name</label>
+          <input type="text" id="clName" class="text-input" placeholder="e.g. John Smith">
+        </div>
+        <div class="input-group">
+          <label class="input-label">Phone</label>
+          <input type="tel" id="clPhone" class="text-input" placeholder="e.g. 207-555-0100">
+        </div>
+        <div class="input-group">
+          <label class="input-label">Email</label>
+          <input type="email" id="clEmail" class="text-input" placeholder="e.g. john@example.com">
+        </div>
+        <div class="input-group">
+          <label class="input-label">Address</label>
+          <input type="text" id="clAddress" class="text-input" placeholder="e.g. 55 Elm St, Town">
+        </div>
+        <button class="big-btn" onclick="saveNewClient()">Save Client</button>
+      `;
+      openModal(modalHtml);
+    }
+
+    function saveNewClient() {
+      const name = document.getElementById("clName").value.trim();
+      const phone = document.getElementById("clPhone").value.trim();
+      const email = document.getElementById("clEmail").value.trim();
+      const address = document.getElementById("clAddress").value.trim();
+      if (!name) return;
+
+      DATA.clients.push({
+        id: "cl_" + Date.now(),
+        name: name,
+        phone: phone,
+        email: email,
+        address: address
+      });
+      saveData();
+      closeModal();
+      renderCurrentView();
+    }
+
+    function openNewCrewModal() {
+      const modalHtml = `
+        <div style="font-family: var(--font-display); font-size: 24px; font-weight: 900; text-transform: uppercase; margin-bottom: 12px;">Add Crew Member</div>
+        <div class="input-group">
+          <label class="input-label">Name</label>
+          <input type="text" id="crName" class="text-input" placeholder="e.g. Sam White">
+        </div>
+        <div class="input-group">
+          <label class="input-label">Phone</label>
+          <input type="tel" id="crPhone" class="text-input" placeholder="e.g. 207-555-9988">
+        </div>
+        <div class="input-group">
+          <label class="input-label">Role</label>
+          <select id="crRole" class="text-input">
+            <option value="Crew">Crew</option>
+            <option value="Owner">Owner</option>
+          </select>
+        </div>
+        <button class="big-btn" onclick="saveNewCrew()">Add to Roster</button>
+      `;
+      openModal(modalHtml);
+    }
+
+    function saveNewCrew() {
+      const name = document.getElementById("crName").value.trim();
+      const phone = document.getElementById("crPhone").value.trim();
+      const role = document.getElementById("crRole").value;
+      if (!name) return;
+
+      DATA.crewMembers.push({
+        id: "c_" + Date.now(),
+        name: name,
+        phone: phone,
+        email: "",
+        role: role
+      });
+      saveData();
+      closeModal();
+      renderCurrentView();
+    }
+
+    // Run setup
+    updateHeaderBadges();
+  </script>
 </body>
 </html>

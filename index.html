@@ -599,6 +599,8 @@
     .bar-row {flex-wrap:wrap;gap:8px;}
     .brand-title {flex-wrap:wrap;min-width:0;}
     #businessTag {max-width:100%;overflow-wrap:anywhere;}
+    .company-logo-header {width:48px;height:48px;object-fit:contain;background:#FFF;border-radius:6px;padding:3px;flex-shrink:0;}
+    .company-logo-preview {width:100%;height:130px;object-fit:contain;padding:10px;background:#FFF;border:2px solid var(--border-dark);border-radius:8px;}
   </style>
 </head>
 <body>
@@ -607,6 +609,7 @@
   <header class="shop-bar">
     <div class="bar-row">
       <div class="brand-title" onclick="goHome()">
+        <img id="companyLogoHeader" class="company-logo-header" alt="Company logo" hidden>
         SHOP BOARD
         <span class="chalk-badge" id="businessTag">FIELD SHOP</span>
       </div>
@@ -842,6 +845,17 @@
     }
 
     function updateHeaderBadges() {
+      const logo = document.getElementById("companyLogoHeader");
+      if (logo) {
+        const src = DATA.business.logoDataUrl || "";
+        if (/^data:image\/(png|jpeg);base64,/.test(src)) {
+          logo.src = src;
+          logo.hidden = false;
+        } else {
+          logo.removeAttribute("src");
+          logo.hidden = true;
+        }
+      }
       const bTag = document.getElementById("businessTag");
       if (bTag) bTag.innerText = DATA.business.name.toUpperCase();
 
@@ -2626,30 +2640,141 @@ Sent from Shop Board`;
     }
 
 
-    /* Company name only; existing job workflows are unchanged. */
+    let COMPANY_LOGO_DRAFT = "";
+    let COMPANY_LOGO_BUSY = false;
+    let COMPANY_LOGO_REQUEST = 0;
+
     function openCompanySettings() {
       if (DATA.currentUser.role !== "Owner") {
-        showToast("Switch to Owner view to change the company name");
+        showToast("Switch to Owner view to change company settings");
         return;
       }
+      COMPANY_LOGO_REQUEST++;
+      COMPANY_LOGO_BUSY = false;
+      COMPANY_LOGO_DRAFT = DATA.business.logoDataUrl || "";
       openModal(`
         <div style="font-family:var(--font-display);font-size:24px;font-weight:900;margin-bottom:12px;">Company Settings</div>
-        <p style="font-size:14px;color:var(--text-muted);margin-bottom:14px;">This name appears in the header and new client email, quote, and bill drafts. Shop Board remains the app name.</p>
+        <p style="font-size:14px;color:var(--text-muted);margin-bottom:14px;">Company name appears in the header and new email drafts. Your logo appears in the header. Changes apply after saving.</p>
         <form id="companySettingsForm" onsubmit="event.preventDefault();saveCompanyName();">
           <div class="input-group">
             <label class="input-label" for="companyNameInput">Company Name</label>
             <input id="companyNameInput" class="text-input" type="text" maxlength="80" autocomplete="organization" required aria-describedby="companyNameError">
           </div>
+          <div class="input-group">
+            <label class="input-label" for="companyLogoInput">Company Logo</label>
+            <input id="companyLogoInput" class="text-input" type="file" accept="image/png,image/jpeg,.png,.jpg,.jpeg" onchange="pickCompanyLogo(this)">
+            <p style="font-size:13px;color:var(--text-muted);margin:8px 0;">PNG or JPEG, up to 10 MB. PNG transparency is preserved. Resized to fit within 256 × 256 pixels, without cropping.</p>
+            <img id="companyLogoPreview" class="company-logo-preview" alt="Selected company logo" hidden>
+            <p id="companyLogoStatus" role="status" aria-live="polite" style="font-size:13px;margin:8px 0;"></p>
+            <button id="removeCompanyLogoBtn" class="comm-btn" type="button" onclick="removeCompanyLogo()" hidden>Remove Logo</button>
+          </div>
           <div id="companyNameError" role="alert" style="color:var(--alert);font-weight:700;margin-bottom:12px;" hidden></div>
-          <button type="submit" class="big-btn">Save Settings</button>
-          <button type="button" class="big-btn secondary" onclick="closeModal()">Cancel</button>
+          <button id="saveCompanySettingsBtn" type="submit" class="big-btn">Save Settings</button>
+          <button type="button" class="big-btn secondary" onclick="cancelCompanySettings()">Cancel</button>
         </form>
       `);
       document.getElementById("companyNameInput").value = DATA.business.name || "";
+      refreshCompanyLogoPreview();
+    }
+
+    function refreshCompanyLogoPreview() {
+      const preview = document.getElementById("companyLogoPreview");
+      const remove = document.getElementById("removeCompanyLogoBtn");
+      if (!preview || !remove) return;
+      if (COMPANY_LOGO_DRAFT) {
+        preview.src = COMPANY_LOGO_DRAFT;
+        preview.hidden = false;
+      } else {
+        preview.removeAttribute("src");
+        preview.hidden = true;
+      }
+      remove.hidden = !COMPANY_LOGO_DRAFT;
+    }
+
+    function cancelCompanySettings() {
+      COMPANY_LOGO_REQUEST++;
+      COMPANY_LOGO_BUSY = false;
+      COMPANY_LOGO_DRAFT = "";
+      closeModal();
+    }
+
+    function removeCompanyLogo() {
+      COMPANY_LOGO_REQUEST++;
+      COMPANY_LOGO_BUSY = false;
+      COMPANY_LOGO_DRAFT = "";
+      const input = document.getElementById("companyLogoInput");
+      const save = document.getElementById("saveCompanySettingsBtn");
+      if (input) input.value = "";
+      if (save) { save.disabled = false; save.textContent = "Save Settings"; }
+      refreshCompanyLogoPreview();
+      document.getElementById("companyLogoStatus").textContent = "Logo will be removed when you save. Cancel keeps the current logo.";
+    }
+
+    function pickCompanyLogo(input) {
+      if (DATA.currentUser.role !== "Owner" || !input.files || !input.files[0]) return;
+      const file = input.files[0];
+      const status = document.getElementById("companyLogoStatus");
+      const save = document.getElementById("saveCompanySettingsBtn");
+      const request = ++COMPANY_LOGO_REQUEST;
+      COMPANY_LOGO_BUSY = false;
+      save.disabled = false;
+      save.textContent = "Save Settings";
+      const png = file.type === "image/png" || (!file.type && /\.png$/i.test(file.name));
+      const jpeg = file.type === "image/jpeg" || (!file.type && /\.jpe?g$/i.test(file.name));
+      if (!png && !jpeg) { status.textContent = "Choose a PNG or JPEG image. Current logo is unchanged."; input.value = ""; return; }
+      if (file.size > 10 * 1024 * 1024) { status.textContent = "Image is too large. Choose a file under 10 MB."; input.value = ""; return; }
+      COMPANY_LOGO_BUSY = true;
+      save.disabled = true;
+      save.textContent = "Preparing Logo…";
+      status.textContent = "Preparing logo…";
+      function active() {
+        return request === COMPANY_LOGO_REQUEST && document.getElementById("companyLogoInput") === input &&
+          document.getElementById("modalOverlay").style.display === "flex";
+      }
+      function fail(message) {
+        if (!active()) return;
+        COMPANY_LOGO_BUSY = false;
+        save.disabled = false;
+        save.textContent = "Save Settings";
+        status.textContent = message + " Current logo is unchanged.";
+        input.value = "";
+      }
+      const reader = new FileReader();
+      reader.onerror = () => fail("Could not read the image.");
+      reader.onload = () => {
+        if (!active()) return;
+        const img = new Image();
+        img.onerror = () => fail("Could not decode this image.");
+        img.onload = () => {
+          if (!active()) return;
+          try {
+            const width = img.naturalWidth || img.width;
+            const height = img.naturalHeight || img.height;
+            if (!width || !height || width * height > 40000000) throw new Error("Image dimensions are unsupported; use a smaller image.");
+            const scale = Math.min(1, 256 / width, 256 / height);
+            const canvas = document.createElement("canvas");
+            canvas.width = Math.max(1, Math.round(width * scale));
+            canvas.height = Math.max(1, Math.round(height * scale));
+            const ctx = canvas.getContext("2d");
+            if (!ctx) throw new Error("Image processing is unavailable.");
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            const data = canvas.toDataURL(png ? "image/png" : "image/jpeg", 0.85);
+            if (!/^data:image\/(png|jpeg);base64,/.test(data) || data.length > 256 * 1024) throw new Error("Prepared logo is too large; use a simpler or smaller image.");
+            COMPANY_LOGO_DRAFT = data;
+            COMPANY_LOGO_BUSY = false;
+            save.disabled = false;
+            save.textContent = "Save Settings";
+            refreshCompanyLogoPreview();
+            status.textContent = "Logo ready. Tap Save Settings to apply it.";
+          } catch (e) { fail(e.message || "Could not prepare logo."); }
+        };
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(file);
     }
 
     function saveCompanyName() {
-      if (DATA.currentUser.role !== "Owner") return;
+      if (DATA.currentUser.role !== "Owner" || COMPANY_LOGO_BUSY) return;
       const input = document.getElementById("companyNameInput");
       const error = document.getElementById("companyNameError");
       if (!input || !error) return;
@@ -2660,20 +2785,21 @@ Sent from Shop Board`;
         error.hidden = false;
         return;
       }
-      const next = {...DATA, business: {...DATA.business, name: name, companyNameCustomized: true}};
+      const next = {...DATA, business: {...DATA.business, name: name, companyNameCustomized: true, logoDataUrl: COMPANY_LOGO_DRAFT}};
       try {
         const payload = JSON.stringify(next);
         localStorage.setItem("SHOP_BOARD_DATA", payload);
         if (localStorage.getItem("SHOP_BOARD_DATA") !== payload) throw new Error("Save verification failed");
       } catch (e) {
-        error.textContent = "Company name was not saved. Phone storage may be full or unavailable. Your previous name is unchanged.";
+        error.textContent = "Settings were not saved. Phone storage may be full or unavailable. Your saved company name and logo are unchanged.";
         error.hidden = false;
         return;
       }
       DATA.business = next.business;
       updateHeaderBadges();
+      COMPANY_LOGO_REQUEST++;
       closeModal();
-      showToast("Company name saved on this device");
+      showToast("Company settings saved on this device");
     }
 
     // Run setup

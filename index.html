@@ -271,6 +271,17 @@
       font-weight: 600;
       margin-bottom: 4px;
     }
+
+    .map-address {
+      color: #176B3A;
+      font-weight: 800;
+      text-decoration: underline;
+      text-decoration-thickness: 1.5px;
+      text-underline-offset: 2px;
+      cursor: pointer;
+    }
+    .map-address:active { opacity: 0.65; }
+
     .card-meta {
       font-size: 14px;
       color: var(--text);
@@ -891,6 +902,25 @@
       return `$${(Number(amount) || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     }
 
+
+    function getMapLink(address) {
+      if (!address || !address.trim() || address.trim() === "On Site") return "#";
+      const query = encodeURIComponent(address.trim());
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      return isIOS
+        ? `https://maps.apple.com/?q=${query}`
+        : `https://www.google.com/maps/search/?api=1&query=${query}`;
+    }
+
+    function openMap(address) {
+      const link = getMapLink(address);
+      if (link === "#") {
+        showToast("Add a street address first");
+        return;
+      }
+      window.location.href = link;
+    }
+
     function getJobMoney(job) {
       const legacyBilled = (job.bills || []).reduce((sum, bill) => sum + (Number(bill.amount) || 0), 0);
       const legacyCollected = (job.bills || []).reduce((sum, bill) => sum + (bill.status === "Paid" ? (Number(bill.amount) || 0) : 0), 0);
@@ -1025,7 +1055,7 @@
                   ${job.status}
                 </div>
               </div>
-              <div class="card-meta">📍 ${job.address}</div>
+              <div class="card-meta"><a class="map-address" href="${getMapLink(job.address)}" onclick="event.stopPropagation();">📍 ${job.address} • Map</a></div>
               <div class="card-meta">🔨 ${job.trade || 'General'}</div>
               <div class="comm-row" onclick="event.stopPropagation();">
                 ${client.phone ? `<a href="tel:${client.phone}" class="comm-btn" style="background: var(--highlight-soft);">📞 Call</a>` : ''}
@@ -1071,7 +1101,7 @@
                   ${job.status}
                 </div>
               </div>
-              <div class="card-meta">📍 ${job.address}</div>
+              <div class="card-meta"><a class="map-address" href="${getMapLink(job.address)}" onclick="event.stopPropagation();">📍 ${job.address} • Map</a></div>
               <div class="card-meta" style="color: var(--text-muted);">
                 📷 ${job.photos.length} photos • 📝 ${job.notes.length} notes
               </div>
@@ -1133,7 +1163,7 @@
         </div>
 
         <div class="card" style="margin-bottom: 10px;">
-          <div class="card-sub">${client.name} • 📍 ${job.address}</div>
+          <div class="card-sub">${client.name} • <a class="map-address" href="${getMapLink(job.address)}">📍 ${job.address} • Map</a></div>
           <div style="font-family: var(--font-display); font-size: 17px; font-weight: 800; text-transform: uppercase; color: var(--brand); margin-top: 4px;">
             Trade: ${job.trade || 'General Carpentry'}
           </div>
@@ -1141,6 +1171,7 @@
           <div class="comm-row">
             ${client.phone ? `<a href="tel:${client.phone}" class="comm-btn">📞 Call</a>` : ''}
             ${client.phone ? `<a href="sms:${client.phone}" class="comm-btn">💬 Text</a>` : ''}
+            <a href="${getMapLink(job.address)}" class="comm-btn" style="background: var(--highlight-soft); color: #176B3A;">🗺️ Map</a>
             <button class="comm-btn" onclick="openJobEmailModal('${job.id}')">✉️ Email</button>
           </div>
         </div>
@@ -1447,11 +1478,12 @@
         ${DATA.clients.map(cl => `
           <div class="card">
             <div class="card-header-row"><div class="card-title">${cl.name}</div><button class="comm-btn" style="min-height:34px; padding:4px 10px; flex:0 0 auto;" onclick="openEditClientModal('${cl.id}')">✏️ Edit</button></div>
-            <div class="card-sub">📍 ${cl.address || 'No address saved'}</div>
+            <div class="card-sub">${cl.address ? `<a class="map-address" href="${getMapLink(cl.address)}">📍 ${cl.address} • Map</a>` : '📍 No address saved'}</div>
             ${cl.projectNotes ? `<div style="font-size:13px; color:var(--text-muted); margin-top:6px; white-space:pre-wrap;">📝 ${cl.projectNotes}</div>` : ''}
             <div class="comm-row">
               ${cl.phone ? `<a href="tel:${cl.phone}" class="comm-btn">📞 Call</a>` : ''}
               ${cl.phone ? `<a href="sms:${cl.phone}" class="comm-btn">💬 Text</a>` : ''}
+              ${cl.address ? `<a href="${getMapLink(cl.address)}" class="comm-btn" style="background: var(--highlight-soft); color: #176B3A;">🗺️ Map</a>` : ''}
               ${cl.email ? `<a href="mailto:${cl.email}" class="comm-btn">✉️ Email</a>` : ''}
             </div>
           </div>

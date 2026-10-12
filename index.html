@@ -904,9 +904,11 @@
 
 
     function getMapLink(address) {
-      if (!address || !address.trim() || address.trim() === "On Site") return "#";
-      const query = encodeURIComponent(address.trim());
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      const cleanAddress = typeof address === "string" ? address.trim() : "";
+      if (!cleanAddress || /^(on site|no address saved)$/i.test(cleanAddress)) return "#";
+      const query = encodeURIComponent(cleanAddress);
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+        (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
       return isIOS
         ? `https://maps.apple.com/?q=${query}`
         : `https://www.google.com/maps/search/?api=1&query=${query}`;
@@ -920,6 +922,19 @@
       }
       window.location.href = link;
     }
+
+    function handleMissingMapAddress(event) {
+      const target = event.target;
+      const link = target && target.closest ? target.closest('a[href="#"]') : null;
+      if (!link) return;
+      const isMapLink = link.classList.contains("map-address") ||
+        (link.classList.contains("comm-btn") && link.textContent.trim() === "🗺️ Map");
+      if (!isMapLink) return;
+      event.preventDefault();
+      event.stopPropagation();
+      openMap("");
+    }
+    document.addEventListener("click", handleMissingMapAddress, true);
 
     function getJobMoney(job) {
       const legacyBilled = (job.bills || []).reduce((sum, bill) => sum + (Number(bill.amount) || 0), 0);

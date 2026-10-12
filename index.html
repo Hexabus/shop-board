@@ -2805,5 +2805,151 @@ Sent from Shop Board`;
     // Run setup
     updateHeaderBadges();
   </script>
+
+  <!-- SHOP BOARD APPEARANCE ADD-ON: insert before the final </body> -->
+<style id="shopBoardDarkModeStyles">
+
+html[data-shop-theme="light"] { color-scheme: light; }
+html[data-shop-theme="dark"] {
+  color-scheme: dark;
+  --bg:#121815; --card-bg:#1E2722; --border:#46554C;
+  --border-dark:#87998D; --text:#EFF4F0; --text-muted:#B8C7BD;
+  --brand:#B94A00; --brand-soft:#432C18;
+  --highlight:#8AD69A; --highlight-soft:#203D2A;
+  --alert:#FFA3A3; --alert-soft:#48252B; --board-header:#141C18;
+}
+html[data-shop-theme="dark"] body { background:var(--bg); color:var(--text); }
+html[data-shop-theme="dark"] .sync-strip { background:#1A241E; color:#C9D7CE; }
+html[data-shop-theme="dark"] :is(.text-input,.back-btn,.status-step,.fat-btn,.comm-btn,.metric-box,.notes-board,.empty-state,.trade-pill) {
+  background:#1E2722; color:var(--text); border-color:var(--border-dark);
+}
+html[data-shop-theme="dark"] :is(.status-step.active,.trade-pill.selected) { background:#D2E3D7; color:#122018; }
+html[data-shop-theme="dark"] :is(.fat-btn.active,.fat-btn:active,.tile:active) { background:#2A3A30; color:var(--text); }
+html[data-shop-theme="dark"] .big-btn.secondary { background:#25352B; color:var(--text); }
+html[data-shop-theme="dark"] .map-address { color:#9AE6AD; }
+html[data-shop-theme="dark"] :is(.photo-thumb,.modal-sheet) { background:var(--card-bg); }
+html[data-shop-theme="dark"] :is(.tag-punch,.tag-change,.tag-waiting) { border-color:#87998D; }
+html[data-shop-theme="dark"] .tag-punch { background:#50252D; color:#FFB6BD; }
+html[data-shop-theme="dark"] .tag-change { background:#483B1C; color:#FFE3A0; }
+html[data-shop-theme="dark"] .tag-waiting { background:#203C51; color:#ACDBFF; }
+html[data-shop-theme="dark"] :is(div,button,input,textarea,select,a,span)[style*="background: #FFF" i],
+html[data-shop-theme="dark"] :is(div,button,input,textarea,select,a,span)[style*="background:#FFF" i] {
+  background-color:var(--card-bg) !important;
+}
+html[data-shop-theme="dark"] :is(div,button,input,textarea,select,a,span)[style*="background: #EFECE6" i],
+html[data-shop-theme="dark"] :is(div,button,input,textarea,select,a,span)[style*="background:#EFECE6" i],
+html[data-shop-theme="dark"] :is(div,button,input,textarea,select,a,span)[style*="background: #EAE8E1" i] {
+  background-color:#2A3A30 !important;
+}
+html[data-shop-theme="dark"] :is(div,button,a,span)[style*="background: #E8F5E9" i],
+html[data-shop-theme="dark"] :is(div,button,a,span)[style*="background:#E8F5E9" i] {
+  background-color:#203D2A !important; color:#9AE6AD !important;
+}
+html[data-shop-theme="dark"] :is(div,button,a,span)[style*="color: #2E7D32" i],
+html[data-shop-theme="dark"] :is(div,button,a,span)[style*="color:#2E7D32" i],
+html[data-shop-theme="dark"] :is(div,button,a,span)[style*="color: #176B3A" i],
+html[data-shop-theme="dark"] :is(div,button,a,span)[style*="color:#176B3A" i] { color:#9AE6AD !important; }
+html[data-shop-theme="dark"] .big-btn[style*="background: var(--alert)"],
+html[data-shop-theme="dark"] .big-btn[style*="background:var(--alert)"] { background:#A82332 !important; color:#FFF !important; }
+html[data-shop-theme="dark"] .big-btn[style*="background: var(--highlight)"],
+html[data-shop-theme="dark"] .big-btn[style*="background:var(--highlight)"] { background:#245A32 !important; color:#FFF !important; }
+.shop-theme-panel { margin-top:18px; padding:14px; background:var(--card-bg); border:2px solid var(--border-dark); border-radius:12px; }
+.shop-theme-choices { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:12px 0; }
+.shop-theme-choice { min-height:52px; padding:10px; border:2px solid var(--border-dark); border-radius:8px; background:var(--card-bg); color:var(--text); font:inherit; font-weight:700; cursor:pointer; }
+.shop-theme-choice[data-choice="system"] { grid-column:1/-1; }
+.shop-theme-choice[aria-pressed="true"] { border:3px solid var(--brand); }
+.shop-theme-status { font-size:13px; color:var(--text-muted); }
+
+</style>
+<script>
+
+(function () {
+  "use strict";
+  if (window.ShopBoardAppearance) return;
+  const KEY = "SHOP_BOARD_THEME";
+  const valid = value => ["light", "dark", "system"].includes(value);
+  const media = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
+  let preference = "system";
+  try { const saved = localStorage.getItem(KEY); if (valid(saved)) preference = saved; } catch (e) {}
+
+  function apply() {
+    const resolved = preference === "system" ? (media && media.matches ? "dark" : "light") : preference;
+    document.documentElement.setAttribute("data-shop-theme", resolved);
+    document.documentElement.style.colorScheme = resolved;
+    updatePanel();
+  }
+
+  function updatePanel() {
+    const panel = document.getElementById("shopAppearancePanel");
+    if (!panel) return;
+    panel.querySelectorAll("[data-choice]").forEach(button => {
+      button.setAttribute("aria-pressed", String(button.getAttribute("data-choice") === preference));
+    });
+  }
+
+  function choose(value) {
+    if (!valid(value)) return false;
+    const panel = document.getElementById("shopAppearancePanel");
+    const status = panel ? panel.querySelector("[role=status]") : null;
+    try {
+      localStorage.setItem(KEY, value);
+      if (localStorage.getItem(KEY) !== value) throw new Error("Theme was not saved");
+    } catch (e) {
+      if (status) status.textContent = "Appearance was not saved. Device storage is unavailable; your previous theme is unchanged.";
+      return false;
+    }
+    preference = value;
+    apply();
+    if (status) status.textContent = "Appearance saved on this device.";
+    return true;
+  }
+
+  function insertPanel() {
+    if (!document.getElementById("companySettingsForm") || document.getElementById("shopAppearancePanel")) return;
+    const sheet = document.getElementById("modalSheet");
+    if (!sheet) return;
+    const panel = document.createElement("section");
+    panel.id = "shopAppearancePanel";
+    panel.className = "shop-theme-panel";
+    panel.setAttribute("aria-label", "Appearance settings");
+    panel.innerHTML = `
+      <h3 style="font-size:20px;margin-bottom:6px;">Appearance</h3>
+      <p style="font-size:14px;color:var(--text-muted);">Theme changes save immediately on this device, separately from company name and logo. Company Settings Cancel does not undo a theme change.</p>
+      <div class="shop-theme-choices">
+        <button type="button" class="shop-theme-choice" data-choice="light" aria-pressed="false">☀️ Light</button>
+        <button type="button" class="shop-theme-choice" data-choice="dark" aria-pressed="false">🌙 Dark</button>
+        <button type="button" class="shop-theme-choice" data-choice="system" aria-pressed="false">📱 Follow phone settings</button>
+      </div>
+      <p class="shop-theme-status" role="status" aria-live="polite">Changes save immediately; no separate Save button needed.</p>`;
+    panel.querySelectorAll("[data-choice]").forEach(button => {
+      button.addEventListener("click", () => choose(button.getAttribute("data-choice")));
+    });
+    sheet.appendChild(panel);
+    updatePanel();
+  }
+
+  window.ShopBoardAppearance = {choose:choose, apply:apply, insertPanel:insertPanel, getPreference:()=>preference};
+  const originalOpen = window.openCompanySettings;
+  if (typeof originalOpen === "function") {
+    window.openCompanySettings = function () {
+      const result = originalOpen.apply(this, arguments);
+      const overlay = document.getElementById("modalOverlay");
+      if (overlay && overlay.style.display === "flex") insertPanel();
+      return result;
+    };
+  }
+  const sheet = document.getElementById("modalSheet");
+  if (sheet && window.MutationObserver) {
+    new MutationObserver(insertPanel).observe(sheet, {childList:true});
+  }
+  const onSystemChange = () => { if (preference === "system") apply(); };
+  if (media && media.addEventListener) media.addEventListener("change", onSystemChange);
+  else if (media && media.addListener) media.addListener(onSystemChange);
+  apply();
+})();
+
+</script>
+
+  
 </body>
 </html>

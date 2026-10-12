@@ -3299,6 +3299,177 @@ html[data-shop-theme="dark"] .big-btn[style*="background:var(--highlight)"] { ba
 
 </script>
 
+<!-- SHOP BOARD SAVE-ERROR GUARD: insert once before final </body>, after restore add-on -->
+<style id="shopBoardSaveGuardStyles">
+.shop-save-failure {position:sticky;top:0;z-index:1100;padding:14px 16px;background:#FFE7E7;color:#681822;border-bottom:3px solid #A82332;}
+.shop-save-failure p {font-size:14px;font-weight:700;line-height:1.4;margin-bottom:8px;}
+.shop-save-failure button {min-height:44px;padding:8px 12px;border:2px solid #A82332;border-radius:8px;background:#FFF;color:#681822;font:inherit;font-weight:700;cursor:pointer;}
+#shopSaveFailureBanner[hidden] {display:none !important;}
+html[data-shop-theme="dark"] .shop-save-failure {background:#49242A;color:#FFD7DC;}
+</style>
+<script>
+
+(function () {
+  "use strict";
+  if (window.ShopBoardSaveGuard) return;
+  let epoch = 0;
+  let lastWrite = null;
+  let lastReadError = null;
+  let startupBlocked = false;
+
+  class ShopSaveError extends Error {
+    constructor(message, cause) {
+      super(message); this.name = "ShopSaveError"; this.cause = cause;
+    }
+  }
+  function showFailure(message, alreadySaved) {
+    let banner = document.getElementById("shopSaveFailureBanner");
+    if (!banner) {
+      banner = document.createElement("div");
+      banner.id = "shopSaveFailureBanner";
+      banner.className = "shop-save-failure";
+      banner.setAttribute("role", "alert");
+      const label = document.createElement("p");
+      label.id = "shopSaveFailureText";
+      const dismiss = document.createElement("button");
+      dismiss.type = "button";
+      dismiss.textContent = "Dismiss warning";
+      dismiss.addEventListener("click", () => { banner.hidden = true; });
+      banner.appendChild(label); banner.appendChild(dismiss);
+      document.body.insertBefore(banner, document.body.firstChild);
+    }
+    document.getElementById("shopSaveFailureText").textContent = message + (alreadySaved ? "" : " Dismissing this warning does not save the entry.");
+    banner.hidden = false;
+    const indicator = document.getElementById("savedIndicator");
+    if (indicator) indicator.textContent = alreadySaved ? "SAVED • SCREEN UPDATE FAILED" : "NOT SAVED • CHECK STORAGE";
+    showToast(alreadySaved ? "Saved, but screen update failed" : "Not saved — check the warning");
+  }
+  function clearFailure() {
+    const banner = document.getElementById("shopSaveFailureBanner");
+    if (banner) banner.hidden = true;
+    const indicator = document.getElementById("savedIndicator");
+    if (indicator) indicator.textContent = "SAVED ON PHONE • LOCAL ONLY";
+  }
+  function verifiedWrite(key, value) {
+    if (startupBlocked) throw new ShopSaveError("Saved records could not be read at startup. Resolve storage access and reload before saving new changes.");
+    let oldValue = null;
+    let wrote = false;
+    try {
+      oldValue = localStorage.getItem(key);
+      localStorage.setItem(key, value);
+      wrote = true;
+      if (localStorage.getItem(key) !== value) throw new Error("The saved data could not be verified.");
+    } catch (cause) {
+      let rollbackFailed = false;
+      if (wrote) {
+        try {
+          if (oldValue === null) localStorage.removeItem(key);
+          else localStorage.setItem(key, oldValue);
+        } catch (e) { rollbackFailed = true; }
+      }
+      const message = rollbackFailed
+        ? "Storage verification failed and storage rollback could not be verified. Keep the app open and export a backup before reloading."
+        : "This change was not saved. Phone storage may be full or blocked. Keep the form open, keep the original attachment, and retry after storage is available. Do not clear this site's data.";
+      throw new ShopSaveError(message, cause);
+    }
+  }
+  Storage.get = function (key) {
+    try { return localStorage.getItem(key); }
+    catch (e) { lastReadError = e; return null; }
+  };
+  Storage.set = function (key, value) { verifiedWrite(key, value); return true; };
+
+  window.saveData = function () {
+    let payload;
+    try { payload = JSON.stringify(DATA); }
+    catch (e) { throw new ShopSaveError("This record could not be prepared for saving. Keep the form open and try again.", e); }
+    verifiedWrite("SHOP_BOARD_DATA", payload);
+    lastWrite = payload;
+    epoch++;
+    clearFailure();
+    updateHeaderBadges();
+    showToast("Saved on phone");
+    return true;
+  };
+
+  function captureTransient() {
+    return {
+      photo: typeof TEMP_PHOTO_DATA === "undefined" ? null : TEMP_PHOTO_DATA,
+      receipt: typeof TEMP_RECEIPT_PHOTO === "undefined" ? null : TEMP_RECEIPT_PHOTO,
+      doc: typeof TEMP_DOC_DATA === "undefined" ? null : TEMP_DOC_DATA,
+      docName: typeof TEMP_DOC_NAME === "undefined" ? "" : TEMP_DOC_NAME,
+      docType: typeof TEMP_DOC_TYPE === "undefined" ? "" : TEMP_DOC_TYPE,
+      docSize: typeof TEMP_DOC_SIZE === "undefined" ? "" : TEMP_DOC_SIZE,
+      confirmation: typeof PENDING_CONFIRM_ACTION === "undefined" ? null : PENDING_CONFIRM_ACTION,
+      view: CURRENT_VIEW, job: ACTIVE_JOB_ID,
+      modalDisplay: document.getElementById("modalOverlay").style.display
+    };
+  }
+  function restoreTransient(state) {
+    if (typeof TEMP_PHOTO_DATA !== "undefined") TEMP_PHOTO_DATA = state.photo;
+    if (typeof TEMP_RECEIPT_PHOTO !== "undefined") TEMP_RECEIPT_PHOTO = state.receipt;
+    if (typeof TEMP_DOC_DATA !== "undefined") TEMP_DOC_DATA = state.doc;
+    if (typeof TEMP_DOC_NAME !== "undefined") TEMP_DOC_NAME = state.docName;
+    if (typeof TEMP_DOC_TYPE !== "undefined") TEMP_DOC_TYPE = state.docType;
+    if (typeof TEMP_DOC_SIZE !== "undefined") TEMP_DOC_SIZE = state.docSize;
+    if (typeof PENDING_CONFIRM_ACTION !== "undefined") PENDING_CONFIRM_ACTION = state.confirmation;
+    CURRENT_VIEW = state.view; ACTIVE_JOB_ID = state.job;
+    document.getElementById("modalOverlay").style.display = state.modalDisplay;
+  }
+  const actions = ["saveNewJob", "saveNewClient", "saveClientEdits", "saveNewCrew", "saveNote", "savePhoto", "saveBill", "saveJobMoney", "saveRealFile", "saveFile", "saveQuickReceipt", "setJobStatus", "toggleBillPaid", "deleteNote", "toggleMoneyForCrew", "switchUserRole", "executeConfirmedAction", "deleteClient", "deleteCrewMember", "deleteJob", "deletePhoto", "deleteBill", "deleteExpense", "deleteFile"];
+  actions.forEach(name => {
+    const original = window[name];
+    if (typeof original !== "function") return;
+    window[name] = function () {
+      let before, transient;
+      const initialEpoch = epoch;
+      try {
+        before = JSON.stringify(DATA);
+        transient = captureTransient();
+      } catch (e) {
+        showFailure("The change could not be started safely. Export a backup and reload only after it is saved.");
+        return false;
+      }
+      try { return original.apply(this, arguments); }
+      catch (e) {
+        if (epoch !== initialEpoch) {
+          if (lastWrite) DATA = JSON.parse(lastWrite);
+          showFailure("The record was saved, but updating the screen failed. Export a backup and reload to view the saved record.", true);
+          return false;
+        }
+        DATA = JSON.parse(before);
+        restoreTransient(transient);
+        showFailure(e instanceof ShopSaveError ? e.message : "This action could not be completed. Your unsaved changes were rolled back; keep the form open and retry.");
+        return false;
+      }
+    };
+  });
+
+  /* At startup, read existing records without a test write that can fail at full quota. */
+  try {
+    const raw = Storage.get("SHOP_BOARD_DATA");
+    if (lastReadError) throw lastReadError;
+    if (raw !== null) {
+      const stored = JSON.parse(raw);
+      if (!stored || !stored.business || !stored.currentUser || !Array.isArray(stored.clients) || !Array.isArray(stored.jobs) || !Array.isArray(stored.crewMembers)) throw new Error("Saved data is malformed");
+      DATA = loadData();
+      DATA.clients.forEach(client => { if (typeof client.projectNotes !== "string") client.projectNotes = ""; });
+      DATA.jobs.forEach(job => {
+        if (!Array.isArray(job.photos)) job.photos = [];
+        if (!Array.isArray(job.expenses)) job.expenses = [];
+      });
+      updateHeaderBadges();
+      renderCurrentView();
+    }
+  } catch (e) {
+    startupBlocked = true;
+    showFailure("Existing saved records could not be read safely. Do not clear this site's data or overwrite it with sample records. Keep any backups and resolve the storage problem first.");
+  }
+  window.ShopBoardSaveGuard = {version:1};
+})();
+
+</script>
+
   
 </body>
 </html>

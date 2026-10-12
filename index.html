@@ -590,6 +590,15 @@
       box-shadow: 0 4px 12px rgba(0,0,0,0.25);
       border: 2px solid var(--brand);
     }
+
+    .company-settings-button {
+      background:#2D3330;color:#FFF;border:1px solid #4B554F;
+      border-radius:8px;min-width:44px;min-height:44px;
+      font-size:22px;cursor:pointer;flex-shrink:0;
+    }
+    .bar-row {flex-wrap:wrap;gap:8px;}
+    .brand-title {flex-wrap:wrap;min-width:0;}
+    #businessTag {max-width:100%;overflow-wrap:anywhere;}
   </style>
 </head>
 <body>
@@ -605,6 +614,7 @@
         <span id="roleBadge">👑 OWNER</span>
         <span style="font-size: 11px; opacity: 0.7;">(Tap)</span>
       </div>
+      <button type="button" class="company-settings-button" aria-label="Company settings" title="Company settings" onclick="openCompanySettings()">⚙️</button>
     </div>
   </header>
 
@@ -791,7 +801,7 @@
       if (stored) {
         try {
           const parsed = JSON.parse(stored);
-          if (parsed.business && (parsed.business.name === "Generations Custom Homes" || !parsed.business.name)) {
+          if (parsed.business && !parsed.business.companyNameCustomized && (parsed.business.name === "Generations Custom Homes" || !parsed.business.name)) {
             parsed.business.name = "Field Trade Co.";
           }
           if (parsed.business && parsed.business.owner === "Kenyon Kores") {
@@ -2613,6 +2623,57 @@ Sent from Shop Board`;
         <button class="big-btn" style="background: var(--alert);" onclick="deleteExpense('${jobId}', '${expId}')">🗑️ Delete Receipt</button>
       `;
       openModal(modalHtml);
+    }
+
+
+    /* Company name only; existing job workflows are unchanged. */
+    function openCompanySettings() {
+      if (DATA.currentUser.role !== "Owner") {
+        showToast("Switch to Owner view to change the company name");
+        return;
+      }
+      openModal(`
+        <div style="font-family:var(--font-display);font-size:24px;font-weight:900;margin-bottom:12px;">Company Settings</div>
+        <p style="font-size:14px;color:var(--text-muted);margin-bottom:14px;">This name appears in the header and new client email, quote, and bill drafts. Shop Board remains the app name.</p>
+        <form id="companySettingsForm" onsubmit="event.preventDefault();saveCompanyName();">
+          <div class="input-group">
+            <label class="input-label" for="companyNameInput">Company Name</label>
+            <input id="companyNameInput" class="text-input" type="text" maxlength="80" autocomplete="organization" required aria-describedby="companyNameError">
+          </div>
+          <div id="companyNameError" role="alert" style="color:var(--alert);font-weight:700;margin-bottom:12px;" hidden></div>
+          <button type="submit" class="big-btn">Save Settings</button>
+          <button type="button" class="big-btn secondary" onclick="closeModal()">Cancel</button>
+        </form>
+      `);
+      document.getElementById("companyNameInput").value = DATA.business.name || "";
+    }
+
+    function saveCompanyName() {
+      if (DATA.currentUser.role !== "Owner") return;
+      const input = document.getElementById("companyNameInput");
+      const error = document.getElementById("companyNameError");
+      if (!input || !error) return;
+      const name = input.value.trim();
+      error.hidden = true;
+      if (!name || name.length > 80 || /[<>"\r\n]/.test(name)) {
+        error.textContent = "Enter a company name (1–80 characters), without angle brackets, double quotes, or line breaks.";
+        error.hidden = false;
+        return;
+      }
+      const next = {...DATA, business: {...DATA.business, name: name, companyNameCustomized: true}};
+      try {
+        const payload = JSON.stringify(next);
+        localStorage.setItem("SHOP_BOARD_DATA", payload);
+        if (localStorage.getItem("SHOP_BOARD_DATA") !== payload) throw new Error("Save verification failed");
+      } catch (e) {
+        error.textContent = "Company name was not saved. Phone storage may be full or unavailable. Your previous name is unchanged.";
+        error.hidden = false;
+        return;
+      }
+      DATA.business = next.business;
+      updateHeaderBadges();
+      closeModal();
+      showToast("Company name saved on this device");
     }
 
     // Run setup

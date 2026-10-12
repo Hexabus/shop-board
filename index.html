@@ -1315,12 +1315,12 @@
             ${job.files.length === 0 ? `<div style="font-size: 13px; color: var(--text-muted);">No documents or permits attached yet.</div>` : ''}
             ${job.files.map(f => `
               <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px dashed var(--border);">
-                <div>
-                  <div style="font-weight: 700; font-size: 15px;">📄 ${f.name}</div>
-                  <div style="font-size: 12px; color: var(--text-muted);">Added by ${f.author} • ${f.date}</div>
+                <div style="min-width: 0; flex: 1; margin-right: 8px;">
+                  <div style="font-weight: 700; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">📄 ${f.name}</div>
+                  <div style="font-size: 12px; color: var(--text-muted);">Added by ${f.author} • ${f.date || 'Today'}${f.size ? ` • ${f.size}` : ''}</div>
                 </div>
                 <div style="display: flex; align-items: center; gap: 8px;">
-                  <button class="comm-btn" style="min-height: 32px; padding: 2px 8px; font-size: 13px;" onclick="showToast('Viewing file: ' + '${f.name}')">View</button>
+                  <button class="comm-btn" style="min-height: 32px; padding: 2px 10px; font-size: 13px;" onclick="openDocViewerById('${job.id}', '${f.id}')">View</button>
                   <button style="border: 2px solid var(--alert); background: #FFF; border-radius: 6px; padding: 4px 8px; font-family: var(--font-display); font-size: 13px; font-weight: 800; color: var(--alert); cursor: pointer;" onclick="event.stopPropagation(); deleteFile('${job.id}', '${f.id}')">DELETE</button>
                 </div>
               </div>
@@ -1806,33 +1806,163 @@
       renderCurrentView();
     }
 
+    let TEMP_DOC_DATA = null;
+    let TEMP_DOC_NAME = "";
+    let TEMP_DOC_TYPE = "";
+    let TEMP_DOC_SIZE = "";
+
     function openAddFileModal(jobId) {
+      TEMP_DOC_DATA = null;
+      TEMP_DOC_NAME = "";
+      TEMP_DOC_TYPE = "";
+      TEMP_DOC_SIZE = "";
+
       const modalHtml = `
-        <div style="font-family: var(--font-display); font-size: 24px; font-weight: 900; text-transform: uppercase; margin-bottom: 12px;">Add Document or PDF</div>
-        <div class="input-group">
-          <label class="input-label">Document Name</label>
-          <input type="text" id="fileName" class="text-input" placeholder="e.g. Foundation_Inspection_Signed.pdf">
+        <div style="font-family: var(--font-display); font-size: 24px; font-weight: 900; text-transform: uppercase; margin-bottom: 8px;">
+          Attach Document / PDF
         </div>
-        <button class="big-btn" onclick="saveFile('${jobId}')">Attach File</button>
+        <div style="font-size: 13px; color: var(--text-muted); font-weight: 600; margin-bottom: 14px;">
+          Upload town permits, signed proposals, specs, or inspection PDFs.
+        </div>
+
+        <div class="input-group">
+          <label class="input-label">Select Document / PDF / Image</label>
+          <input type="file" id="filePickerInput" accept=".pdf,image/*,.doc,.docx,.txt" class="text-input" onchange="handleDocFilePick(this)">
+          <div id="docUploadStatus" style="font-size: 13px; font-weight: 700; color: #2E7D32; margin-top: 6px; display: none;"></div>
+        </div>
+
+        <div class="input-group">
+          <label class="input-label">Document Name / Label</label>
+          <input type="text" id="docNameInput" class="text-input" placeholder="e.g. Signed_Town_Permit.pdf">
+        </div>
+
+        <button class="big-btn" id="attachFileBtn" style="background: #2E7D32;" onclick="saveRealFile('${jobId}')">
+          ✓ Save Document to Job
+        </button>
       `;
       openModal(modalHtml);
     }
 
-    function saveFile(jobId) {
-      const job = DATA.jobs.find(j => j.id === jobId);
-      const name = document.getElementById("fileName").value.trim();
-      if (!name) return;
+    function handleDocFilePick(input) {
+      if (input.files && input.files[0]) {
+        const file = input.files[0];
+        TEMP_DOC_NAME = file.name;
+        TEMP_DOC_TYPE = file.type || "application/pdf";
 
-      if (!job.files) job.files = [];
-      job.files.push({
+        const sizeKb = Math.round(file.size / 1024);
+        TEMP_DOC_SIZE = sizeKb > 1024 ? (sizeKb / 1024).toFixed(1) + " MB" : sizeKb + " KB";
+
+        const nameInput = document.getElementById("docNameInput");
+        if (nameInput && !nameInput.value.trim()) {
+          nameInput.value = file.name;
+        }
+
+        const statusEl = document.getElementById("docUploadStatus");
+        if (statusEl) {
+          statusEl.innerText = `Selected: ${file.name} (${TEMP_DOC_SIZE})`;
+          statusEl.style.display = "block";
+        }
+
+        const attachBtn = document.getElementById("attachFileBtn");
+        if (attachBtn) {
+          attachBtn.disabled = true;
+          attachBtn.innerText = "⏳ Loading file into phone...";
+          attachBtn.style.opacity = "0.7";
+        }
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          TEMP_DOC_DATA = e.target.result;
+          if (attachBtn) {
+            attachBtn.disabled = false;
+            attachBtn.innerText = "✓ Save Document to Job";
+            attachBtn.style.opacity = "1";
+          }
+          showToast("Document ready to attach");
+        };
+        reader.onerror = function() {
+          alert("Error reading file.");
+          if (attachBtn) { attachBtn.disabled = false; attachBtn.innerText = "✓ Save Document to Job"; }
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    function saveRealFile(jobId) {
+      const job = DATA.jobs.find(j => j.id === jobId);
+      if (!job) return;
+
+      const name = (document.getElementById("docNameInput").value || "").trim() || TEMP_DOC_NAME || "Attached_Document.pdf";
+
+      if (!Array.isArray(job.files)) job.files = [];
+
+      job.files.unshift({
         id: "f_" + Date.now(),
         name: name,
-        author: DATA.currentUser.name,
-        date: "Today"
+        dataUrl: TEMP_DOC_DATA || null,
+        type: TEMP_DOC_TYPE || "application/pdf",
+        size: TEMP_DOC_SIZE || "Document",
+        author: DATA.currentUser ? DATA.currentUser.name : "Owner",
+        date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
       });
+
+      TEMP_DOC_DATA = null;
+      TEMP_DOC_NAME = "";
+      TEMP_DOC_TYPE = "";
+      TEMP_DOC_SIZE = "";
+
       saveData();
       closeModal();
       renderCurrentView();
+      showToast("Document saved to job");
+    }
+
+    function openDocViewerById(jobId, fileId) {
+      const job = DATA.jobs.find(j => j.id === jobId);
+      if (!job || !job.files) return;
+      const file = job.files.find(f => f.id === fileId);
+      if (!file) return;
+
+      const hasData = Boolean(file.dataUrl);
+      const isImg = file.type && file.type.startsWith("image/");
+      const isPdf = file.type && (file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf"));
+
+      let previewContent = "";
+      if (!hasData) {
+        previewContent = `
+          <div style="background:#FFF; padding:24px 14px; border:2px dashed var(--border); border-radius:8px; margin: 12px 0;">
+            <div style="font-size:36px; margin-bottom:8px;">📄</div>
+            <div style="font-weight:700;">${file.name}</div>
+            <div style="font-size:13px; color:var(--text-muted); margin-top:4px;">Sample record. Real uploaded documents can be viewed and opened directly.</div>
+          </div>
+        `;
+      } else if (isImg) {
+        previewContent = `
+          <img src="${file.dataUrl}" style="width:100%; max-height:55vh; object-fit:contain; border-radius:8px; border:2px solid var(--border-dark); background:#111; margin:12px 0;">
+        `;
+      } else {
+        previewContent = `
+          <div style="background:#FFF; padding:20px; border:2px solid var(--border-dark); border-radius:8px; margin:12px 0; text-align:center;">
+            <div style="font-size:44px; margin-bottom:8px;">📑</div>
+            <div style="font-family:var(--font-display); font-size:18px; font-weight:800;">${file.name}</div>
+            <div style="font-size:13px; color:var(--text-muted); margin:4px 0 16px 0;">${file.size || 'PDF Document'}</div>
+            <a href="${file.dataUrl}" download="${file.name}" target="_blank" class="big-btn" style="background:#2E7D32; margin-bottom:0; text-decoration:none;">
+              📥 Open / Download PDF
+            </a>
+          </div>
+        `;
+      }
+
+      const modalHtml = `
+        <div style="font-family:var(--font-display); font-size:22px; font-weight:900; text-transform:uppercase; margin-bottom:6px;">
+          Document Details
+        </div>
+        <div style="font-size:13px; color:var(--text-muted); font-weight:600;">Added by ${file.author} • ${file.date || 'Today'}</div>
+        ${previewContent}
+        <button class="big-btn secondary" style="margin-bottom:8px;" onclick="closeModal()">Close</button>
+        <button class="big-btn" style="background:var(--alert);" onclick="deleteFile('${jobId}', '${fileId}')">🗑️ Delete Document</button>
+      `;
+      openModal(modalHtml);
     }
 
     function openJobEmailModal(jobId) {

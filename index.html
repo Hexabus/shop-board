@@ -3501,8 +3501,15 @@ html[data-shop-theme="dark"] .shop-save-failure {background:#49242A;color:#FFD7D
       if (status) status.textContent = "Start screen was not saved. Device storage may be full or blocked. Your previous choice is unchanged.";
       return false;
     }
-    preference = value;
-    if (status) status.textContent = names[value] + " is saved as your start screen on this device. It applies the next time Shop Board fully loads.";
+        preference = value;
+    const applied = applyOnLoad();
+
+    if (status) {
+      status.textContent = applied
+        ? names[value] + " is saved. Close Settings to see it now; it will also open on the next launch."
+        : names[value] + " is saved, but the screen could not be updated. Home is shown for now.";
+    }
+
     return true;
   }
 

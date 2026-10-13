@@ -3470,6 +3470,97 @@ html[data-shop-theme="dark"] .shop-save-failure {background:#49242A;color:#FFD7D
 
 </script>
 
+<!-- SHOP BOARD START SCREEN: insert once before final </body>, after save-error guard -->
+<style id="shopBoardStartScreenStyles">
+.shop-start-screen-panel {margin-top:18px;padding:14px;background:var(--card-bg);color:var(--text);border:2px solid var(--border-dark);border-radius:12px;}
+</style>
+<script>
+
+(function () {
+  "use strict";
+  if (window.ShopBoardStartScreen) return;
+  const KEY = "SHOP_BOARD_START_SCREEN";
+  const valid = value => ["HOME", "TODAY", "JOBS"].includes(value);
+  const names = {HOME:"Home", TODAY:"Today", JOBS:"Jobs"};
+  let preference = "HOME";
+  try {
+    const stored = localStorage.getItem(KEY);
+    if (valid(stored)) preference = stored;
+  } catch (e) {}
+
+  function save(value) {
+    const status = document.getElementById("shopStartScreenStatus");
+    if (!valid(value)) {
+      if (status) status.textContent = "Choose Home, Today, or Jobs.";
+      return false;
+    }
+    try {
+      localStorage.setItem(KEY, value);
+      if (localStorage.getItem(KEY) !== value) throw new Error("Save could not be verified");
+    } catch (e) {
+      if (status) status.textContent = "Start screen was not saved. Device storage may be full or blocked. Your previous choice is unchanged.";
+      return false;
+    }
+    preference = value;
+    if (status) status.textContent = names[value] + " is saved as your start screen on this device. It applies the next time Shop Board fully loads.";
+    return true;
+  }
+
+  function insertPanel() {
+    if (typeof DATA === "undefined" || !DATA.currentUser || DATA.currentUser.role !== "Owner") return;
+    if (!document.getElementById("companySettingsForm") || document.getElementById("shopStartScreenPanel")) return;
+    const sheet = document.getElementById("modalSheet");
+    if (!sheet) return;
+    const panel = document.createElement("section");
+    panel.id = "shopStartScreenPanel";
+    panel.className = "shop-start-screen-panel";
+    panel.setAttribute("aria-label", "Start screen settings");
+    panel.innerHTML = `
+      <h3 style="font-size:20px;margin-bottom:8px;">Start Screen</h3>
+      <p style="font-size:14px;color:var(--text-muted);margin-bottom:12px;">Choose which screen opens when Shop Board fully loads on this device. Returning to an app already open keeps your current screen.</p>
+      <label class="input-label" for="shopStartScreenSelect">Open Shop Board to</label>
+      <select id="shopStartScreenSelect" class="text-input">
+        <option value="HOME">Home — six main tiles</option>
+        <option value="TODAY">Today — today's work</option>
+        <option value="JOBS">Jobs — all projects</option>
+      </select>
+      <button id="shopStartScreenSave" type="button" class="big-btn" style="margin-top:12px;">Save Start Screen</button>
+      <p id="shopStartScreenStatus" role="status" aria-live="polite" style="font-size:13px;color:var(--text-muted);">Saved separately from company name and logo. Choosing an option does not save it until you tap Save Start Screen.</p>`;
+    sheet.appendChild(panel);
+    const select = document.getElementById("shopStartScreenSelect");
+    select.value = preference;
+    document.getElementById("shopStartScreenSave").addEventListener("click", () => save(select.value));
+  }
+
+  function applyOnLoad() {
+    if (typeof DATA === "undefined" || typeof window.openView !== "function") return false;
+    try {
+      window.openView(preference);
+      return true;
+    } catch (e) {
+      try { window.goHome(); } catch (fallbackError) {}
+      if (typeof window.showToast === "function") window.showToast("Could not open the selected start screen. Returning to Home.");
+      return false;
+    }
+  }
+
+  window.ShopBoardStartScreen = {save:save, getPreference:()=>preference, insertPanel:insertPanel};
+  const originalOpen = window.openCompanySettings;
+  if (typeof originalOpen === "function") {
+    window.openCompanySettings = function () {
+      const result = originalOpen.apply(this, arguments);
+      const overlay = document.getElementById("modalOverlay");
+      if (overlay && overlay.style.display === "flex") insertPanel();
+      return result;
+    };
+  }
+  const sheet = document.getElementById("modalSheet");
+  if (sheet && window.MutationObserver) new MutationObserver(insertPanel).observe(sheet, {childList:true});
+  applyOnLoad();
+})();
+
+</script>
+
   
 </body>
 </html>

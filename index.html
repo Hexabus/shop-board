@@ -4015,7 +4015,7 @@ html[data-shop-theme="dark"] .shop-save-failure {background:#49242A;color:#FFD7D
       if (save) {
         if (save.getAttribute("form") !== "companySettingsForm") save.setAttribute("form", "companySettingsForm");
         if (save.parentNode !== footer) footer.appendChild(save);
-        if (!save.disabled && save.textContent.trim() === "Save Settings") save.textContent = "Save Company Profile";
+        if (!save.disabled && save.textContent.trim() === "Save Settings") save.textContent = "Save Company Settings";
       }
       const cancel = form.querySelector('button[onclick="cancelCompanySettings()"]');
       if (cancel && cancel.parentNode !== footer) footer.appendChild(cancel);

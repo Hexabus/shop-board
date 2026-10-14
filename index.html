@@ -603,7 +603,13 @@
     .company-logo-preview {width:100%;height:130px;object-fit:contain;padding:10px;background:#FFF;border:2px solid var(--border-dark);border-radius:8px;}
   </style>
 </head>
-<body>
+<body data-shop-boot="loading"><style>
+body[data-shop-boot="loading"] #appContainer{visibility:hidden;}
+#shopBootOverlay,#shopStorageBusy{position:fixed;inset:0;z-index:5000;background:var(--bg);color:var(--text);display:flex;align-items:center;justify-content:center;padding:24px;}
+#shopBootOverlay[hidden],#shopStorageBusy[hidden]{display:none!important;}
+#shopStorageBusy{z-index:6000;background:rgba(0,0,0,.7);color:white;}
+#shopBootOverlay p{max-width:520px;font-size:18px;line-height:1.5;}button:disabled{opacity:.6;cursor:wait;}
+</style><div id="shopBootOverlay" role="status" aria-live="polite"><p id="shopBootStatus">Loading saved Shop Board records…</p></div><div id="shopStorageBusy" role="status" aria-live="polite" hidden>Saving… Keep Shop Board open until this finishes.</div>
 
   <!-- Top Sticky Header -->
   <header class="shop-bar">
@@ -623,7 +629,7 @@
 
   <!-- Offline / Sync Status -->
   <div class="sync-strip">
-    <div><span class="status-dot"></span><span id="savedIndicator">SAVED ON PHONE • OFFLINE READY</span></div>
+    <div><span class="status-dot"></span><span id="savedIndicator">LOADING SAVED RECORDS</span></div>
     <div id="crewVisibilityStatus" style="font-size:11px; cursor:pointer;" onclick="toggleMoneyForCrew()">Crew Money: OFF</div>
   </div>
 
@@ -697,31 +703,263 @@
     </div>
   </div>
 
-  <script>
+  
+
+  <!-- SHOP BOARD APPEARANCE ADD-ON: insert before the final </body> -->
+<style id="shopBoardDarkModeStyles">
+
+html[data-shop-theme="light"] { color-scheme: light; }
+html[data-shop-theme="dark"] {
+  color-scheme: dark;
+  --bg:#121815; --card-bg:#1E2722; --border:#46554C;
+  --border-dark:#87998D; --text:#EFF4F0; --text-muted:#B8C7BD;
+  --brand:#B94A00; --brand-soft:#432C18;
+  --highlight:#8AD69A; --highlight-soft:#203D2A;
+  --alert:#FFA3A3; --alert-soft:#48252B; --board-header:#141C18;
+}
+html[data-shop-theme="dark"] body { background:var(--bg); color:var(--text); }
+html[data-shop-theme="dark"] .sync-strip { background:#1A241E; color:#C9D7CE; }
+html[data-shop-theme="dark"] :is(.text-input,.back-btn,.status-step,.fat-btn,.comm-btn,.metric-box,.notes-board,.empty-state,.trade-pill) {
+  background:#1E2722; color:var(--text); border-color:var(--border-dark);
+}
+html[data-shop-theme="dark"] :is(.status-step.active,.trade-pill.selected) { background:#D2E3D7; color:#122018; }
+html[data-shop-theme="dark"] :is(.fat-btn.active,.fat-btn:active,.tile:active) { background:#2A3A30; color:var(--text); }
+html[data-shop-theme="dark"] .big-btn.secondary { background:#25352B; color:var(--text); }
+html[data-shop-theme="dark"] .map-address { color:#9AE6AD; }
+html[data-shop-theme="dark"] :is(.photo-thumb,.modal-sheet) { background:var(--card-bg); }
+html[data-shop-theme="dark"] :is(.tag-punch,.tag-change,.tag-waiting) { border-color:#87998D; }
+html[data-shop-theme="dark"] .tag-punch { background:#50252D; color:#FFB6BD; }
+html[data-shop-theme="dark"] .tag-change { background:#483B1C; color:#FFE3A0; }
+html[data-shop-theme="dark"] .tag-waiting { background:#203C51; color:#ACDBFF; }
+html[data-shop-theme="dark"] :is(div,button,input,textarea,select,a,span)[style*="background: #FFF" i],
+html[data-shop-theme="dark"] :is(div,button,input,textarea,select,a,span)[style*="background:#FFF" i] {
+  background-color:var(--card-bg) !important;
+}
+html[data-shop-theme="dark"] :is(div,button,input,textarea,select,a,span)[style*="background: #EFECE6" i],
+html[data-shop-theme="dark"] :is(div,button,input,textarea,select,a,span)[style*="background:#EFECE6" i],
+html[data-shop-theme="dark"] :is(div,button,input,textarea,select,a,span)[style*="background: #EAE8E1" i] {
+  background-color:#2A3A30 !important;
+}
+html[data-shop-theme="dark"] :is(div,button,a,span)[style*="background: #E8F5E9" i],
+html[data-shop-theme="dark"] :is(div,button,a,span)[style*="background:#E8F5E9" i] {
+  background-color:#203D2A !important; color:#9AE6AD !important;
+}
+html[data-shop-theme="dark"] :is(div,button,a,span)[style*="color: #2E7D32" i],
+html[data-shop-theme="dark"] :is(div,button,a,span)[style*="color:#2E7D32" i],
+html[data-shop-theme="dark"] :is(div,button,a,span)[style*="color: #176B3A" i],
+html[data-shop-theme="dark"] :is(div,button,a,span)[style*="color:#176B3A" i] { color:#9AE6AD !important; }
+html[data-shop-theme="dark"] .big-btn[style*="background: var(--alert)"],
+html[data-shop-theme="dark"] .big-btn[style*="background:var(--alert)"] { background:#A82332 !important; color:#FFF !important; }
+html[data-shop-theme="dark"] .big-btn[style*="background: var(--highlight)"],
+html[data-shop-theme="dark"] .big-btn[style*="background:var(--highlight)"] { background:#245A32 !important; color:#FFF !important; }
+.shop-theme-panel { margin-top:18px; padding:14px; background:var(--card-bg); border:2px solid var(--border-dark); border-radius:12px; }
+.shop-theme-choices { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:12px 0; }
+.shop-theme-choice { min-height:52px; padding:10px; border:2px solid var(--border-dark); border-radius:8px; background:var(--card-bg); color:var(--text); font:inherit; font-weight:700; cursor:pointer; }
+.shop-theme-choice[data-choice="system"] { grid-column:1/-1; }
+.shop-theme-choice[aria-pressed="true"] { border:3px solid var(--brand); }
+.shop-theme-status { font-size:13px; color:var(--text-muted); }
+
+</style>
+
+
+<!-- SHOP BOARD BACKUP EXPORT: insert once before the final </body>, after the appearance add-on -->
+<style id="shopBoardBackupExportStyles">
+.shop-backup-panel { margin-top:18px;padding:14px;background:var(--card-bg);color:var(--text);border:2px solid var(--border-dark);border-radius:12px; }
+#shopBackupDownload[hidden] { display:none !important; }
+#shopExportBackupButton:disabled { opacity:0.6;cursor:wait; }
+</style>
+
+
+  <!-- SHOP BOARD BACKUP RESTORE: insert once before final </body>, after backup export add-on -->
+<style id="shopBoardBackupRestoreStyles">
+.shop-restore-panel {margin-top:18px;padding:14px;background:var(--card-bg);color:var(--text);border:2px solid var(--border-dark);border-radius:12px;}
+#shopRestorePreview[hidden] {display:none !important;}
+#shopRestoreApply:disabled {opacity:0.55;cursor:not-allowed;}
+</style>
+
+
+<!-- SHOP BOARD SAVE-ERROR GUARD: insert once before final </body>, after restore add-on -->
+<style id="shopBoardSaveGuardStyles">
+.shop-save-failure {position:sticky;top:0;z-index:1100;padding:14px 16px;background:#FFE7E7;color:#681822;border-bottom:3px solid #A82332;}
+.shop-save-failure p {font-size:14px;font-weight:700;line-height:1.4;margin-bottom:8px;}
+.shop-save-failure button {min-height:44px;padding:8px 12px;border:2px solid #A82332;border-radius:8px;background:#FFF;color:#681822;font:inherit;font-weight:700;cursor:pointer;}
+#shopSaveFailureBanner[hidden] {display:none !important;}
+html[data-shop-theme="dark"] .shop-save-failure {background:#49242A;color:#FFD7DC;}
+</style>
+
+
+<!-- SHOP BOARD START SCREEN: insert once before final </body>, after save-error guard -->
+<style id="shopBoardStartScreenStyles">
+.shop-start-screen-panel {margin-top:18px;padding:14px;background:var(--card-bg);color:var(--text);border:2px solid var(--border-dark);border-radius:12px;}
+</style>
+
+
+  <!-- SHOP BOARD MAPS PREFERENCE: insert once before final </body>, after start-screen add-on -->
+<style id="shopBoardMapsPreferenceStyles">
+.shop-maps-preference-panel {margin-top:18px;padding:14px;background:var(--card-bg);color:var(--text);border:2px solid var(--border-dark);border-radius:12px;}
+</style>
+
+
+  <!-- SHOP BOARD RECEIPT CATEGORY: insert once before final </body>, after Maps-preference add-on -->
+<style id="shopBoardReceiptCategoryStyles">
+.shop-receipt-category-panel {margin-top:18px;padding:14px;background:var(--card-bg);color:var(--text);border:2px solid var(--border-dark);border-radius:12px;}
+</style>
+
+
+  <!-- SHOP BOARD RECEIPT JOB MEMORY: insert once before final </body>, after receipt-category add-on -->
+<style id="shopBoardReceiptJobMemoryStyles">
+.shop-receipt-job-memory-panel {margin-top:18px;padding:14px;background:var(--card-bg);color:var(--text);border:2px solid var(--border-dark);border-radius:12px;}
+</style>
+
+
+  <!-- SHOP BOARD SETTINGS LAYOUT: insert once before final </body>, after receipt-job-memory add-on -->
+<style id="shopBoardSettingsLayoutStyles">
+
+.shop-company-profile-card,
+.shop-receipts-settings-card {
+  margin-top:18px;padding:14px;background:var(--card-bg);color:var(--text);
+  border:2px solid var(--border-dark);border-radius:12px;
+}
+.shop-settings-card-heading {font-size:20px;margin:0 0 12px;font-weight:800;}
+.shop-receipt-settings-subheading {font-size:17px;margin:0 0 8px;font-weight:800;}
+#shopReceiptsSettingsCard > #shopReceiptCategoryPanel,
+#shopReceiptsSettingsCard > #shopReceiptJobMemoryPanel {
+  margin:0;padding:0;border:0;border-radius:0;box-shadow:none;background:transparent;
+}
+#shopReceiptsSettingsCard > #shopReceiptJobMemoryPanel {
+  margin-top:16px;padding-top:16px;border-top:1px solid var(--border);
+}
+.shop-settings-footer {
+  margin-top:20px;padding:14px 0 calc(10px + env(safe-area-inset-bottom,0px));
+  border-top:2px solid var(--border);background:var(--bg);
+}
+.shop-settings-footer-note {font-size:13px;color:var(--text-muted);margin:0 0 12px;line-height:1.4;}
+#shopSettingsFooter button {width:100%;}
+</style>
+
+
+  <!-- SHOP BOARD INDEXEDDB STAGE 1: insert once before final </body>, after Settings-layout add-on -->
+<style id="shopBoardIndexedDBPrepStyles">
+.shop-idb-panel {margin-top:18px;padding:14px;background:var(--card-bg);color:var(--text);border:2px solid var(--border-dark);border-radius:12px;}
+#shopIDBPrepare:disabled {opacity:0.6;cursor:wait;}
+</style>
+
+
+  <!-- Insert once AFTER the existing IndexedDB Stage 1 add-on, before final </body>. Keep Stage 1. -->
+<style>
+#shopIDBCheck:disabled, #shopIDBPrepare:disabled {opacity:0.6;cursor:wait;}
+</style>
+
+
+  
+<script>
+
+(function(){
+'use strict';
+let db,active=false,ready=false,unavailable=false,cache={},revision=0,queue=Promise.resolve(),pending=0;
+const sig=v=>JSON.stringify(Object.keys(v).sort().map(k=>[k,v[k]]));
+const clone=v=>JSON.parse(JSON.stringify(v));
+function validate(v){const d=JSON.parse(v.SHOP_BOARD_DATA||'null');if(!d||!d.business||!d.currentUser||!Array.isArray(d.jobs)||!Array.isArray(d.clients)||!Array.isArray(d.crewMembers))throw Error('Saved records are missing or invalid. No sample records were substituted.');return d;}
+function locals(){const v={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith('SHOP_BOARD_')){const s=localStorage.getItem(k);if(typeof s!=='string')throw Error('Saved values changed while reading. Reload and retry.');v[k]=s;}}return v;}
+function busy(){const n=document.getElementById('shopStorageBusy');if(n){n.hidden=!pending;if(pending)n.textContent='Saving… Keep Shop Board open until this finishes.';}const s=document.getElementById('savedIndicator');if(s){if(pending)s.textContent='SAVING • KEEP APP OPEN';else if(s.textContent==='SAVING • KEEP APP OPEN')s.textContent='SAVED ON PHONE • '+(active?'INDEXEDDB':'LOCALSTORAGE');}}
+function enqueue(fn){pending++;busy();const result=queue.then(fn).catch(e=>{const s=document.getElementById('savedIndicator');if(s)s.textContent='NOT SAVED • CHECK STORAGE';throw e;});queue=result.catch(()=>{});return result.finally(()=>{pending--;busy();});}
+function open(){return new Promise((resolve,reject)=>{let done=false,req;const timer=setTimeout(()=>finish(Error('Storage opening timed out. Close other Shop Board tabs and reload normally.')),15000);function finish(e){if(done)return;done=true;clearTimeout(timer);e?reject(e):resolve(req.result);}try{if(!window.indexedDB)throw Error('IndexedDB is unavailable in this browser. Do not clear site data.');req=window.indexedDB.open('SHOP_BOARD_ACTIVE_DB',1);}catch(e){finish(e);return;}req.onupgradeneeded=()=>{for(const n of ['values','metadata'])if(!req.result.objectStoreNames.contains(n))req.result.createObjectStore(n,{keyPath:'id'});};req.onerror=()=>finish(req.error||Error('Database opening failed.'));req.onblocked=()=>{const n=document.getElementById('shopBootStatus');if(n)n.textContent='Close other Shop Board tabs, then reload this one.';};req.onsuccess=()=>{if(done)req.result.close();else finish();};});}
+function tx(names,mode,work){return new Promise((resolve,reject)=>{let t,result,reason;try{t=db.transaction(names,mode);}catch(e){reject(e);return;}const fail=e=>{reason=e;try{t.abort();}catch(_){reject(e);}};const timer=setTimeout(()=>{const n=document.getElementById('shopStorageBusy');if(n&&!n.hidden)n.textContent='Storage is still working. Keep this app open and retain your original attachment. No completion has been confirmed yet.';},20000);t.oncomplete=()=>{clearTimeout(timer);resolve(result);};t.onabort=()=>{clearTimeout(timer);reject(reason||t.error||Error('Storage transaction aborted.'));};t.onerror=()=>{reason=reason||t.error||Error('Storage request failed.');};try{work(t,v=>{result=v;},fail);}catch(e){fail(e);}});}
+function readState(){return tx(['values','metadata'],'readonly',(t,finish,fail)=>{let state=null,values={},count=0;const done=()=>{if(++count===2)finish({state,values});};const m=t.objectStore('metadata').get('state');m.onsuccess=()=>{state=m.result||null;done();};const r=t.objectStore('values').getAll();r.onsuccess=()=>{try{for(const item of r.result){if(typeof item.id!=='string'||!item.id.startsWith('SHOP_BOARD_')||typeof item.value!=='string')throw Error('Stored values are invalid.');values[item.id]=item.value;}done();}catch(e){fail(e);}};});}
+async function initialize(){db=await open();db.onversionchange=()=>{unavailable=true;db.close();};const r=await readState();if(r.state&&r.state.active){if(!Number.isSafeInteger(r.state.revision)||r.state.revision<1)throw Error('Storage metadata is invalid.');validate(r.values);cache=r.values;revision=r.state.revision;active=true;}else{if(localStorage.getItem('SHOPBOARD_INDEXEDDB_ACTIVATED')==='1')throw Error('IndexedDB was previously activated, but its active records cannot be found. The old localStorage copy was not loaded as current data. Keep your backup; do not clear site data.');cache=locals();if(cache.SHOP_BOARD_DATA!==undefined)validate(cache);}ready=true;}
+function get(k){if(!ready)throw Error('Storage is not ready.');return active?(Object.prototype.hasOwnProperty.call(cache,k)?cache[k]:null):localStorage.getItem(k);}
+function values(){return active?clone(cache):locals();}
+function setMany(changes){const c={...changes};for(const[k,v]of Object.entries(c)){if(!k.startsWith('SHOP_BOARD_')||(v!==null&&typeof v!=='string'))throw Error('Invalid storage value.');}if(c.SHOP_BOARD_DATA!==undefined){if(c.SHOP_BOARD_DATA===null)throw Error('Main records cannot be removed.');validate(c);}return enqueue(async()=>{if(!ready||unavailable)throw Error('Storage is unavailable. Keep your backup and reload normally.');if(!active){const state=await readState();if(state.state&&state.state.active)throw Error('Another tab activated IndexedDB. Reload before saving.');const old={},written=[];try{for(const k of Object.keys(c))old[k]=localStorage.getItem(k);for(const[k,v]of Object.entries(c)){if(v===null)localStorage.removeItem(k);else localStorage.setItem(k,v);written.push(k);if(localStorage.getItem(k)!==v)throw Error('Save read-back did not match.');}}catch(e){let failed=false;for(const k of written.reverse()){try{if(old[k]===null)localStorage.removeItem(k);else localStorage.setItem(k,old[k]);if(localStorage.getItem(k)!==old[k])failed=true;}catch(_){failed=true;}}if(failed)throw Error('Save failed and rollback could not be verified. Keep the app open and export before reloading.');throw e;}return true;}
+const next=revision+1;await tx(['values','metadata'],'readwrite',(t,finish,fail)=>{const m=t.objectStore('metadata'),r=m.get('state');r.onsuccess=()=>{try{if(!r.result||!r.result.active||r.result.revision!==revision)throw Error('Another tab saved newer records. Close other tabs and reload before retrying.');const s=t.objectStore('values');for(const[k,v]of Object.entries(c)){if(v===null)s.delete(k);else s.put({id:k,value:v});const check=s.get(k);check.onsuccess=()=>{if((check.result?check.result.value:null)!==v)fail(Error('IndexedDB read-back verification failed.'));};}m.put({id:'state',active:true,revision:next});finish(true);}catch(e){fail(e);}};});for(const[k,v]of Object.entries(c)){if(v===null)delete cache[k];else cache[k]=v;}revision=next;return true;});}
+function activate(expected){const v=clone(expected);validate(v);return enqueue(async()=>{if(active)return true;if(!ready||unavailable)throw Error('Storage is unavailable.');if(sig(locals())!==sig(v))throw Error('Saved data changed. Prepare and check a fresh copy.');const markerKey='SHOPBOARD_INDEXEDDB_ACTIVATED',oldMarker=localStorage.getItem(markerKey);localStorage.setItem(markerKey,'1');if(localStorage.getItem(markerKey)!=='1')throw Error('The migration safety marker could not be saved.');try{await tx(['values','metadata'],'readwrite',(t,finish,fail)=>{const m=t.objectStore('metadata'),r=m.get('state');r.onsuccess=()=>{try{if(r.result&&r.result.active)throw Error('Another tab activated storage. Reload before continuing.');const s=t.objectStore('values');s.clear();for(const[id,value]of Object.entries(v))s.put({id,value});const check=s.getAll();check.onsuccess=()=>{try{const read={};for(const item of check.result)read[item.id]=item.value;if(sig(read)!==sig(v)||sig(locals())!==sig(v))throw Error('Migration verification failed or original data changed. Retry with a fresh copy.');m.put({id:'state',active:true,revision:1});finish(true);}catch(e){fail(e);}};}catch(e){fail(e);}};});}catch(e){try{if(oldMarker===null)localStorage.removeItem(markerKey);else localStorage.setItem(markerKey,oldMarker);}catch(_){throw Error('Activation failed and its safety marker could not be restored. Keep your backup and resolve storage before reloading.');}throw e;}cache=v;revision=1;active=true;return true;});}
+async function checkActive(){await queue;if(!active)throw Error('IndexedDB is not active.');const r=await readState();validate(r.values);if(!r.state||!r.state.active||r.state.revision!==revision||sig(r.values)!==sig(cache))throw Error('Stored data differs from this open app. Close other tabs and reload; do not overwrite it with older data.');return true;}
+for(const type of ['click','submit','keydown','change'])document.addEventListener(type,event=>{if(pending){event.preventDefault();event.stopImmediatePropagation();}},true);
+window.ShopBoardDatabase={initialize,get,values,set:(k,v)=>setMany({[k]:v}),remove:k=>setMany({[k]:null}),setMany,activate,checkActive,validate,signature:sig,isActive:()=>active,isBusy:()=>pending>0,backendLabel:()=>active?'INDEXEDDB':'LOCALSTORAGE'};
+})();
+
+</script>
+<script>
+async function bootShopBoard(){
+Object.defineProperty(window,"loadData",{configurable:true,get:()=>loadData,set:v=>{loadData=v;}});
+Object.defineProperty(window,"saveData",{configurable:true,get:()=>saveData,set:v=>{saveData=v;}});
+Object.defineProperty(window,"showToast",{configurable:true,get:()=>showToast,set:v=>{showToast=v;}});
+Object.defineProperty(window,"updateHeaderBadges",{configurable:true,get:()=>updateHeaderBadges,set:v=>{updateHeaderBadges=v;}});
+Object.defineProperty(window,"switchUserRole",{configurable:true,get:()=>switchUserRole,set:v=>{switchUserRole=v;}});
+Object.defineProperty(window,"toggleMoneyForCrew",{configurable:true,get:()=>toggleMoneyForCrew,set:v=>{toggleMoneyForCrew=v;}});
+Object.defineProperty(window,"goHome",{configurable:true,get:()=>goHome,set:v=>{goHome=v;}});
+Object.defineProperty(window,"openView",{configurable:true,get:()=>openView,set:v=>{openView=v;}});
+Object.defineProperty(window,"openModal",{configurable:true,get:()=>openModal,set:v=>{openModal=v;}});
+Object.defineProperty(window,"closeModal",{configurable:true,get:()=>closeModal,set:v=>{closeModal=v;}});
+Object.defineProperty(window,"closeModalOnOutside",{configurable:true,get:()=>closeModalOnOutside,set:v=>{closeModalOnOutside=v;}});
+Object.defineProperty(window,"formatMoney",{configurable:true,get:()=>formatMoney,set:v=>{formatMoney=v;}});
+Object.defineProperty(window,"getMapLink",{configurable:true,get:()=>getMapLink,set:v=>{getMapLink=v;}});
+Object.defineProperty(window,"openMap",{configurable:true,get:()=>openMap,set:v=>{openMap=v;}});
+Object.defineProperty(window,"handleMissingMapAddress",{configurable:true,get:()=>handleMissingMapAddress,set:v=>{handleMissingMapAddress=v;}});
+Object.defineProperty(window,"getJobMoney",{configurable:true,get:()=>getJobMoney,set:v=>{getJobMoney=v;}});
+Object.defineProperty(window,"renderCurrentView",{configurable:true,get:()=>renderCurrentView,set:v=>{renderCurrentView=v;}});
+Object.defineProperty(window,"renderHome",{configurable:true,get:()=>renderHome,set:v=>{renderHome=v;}});
+Object.defineProperty(window,"renderToday",{configurable:true,get:()=>renderToday,set:v=>{renderToday=v;}});
+Object.defineProperty(window,"renderJobs",{configurable:true,get:()=>renderJobs,set:v=>{renderJobs=v;}});
+Object.defineProperty(window,"renderJobDetail",{configurable:true,get:()=>renderJobDetail,set:v=>{renderJobDetail=v;}});
+Object.defineProperty(window,"scrollToSection",{configurable:true,get:()=>scrollToSection,set:v=>{scrollToSection=v;}});
+Object.defineProperty(window,"renderPhotosView",{configurable:true,get:()=>renderPhotosView,set:v=>{renderPhotosView=v;}});
+Object.defineProperty(window,"renderJobPhotosView",{configurable:true,get:()=>renderJobPhotosView,set:v=>{renderJobPhotosView=v;}});
+Object.defineProperty(window,"renderMoneyView",{configurable:true,get:()=>renderMoneyView,set:v=>{renderMoneyView=v;}});
+Object.defineProperty(window,"renderClientsView",{configurable:true,get:()=>renderClientsView,set:v=>{renderClientsView=v;}});
+Object.defineProperty(window,"renderNotesView",{configurable:true,get:()=>renderNotesView,set:v=>{renderNotesView=v;}});
+Object.defineProperty(window,"setJobStatus",{configurable:true,get:()=>setJobStatus,set:v=>{setJobStatus=v;}});
+Object.defineProperty(window,"toggleBillPaid",{configurable:true,get:()=>toggleBillPaid,set:v=>{toggleBillPaid=v;}});
+Object.defineProperty(window,"deleteNote",{configurable:true,get:()=>deleteNote,set:v=>{deleteNote=v;}});
+Object.defineProperty(window,"openNewJobModal",{configurable:true,get:()=>openNewJobModal,set:v=>{openNewJobModal=v;}});
+Object.defineProperty(window,"selectTradePill",{configurable:true,get:()=>selectTradePill,set:v=>{selectTradePill=v;}});
+Object.defineProperty(window,"saveNewJob",{configurable:true,get:()=>saveNewJob,set:v=>{saveNewJob=v;}});
+Object.defineProperty(window,"openAddNoteModal",{configurable:true,get:()=>openAddNoteModal,set:v=>{openAddNoteModal=v;}});
+Object.defineProperty(window,"saveNote",{configurable:true,get:()=>saveNote,set:v=>{saveNote=v;}});
+Object.defineProperty(window,"openAddPhotoModal",{configurable:true,get:()=>openAddPhotoModal,set:v=>{openAddPhotoModal=v;}});
+Object.defineProperty(window,"handlePhotoPick",{configurable:true,get:()=>handlePhotoPick,set:v=>{handlePhotoPick=v;}});
+Object.defineProperty(window,"savePhoto",{configurable:true,get:()=>savePhoto,set:v=>{savePhoto=v;}});
+Object.defineProperty(window,"openPhotoViewer",{configurable:true,get:()=>openPhotoViewer,set:v=>{openPhotoViewer=v;}});
+Object.defineProperty(window,"openAddBillModal",{configurable:true,get:()=>openAddBillModal,set:v=>{openAddBillModal=v;}});
+Object.defineProperty(window,"saveBill",{configurable:true,get:()=>saveBill,set:v=>{saveBill=v;}});
+Object.defineProperty(window,"openAddFileModal",{configurable:true,get:()=>openAddFileModal,set:v=>{openAddFileModal=v;}});
+Object.defineProperty(window,"handleDocFilePick",{configurable:true,get:()=>handleDocFilePick,set:v=>{handleDocFilePick=v;}});
+Object.defineProperty(window,"saveRealFile",{configurable:true,get:()=>saveRealFile,set:v=>{saveRealFile=v;}});
+Object.defineProperty(window,"openDocViewerById",{configurable:true,get:()=>openDocViewerById,set:v=>{openDocViewerById=v;}});
+Object.defineProperty(window,"openJobEmailModal",{configurable:true,get:()=>openJobEmailModal,set:v=>{openJobEmailModal=v;}});
+Object.defineProperty(window,"openQuoteEmailModal",{configurable:true,get:()=>openQuoteEmailModal,set:v=>{openQuoteEmailModal=v;}});
+Object.defineProperty(window,"openBillEmailModal",{configurable:true,get:()=>openBillEmailModal,set:v=>{openBillEmailModal=v;}});
+Object.defineProperty(window,"openNewClientModal",{configurable:true,get:()=>openNewClientModal,set:v=>{openNewClientModal=v;}});
+Object.defineProperty(window,"saveNewClient",{configurable:true,get:()=>saveNewClient,set:v=>{saveNewClient=v;}});
+Object.defineProperty(window,"openEditClientModal",{configurable:true,get:()=>openEditClientModal,set:v=>{openEditClientModal=v;}});
+Object.defineProperty(window,"saveClientEdits",{configurable:true,get:()=>saveClientEdits,set:v=>{saveClientEdits=v;}});
+Object.defineProperty(window,"openEditJobMoneyModal",{configurable:true,get:()=>openEditJobMoneyModal,set:v=>{openEditJobMoneyModal=v;}});
+Object.defineProperty(window,"saveJobMoney",{configurable:true,get:()=>saveJobMoney,set:v=>{saveJobMoney=v;}});
+Object.defineProperty(window,"openNewCrewModal",{configurable:true,get:()=>openNewCrewModal,set:v=>{openNewCrewModal=v;}});
+Object.defineProperty(window,"saveNewCrew",{configurable:true,get:()=>saveNewCrew,set:v=>{saveNewCrew=v;}});
+Object.defineProperty(window,"showAppConfirm",{configurable:true,get:()=>showAppConfirm,set:v=>{showAppConfirm=v;}});
+Object.defineProperty(window,"executeConfirmedAction",{configurable:true,get:()=>executeConfirmedAction,set:v=>{executeConfirmedAction=v;}});
+Object.defineProperty(window,"deleteClient",{configurable:true,get:()=>deleteClient,set:v=>{deleteClient=v;}});
+Object.defineProperty(window,"deleteCrewMember",{configurable:true,get:()=>deleteCrewMember,set:v=>{deleteCrewMember=v;}});
+Object.defineProperty(window,"deleteJob",{configurable:true,get:()=>deleteJob,set:v=>{deleteJob=v;}});
+Object.defineProperty(window,"deletePhoto",{configurable:true,get:()=>deletePhoto,set:v=>{deletePhoto=v;}});
+Object.defineProperty(window,"deleteBill",{configurable:true,get:()=>deleteBill,set:v=>{deleteBill=v;}});
+Object.defineProperty(window,"deleteExpense",{configurable:true,get:()=>deleteExpense,set:v=>{deleteExpense=v;}});
+Object.defineProperty(window,"deleteFile",{configurable:true,get:()=>deleteFile,set:v=>{deleteFile=v;}});
+Object.defineProperty(window,"compressImage",{configurable:true,get:()=>compressImage,set:v=>{compressImage=v;}});
+Object.defineProperty(window,"openQuickReceiptModal",{configurable:true,get:()=>openQuickReceiptModal,set:v=>{openQuickReceiptModal=v;}});
+Object.defineProperty(window,"handleReceiptPhotoPick",{configurable:true,get:()=>handleReceiptPhotoPick,set:v=>{handleReceiptPhotoPick=v;}});
+Object.defineProperty(window,"saveQuickReceipt",{configurable:true,get:()=>saveQuickReceipt,set:v=>{saveQuickReceipt=v;}});
+Object.defineProperty(window,"openReceiptViewerById",{configurable:true,get:()=>openReceiptViewerById,set:v=>{openReceiptViewerById=v;}});
+Object.defineProperty(window,"openCompanySettings",{configurable:true,get:()=>openCompanySettings,set:v=>{openCompanySettings=v;}});
+Object.defineProperty(window,"refreshCompanyLogoPreview",{configurable:true,get:()=>refreshCompanyLogoPreview,set:v=>{refreshCompanyLogoPreview=v;}});
+Object.defineProperty(window,"cancelCompanySettings",{configurable:true,get:()=>cancelCompanySettings,set:v=>{cancelCompanySettings=v;}});
+Object.defineProperty(window,"removeCompanyLogo",{configurable:true,get:()=>removeCompanyLogo,set:v=>{removeCompanyLogo=v;}});
+Object.defineProperty(window,"pickCompanyLogo",{configurable:true,get:()=>pickCompanyLogo,set:v=>{pickCompanyLogo=v;}});
+Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCompanyName,set:v=>{saveCompanyName=v;}});
+
     /* Safe Storage Helper for iOS Files / Sandbox environments */
-    const Storage = {
-      isAvailable: function() {
-        try {
-          const test = '__test__';
-          localStorage.setItem(test, test);
-          localStorage.removeItem(test);
-          return true;
-        } catch(e) {
-          return false;
-        }
-      },
-      get: function(key) {
-        try {
-          if (this.isAvailable()) return localStorage.getItem(key);
-        } catch(e) {}
-        return null;
-      },
-      set: function(key, val) {
-        try {
-          if (this.isAvailable()) localStorage.setItem(key, val);
-        } catch(e) {}
-      }
-    };
+    const Storage=window.ShopBoardDatabase;
+    await Storage.initialize();
 
     const DEFAULT_DATA = {
       business: {
@@ -799,11 +1037,12 @@
       ]
     };
 
-    function loadData() {
+    async function loadData() {
       const stored = Storage.get("SHOP_BOARD_DATA");
       if (stored) {
         try {
           const parsed = JSON.parse(stored);
+          Storage.validate({SHOP_BOARD_DATA:stored});
           if (parsed.business && !parsed.business.companyNameCustomized && (parsed.business.name === "Generations Custom Homes" || !parsed.business.name)) {
             parsed.business.name = "Field Trade Co.";
           }
@@ -814,13 +1053,13 @@
             parsed.currentUser.name = "Shop Owner";
           }
           return parsed;
-        } catch (e) {}
+        } catch (e) { throw e; }
       }
-      Storage.set("SHOP_BOARD_DATA", JSON.stringify(DEFAULT_DATA));
+      await Storage.set("SHOP_BOARD_DATA", JSON.stringify(DEFAULT_DATA));
       return DEFAULT_DATA;
     }
 
-    let DATA = loadData();
+    let DATA = await loadData();
     // Backward-compatible fields for existing saved Shop Board data.
     DATA.clients.forEach(client => { if (typeof client.projectNotes !== "string") client.projectNotes = ""; });
     DATA.jobs.forEach(job => {
@@ -830,8 +1069,8 @@
     let CURRENT_VIEW = "HOME";
     let ACTIVE_JOB_ID = null;
 
-    function saveData() {
-      Storage.set("SHOP_BOARD_DATA", JSON.stringify(DATA));
+    async function saveData() {
+      await Storage.set("SHOP_BOARD_DATA", JSON.stringify(DATA));
       showToast("Saved on phone");
       updateHeaderBadges();
     }
@@ -874,7 +1113,7 @@
       }
     }
 
-    function switchUserRole() {
+    async function switchUserRole() {
       if (DATA.currentUser.role === "Owner") {
         DATA.currentUser.name = "Dave Miller";
         DATA.currentUser.role = "Crew";
@@ -884,14 +1123,14 @@
         DATA.currentUser.role = "Owner";
         showToast(`Switched to ${DATA.currentUser.name} (Owner View)`);
       }
-      saveData();
+      await saveData();
       renderCurrentView();
     }
 
-    function toggleMoneyForCrew() {
+    async function toggleMoneyForCrew() {
       if (DATA.currentUser.role !== "Owner") return;
       DATA.business.crewSeeMoney = !DATA.business.crewSeeMoney;
-      saveData();
+      await saveData();
       renderCurrentView();
       showToast(`Crew can see money: ${DATA.business.crewSeeMoney ? "YES" : "NO"}`);
     }
@@ -1598,34 +1837,34 @@
       `;
     }
 
-    function setJobStatus(jobId, status) {
+    async function setJobStatus(jobId, status) {
       const job = DATA.jobs.find(j => j.id === jobId);
       if (job) {
         job.status = status;
-        saveData();
+        await saveData();
         renderCurrentView();
         showToast(`Job status set to ${status.toUpperCase()}`);
       }
     }
 
-    function toggleBillPaid(jobId, billId) {
+    async function toggleBillPaid(jobId, billId) {
       const job = DATA.jobs.find(j => j.id === jobId);
       if (job && job.bills) {
         const bill = job.bills.find(b => b.id === billId);
         if (bill) {
           bill.status = bill.status === "Paid" ? "Unpaid" : "Paid";
-          saveData();
+          await saveData();
           renderCurrentView();
           showToast(`Bill marked as ${bill.status.toUpperCase()}`);
         }
       }
     }
 
-    function deleteNote(jobId, noteId) {
+    async function deleteNote(jobId, noteId) {
       const job = DATA.jobs.find(j => j.id === jobId);
       if (job && job.notes) {
         job.notes = job.notes.filter(n => n.id !== noteId);
-        saveData();
+        await saveData();
         renderCurrentView();
         showToast("Note deleted");
       }
@@ -1671,7 +1910,7 @@
       document.getElementById('newJobTrade').value = el.innerText;
     }
 
-    function saveNewJob() {
+    async function saveNewJob() {
       const name = document.getElementById("newJobName").value.trim();
       const trade = document.getElementById("newJobTrade").value;
       const clientId = document.getElementById("newJobClientId").value;
@@ -1699,7 +1938,7 @@
       };
 
       DATA.jobs.unshift(newJob);
-      saveData();
+      await saveData();
       closeModal();
       openView('JOB_DETAIL', newJob.id);
     }
@@ -1729,7 +1968,7 @@
       openModal(modalHtml);
     }
 
-    function saveNote(jobId) {
+    async function saveNote(jobId) {
       const text = document.getElementById("noteText").value.trim();
       const tag = document.getElementById("noteTag").value;
       if (!text) return;
@@ -1745,7 +1984,7 @@
           tag: tag,
           timestamp: timeStr
         });
-        saveData();
+        await saveData();
         closeModal();
         renderCurrentView();
       }
@@ -1797,7 +2036,7 @@
       }
     }
 
-    function savePhoto(jobId) {
+    async function savePhoto(jobId) {
       const job = DATA.jobs.find(j => j.id === jobId);
       if (!job) return;
 
@@ -1818,7 +2057,7 @@
       });
 
       TEMP_PHOTO_DATA = null;
-      saveData();
+      await saveData();
       closeModal();
       renderCurrentView();
     }
@@ -1859,7 +2098,7 @@
       openModal(modalHtml);
     }
 
-    function saveBill(jobId) {
+    async function saveBill(jobId) {
       const job = DATA.jobs.find(j => j.id === jobId);
       const desc = document.getElementById("billDesc").value.trim();
       const amount = parseFloat(document.getElementById("billAmount").value) || 0;
@@ -1872,7 +2111,7 @@
         amount: amount,
         status: "Unpaid"
       });
-      saveData();
+      await saveData();
       closeModal();
       renderCurrentView();
     }
@@ -1959,7 +2198,7 @@
       }
     }
 
-    function saveRealFile(jobId) {
+    async function saveRealFile(jobId) {
       const job = DATA.jobs.find(j => j.id === jobId);
       if (!job) return;
 
@@ -1982,7 +2221,7 @@
       TEMP_DOC_TYPE = "";
       TEMP_DOC_SIZE = "";
 
-      saveData();
+      await saveData();
       closeModal();
       renderCurrentView();
       showToast("Document saved to job");
@@ -2189,7 +2428,7 @@ Sent from Shop Board`;
       openModal(modalHtml);
     }
 
-    function saveNewClient() {
+    async function saveNewClient() {
       const name = document.getElementById("clName").value.trim();
       const phone = document.getElementById("clPhone").value.trim();
       const email = document.getElementById("clEmail").value.trim();
@@ -2205,7 +2444,7 @@ Sent from Shop Board`;
         address: address,
         projectNotes: projectNotes
       });
-      saveData();
+      await saveData();
       closeModal();
       renderCurrentView();
     }
@@ -2223,7 +2462,7 @@ Sent from Shop Board`;
         <button class="big-btn" style="background: var(--alert); margin-top: 10px;" onclick="deleteClient('${client.id}')">🗑️ Delete Client</button>`);
     }
 
-    function saveClientEdits(clientId) {
+    async function saveClientEdits(clientId) {
       const client = DATA.clients.find(c => c.id === clientId);
       const name = document.getElementById('editClName').value.trim();
       if (!client || !name) { alert('Please enter a client name.'); return; }
@@ -2232,7 +2471,7 @@ Sent from Shop Board`;
       client.email = document.getElementById('editClEmail').value.trim();
       client.address = document.getElementById('editClAddress').value.trim();
       client.projectNotes = document.getElementById('editClProjectNotes').value.trim();
-      saveData(); closeModal(); renderCurrentView(); showToast('Client updated');
+      await saveData(); closeModal(); renderCurrentView(); showToast('Client updated');
     }
 
     function openEditJobMoneyModal(jobId) {
@@ -2246,13 +2485,13 @@ Sent from Shop Board`;
         <button class="big-btn" onclick="saveJobMoney('${job.id}')">Save Money Totals</button>`);
     }
 
-    function saveJobMoney(jobId) {
+    async function saveJobMoney(jobId) {
       const job = DATA.jobs.find(j => j.id === jobId);
       const billed = Number(document.getElementById('editMoneyBilled').value);
       const collected = Number(document.getElementById('editMoneyCollected').value);
       if (!job || !Number.isFinite(billed) || billed < 0 || !Number.isFinite(collected) || collected < 0) { alert('Enter valid zero-or-greater dollar amounts.'); return; }
       job.moneyBilled = billed; job.moneyCollected = collected;
-      saveData(); closeModal(); renderCurrentView(); showToast('Job money totals updated');
+      await saveData(); closeModal(); renderCurrentView(); showToast('Job money totals updated');
     }
 
     function openNewCrewModal() {
@@ -2278,7 +2517,7 @@ Sent from Shop Board`;
       openModal(modalHtml);
     }
 
-    function saveNewCrew() {
+    async function saveNewCrew() {
       const name = document.getElementById("crName").value.trim();
       const phone = document.getElementById("crPhone").value.trim();
       const role = document.getElementById("crRole").value;
@@ -2291,7 +2530,7 @@ Sent from Shop Board`;
         email: "",
         role: role
       });
-      saveData();
+      await saveData();
       closeModal();
       renderCurrentView();
     }
@@ -2322,12 +2561,12 @@ Sent from Shop Board`;
       openModal(modalHtml);
     }
 
-    function executeConfirmedAction() {
+    async function executeConfirmedAction() {
       const action = PENDING_CONFIRM_ACTION;
       PENDING_CONFIRM_ACTION = null;
       closeModal();
       if (typeof action === 'function') {
-        action();
+        await action();
       }
     }
 
@@ -2338,9 +2577,9 @@ Sent from Shop Board`;
         "Delete Client?",
         `Are you sure you want to delete "${name}"? Existing jobs on your board will remain.`,
         "🗑️ Yes, Delete Client",
-        function() {
+        async function() {
           DATA.clients = DATA.clients.filter(c => c.id !== clientId);
-          saveData();
+          await saveData();
           renderCurrentView();
           showToast("Client deleted");
         }
@@ -2358,9 +2597,9 @@ Sent from Shop Board`;
         "Remove Crew?",
         `Remove "${name}" from your crew roster?`,
         "🗑️ Yes, Remove Crew",
-        function() {
+        async function() {
           DATA.crewMembers = DATA.crewMembers.filter(c => c.id !== crewId);
-          saveData();
+          await saveData();
           renderCurrentView();
           showToast("Crew member removed");
         }
@@ -2374,9 +2613,9 @@ Sent from Shop Board`;
         "Delete Job?",
         `Permanently delete "${name}" and all of its notes, photos, and bills?`,
         "🗑️ Yes, Delete Job",
-        function() {
+        async function() {
           DATA.jobs = DATA.jobs.filter(j => j.id !== jobId);
-          saveData();
+          await saveData();
           goHome();
           showToast("Job deleted");
         }
@@ -2388,11 +2627,11 @@ Sent from Shop Board`;
         "Delete Photo?",
         "Permanently delete this photo from the job?",
         "🗑️ Yes, Delete Photo",
-        function() {
+        async function() {
           const job = DATA.jobs.find(j => j.id === jobId);
           if (job && job.photos) {
             job.photos = job.photos.filter(p => p.id !== photoId);
-            saveData();
+            await saveData();
             renderCurrentView();
             showToast("Photo deleted");
           }
@@ -2405,11 +2644,11 @@ Sent from Shop Board`;
         "Delete Bill?",
         "Are you sure you want to delete this bill / invoice record?",
         "🗑️ Yes, Delete Bill",
-        function() {
+        async function() {
           const job = DATA.jobs.find(j => j.id === jobId);
           if (job && job.bills) {
             job.bills = job.bills.filter(b => b.id !== billId);
-            saveData();
+            await saveData();
             renderCurrentView();
             showToast("Bill deleted");
           }
@@ -2422,14 +2661,14 @@ Sent from Shop Board`;
         "Delete Receipt?",
         "Permanently delete this receipt and expense record?",
         "🗑️ Yes, Delete Receipt",
-        function() {
+        async function() {
           const job = DATA.jobs.find(j => j.id === jobId);
           if (job && job.expenses) {
             job.expenses = job.expenses.filter(e => e.id !== expId);
             if (job.photos) {
               job.photos = job.photos.filter(p => !p.caption || !p.caption.includes(expId));
             }
-            saveData();
+            await saveData();
             renderCurrentView();
             showToast("Receipt deleted");
           }
@@ -2442,11 +2681,11 @@ Sent from Shop Board`;
         "Delete File?",
         "Remove this document attachment from the job?",
         "🗑️ Yes, Remove File",
-        function() {
+        async function() {
           const job = DATA.jobs.find(j => j.id === jobId);
           if (job && job.files) {
             job.files = job.files.filter(f => f.id !== fileId);
-            saveData();
+            await saveData();
             renderCurrentView();
             showToast("File removed");
           }
@@ -2572,7 +2811,7 @@ Sent from Shop Board`;
       }
     }
 
-    function saveQuickReceipt() {
+    async function saveQuickReceipt() {
       const selectEl = document.getElementById("receiptJobSelect");
       const jobId = selectEl ? selectEl.value : ACTIVE_JOB_ID;
       const job = DATA.jobs.find(j => j.id === jobId);
@@ -2614,7 +2853,7 @@ Sent from Shop Board`;
       }
 
       TEMP_RECEIPT_PHOTO = null;
-      saveData();
+      await saveData();
       closeModal();
       renderCurrentView();
       showToast(`Receipt saved: $${amountVal.toFixed(2)} to ${job.name}`);
@@ -2773,7 +3012,7 @@ Sent from Shop Board`;
       reader.readAsDataURL(file);
     }
 
-    function saveCompanyName() {
+    async function saveCompanyName() {
       if (DATA.currentUser.role !== "Owner" || COMPANY_LOGO_BUSY) return;
       const input = document.getElementById("companyNameInput");
       const error = document.getElementById("companyNameError");
@@ -2788,8 +3027,8 @@ Sent from Shop Board`;
       const next = {...DATA, business: {...DATA.business, name: name, companyNameCustomized: true, logoDataUrl: COMPANY_LOGO_DRAFT}};
       try {
         const payload = JSON.stringify(next);
-        localStorage.setItem("SHOP_BOARD_DATA", payload);
-        if (localStorage.getItem("SHOP_BOARD_DATA") !== payload) throw new Error("Save verification failed");
+        await Storage.set("SHOP_BOARD_DATA", payload);
+        if (Storage.get("SHOP_BOARD_DATA") !== payload) throw new Error("Save verification failed");
       } catch (e) {
         error.textContent = "Settings were not saved. Phone storage may be full or unavailable. Your saved company name and logo are unchanged.";
         error.hidden = false;
@@ -2804,73 +3043,18 @@ Sent from Shop Board`;
 
     // Run setup
     updateHeaderBadges();
-  </script>
+  
+;
 
-  <!-- SHOP BOARD APPEARANCE ADD-ON: insert before the final </body> -->
-<style id="shopBoardDarkModeStyles">
 
-html[data-shop-theme="light"] { color-scheme: light; }
-html[data-shop-theme="dark"] {
-  color-scheme: dark;
-  --bg:#121815; --card-bg:#1E2722; --border:#46554C;
-  --border-dark:#87998D; --text:#EFF4F0; --text-muted:#B8C7BD;
-  --brand:#B94A00; --brand-soft:#432C18;
-  --highlight:#8AD69A; --highlight-soft:#203D2A;
-  --alert:#FFA3A3; --alert-soft:#48252B; --board-header:#141C18;
-}
-html[data-shop-theme="dark"] body { background:var(--bg); color:var(--text); }
-html[data-shop-theme="dark"] .sync-strip { background:#1A241E; color:#C9D7CE; }
-html[data-shop-theme="dark"] :is(.text-input,.back-btn,.status-step,.fat-btn,.comm-btn,.metric-box,.notes-board,.empty-state,.trade-pill) {
-  background:#1E2722; color:var(--text); border-color:var(--border-dark);
-}
-html[data-shop-theme="dark"] :is(.status-step.active,.trade-pill.selected) { background:#D2E3D7; color:#122018; }
-html[data-shop-theme="dark"] :is(.fat-btn.active,.fat-btn:active,.tile:active) { background:#2A3A30; color:var(--text); }
-html[data-shop-theme="dark"] .big-btn.secondary { background:#25352B; color:var(--text); }
-html[data-shop-theme="dark"] .map-address { color:#9AE6AD; }
-html[data-shop-theme="dark"] :is(.photo-thumb,.modal-sheet) { background:var(--card-bg); }
-html[data-shop-theme="dark"] :is(.tag-punch,.tag-change,.tag-waiting) { border-color:#87998D; }
-html[data-shop-theme="dark"] .tag-punch { background:#50252D; color:#FFB6BD; }
-html[data-shop-theme="dark"] .tag-change { background:#483B1C; color:#FFE3A0; }
-html[data-shop-theme="dark"] .tag-waiting { background:#203C51; color:#ACDBFF; }
-html[data-shop-theme="dark"] :is(div,button,input,textarea,select,a,span)[style*="background: #FFF" i],
-html[data-shop-theme="dark"] :is(div,button,input,textarea,select,a,span)[style*="background:#FFF" i] {
-  background-color:var(--card-bg) !important;
-}
-html[data-shop-theme="dark"] :is(div,button,input,textarea,select,a,span)[style*="background: #EFECE6" i],
-html[data-shop-theme="dark"] :is(div,button,input,textarea,select,a,span)[style*="background:#EFECE6" i],
-html[data-shop-theme="dark"] :is(div,button,input,textarea,select,a,span)[style*="background: #EAE8E1" i] {
-  background-color:#2A3A30 !important;
-}
-html[data-shop-theme="dark"] :is(div,button,a,span)[style*="background: #E8F5E9" i],
-html[data-shop-theme="dark"] :is(div,button,a,span)[style*="background:#E8F5E9" i] {
-  background-color:#203D2A !important; color:#9AE6AD !important;
-}
-html[data-shop-theme="dark"] :is(div,button,a,span)[style*="color: #2E7D32" i],
-html[data-shop-theme="dark"] :is(div,button,a,span)[style*="color:#2E7D32" i],
-html[data-shop-theme="dark"] :is(div,button,a,span)[style*="color: #176B3A" i],
-html[data-shop-theme="dark"] :is(div,button,a,span)[style*="color:#176B3A" i] { color:#9AE6AD !important; }
-html[data-shop-theme="dark"] .big-btn[style*="background: var(--alert)"],
-html[data-shop-theme="dark"] .big-btn[style*="background:var(--alert)"] { background:#A82332 !important; color:#FFF !important; }
-html[data-shop-theme="dark"] .big-btn[style*="background: var(--highlight)"],
-html[data-shop-theme="dark"] .big-btn[style*="background:var(--highlight)"] { background:#245A32 !important; color:#FFF !important; }
-.shop-theme-panel { margin-top:18px; padding:14px; background:var(--card-bg); border:2px solid var(--border-dark); border-radius:12px; }
-.shop-theme-choices { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:12px 0; }
-.shop-theme-choice { min-height:52px; padding:10px; border:2px solid var(--border-dark); border-radius:8px; background:var(--card-bg); color:var(--text); font:inherit; font-weight:700; cursor:pointer; }
-.shop-theme-choice[data-choice="system"] { grid-column:1/-1; }
-.shop-theme-choice[aria-pressed="true"] { border:3px solid var(--brand); }
-.shop-theme-status { font-size:13px; color:var(--text-muted); }
-
-</style>
-<script>
-
-(function () {
+await (async function () {
   "use strict";
   if (window.ShopBoardAppearance) return;
   const KEY = "SHOP_BOARD_THEME";
   const valid = value => ["light", "dark", "system"].includes(value);
   const media = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
   let preference = "system";
-  try { const saved = localStorage.getItem(KEY); if (valid(saved)) preference = saved; } catch (e) {}
+  try { const saved = Storage.get(KEY); if (valid(saved)) preference = saved; } catch (e) {}
 
   function apply() {
     const resolved = preference === "system" ? (media && media.matches ? "dark" : "light") : preference;
@@ -2887,13 +3071,13 @@ html[data-shop-theme="dark"] .big-btn[style*="background:var(--highlight)"] { ba
     });
   }
 
-  function choose(value) {
+  async function choose(value) {
     if (!valid(value)) return false;
     const panel = document.getElementById("shopAppearancePanel");
     const status = panel ? panel.querySelector("[role=status]") : null;
     try {
-      localStorage.setItem(KEY, value);
-      if (localStorage.getItem(KEY) !== value) throw new Error("Theme was not saved");
+      await Storage.set(KEY, value);
+      if (Storage.get(KEY) !== value) throw new Error("Theme was not saved");
     } catch (e) {
       if (status) status.textContent = "Appearance was not saved. Device storage is unavailable; your previous theme is unchanged.";
       return false;
@@ -2928,7 +3112,7 @@ html[data-shop-theme="dark"] .big-btn[style*="background:var(--highlight)"] { ba
     updatePanel();
   }
 
-  window.ShopBoardAppearance = {choose:choose, apply:apply, insertPanel:insertPanel, getPreference:()=>preference};
+  window.ShopBoardAppearance = {reload:()=>{const saved=Storage.get(KEY);if(valid(saved))preference=saved;apply();},choose:choose, apply:apply, insertPanel:insertPanel, getPreference:()=>preference};
   const originalOpen = window.openCompanySettings;
   if (typeof originalOpen === "function") {
     window.openCompanySettings = function () {
@@ -2948,17 +3132,11 @@ html[data-shop-theme="dark"] .big-btn[style*="background:var(--highlight)"] { ba
   apply();
 })();
 
-</script>
 
-<!-- SHOP BOARD BACKUP EXPORT: insert once before the final </body>, after the appearance add-on -->
-<style id="shopBoardBackupExportStyles">
-.shop-backup-panel { margin-top:18px;padding:14px;background:var(--card-bg);color:var(--text);border:2px solid var(--border-dark);border-radius:12px; }
-#shopBackupDownload[hidden] { display:none !important; }
-#shopExportBackupButton:disabled { opacity:0.6;cursor:wait; }
-</style>
-<script>
+;
 
-(function () {
+
+await (async function () {
   "use strict";
   if (window.ShopBoardBackupExport) return;
   let downloadUrl = null;
@@ -2977,10 +3155,11 @@ html[data-shop-theme="dark"] .big-btn[style*="background:var(--highlight)"] { ba
     }
     let theme = "system";
     try {
-      const saved = localStorage.getItem("SHOP_BOARD_THEME");
+      const saved = Storage.get("SHOP_BOARD_THEME");
       if (["light", "dark", "system"].includes(saved)) theme = saved;
     } catch (e) {}
-    const data = JSON.parse(JSON.stringify(DATA));
+    const data=JSON.parse(Storage.get("SHOP_BOARD_DATA"));
+    const preferences=Storage.values();delete preferences.SHOP_BOARD_DATA;
     const now = new Date();
     const backup = {
       app: "Shop Board",
@@ -2988,7 +3167,7 @@ html[data-shop-theme="dark"] .big-btn[style*="background:var(--highlight)"] { ba
       exportedAt: now.toISOString(),
       scope: "Current data on this device only",
       data: data,
-      deviceSettings: {appearance: theme}
+      deviceSettings: {appearance: theme,preferences:preferences}
     };
     const timestamp = now.toISOString().replace(/[:.]/g, "-");
     const filename = "Shop-Board-Backup-" + timestamp + ".json";
@@ -3038,7 +3217,7 @@ html[data-shop-theme="dark"] .big-btn[style*="background:var(--highlight)"] { ba
       <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">External photo links and filename-only records remain links or records; their missing file contents cannot be included. This export is not cloud sync.</p>
       <button id="shopExportBackupButton" type="button" class="big-btn">Export Backup</button>
       <a id="shopBackupDownload" class="comm-btn" hidden>Save / Download Backup</a>
-      <p id="shopBackupStatus" role="status" aria-live="polite" style="font-size:13px;overflow-wrap:anywhere;margin:12px 0;">Your backup contains private client and financial information. Store it somewhere safe. Restore is not included in this update.</p>`;
+      <p id="shopBackupStatus" role="status" aria-live="polite" style="font-size:13px;overflow-wrap:anywhere;margin:12px 0;">Your backup contains private client and financial information. Store it somewhere safe. This backup includes saved device preferences.</p>`;
     sheet.appendChild(panel);
     document.getElementById("shopExportBackupButton").addEventListener("click", exportBackup);
   }
@@ -3067,22 +3246,16 @@ html[data-shop-theme="dark"] .big-btn[style*="background:var(--highlight)"] { ba
   });
 })();
 
-</script>
 
-  <!-- SHOP BOARD BACKUP RESTORE: insert once before final </body>, after backup export add-on -->
-<style id="shopBoardBackupRestoreStyles">
-.shop-restore-panel {margin-top:18px;padding:14px;background:var(--card-bg);color:var(--text);border:2px solid var(--border-dark);border-radius:12px;}
-#shopRestorePreview[hidden] {display:none !important;}
-#shopRestoreApply:disabled {opacity:0.55;cursor:not-allowed;}
-</style>
-<script>
+;
 
-(function () {
+
+await (async function () {
   "use strict";
   if (window.ShopBoardBackupRestore) return;
   let pending = null;
   let request = 0;
-  const MAX_BYTES = 25 * 1024 * 1024;
+  const MAX_BYTES = 128 * 1024 * 1024;
   const object = v => v !== null && typeof v === "object" && !Array.isArray(v);
   const text = (v, label) => { if (typeof v !== "string") throw new Error(label + " must be text."); };
   const number = (v, label) => { if (typeof v !== "number" || !Number.isFinite(v) || v < 0) throw new Error(label + " must be a valid nonnegative number."); };
@@ -3169,7 +3342,20 @@ html[data-shop-theme="dark"] .big-btn[style*="background:var(--highlight)"] { ba
     data.business.companyNameCustomized = true;
     const exportedAt = typeof input.exportedAt === "string" && !Number.isNaN(Date.parse(input.exportedAt)) ? input.exportedAt : null;
     const theme = input.deviceSettings && ["light", "dark", "system"].includes(input.deviceSettings.appearance) ? input.deviceSettings.appearance : null;
-    return {data:data, stats:stats, exportedAt:exportedAt, theme:theme};
+    const preferences={};
+    const supplied=input.deviceSettings&&input.deviceSettings.preferences;
+    if(supplied!==undefined){
+      if(!object(supplied))throw new Error("Invalid device preferences.");
+      const choices={SHOP_BOARD_THEME:["light","dark","system"],SHOP_BOARD_START_SCREEN:["HOME","TODAY","JOBS"],SHOP_BOARD_MAPS_SERVICE:["AUTO","APPLE","GOOGLE"],SHOP_BOARD_RECEIPT_CATEGORY:["Materials","Hardware","Lumber","Tools","Fuel / Dump","Subcontract"]};
+      for(const[key,value]of Object.entries(supplied)){
+        if(typeof value!=="string"||value.length>10000)throw new Error("Invalid preference value.");
+        if(key==="SHOP_BOARD_RECEIPT_JOB_PREFS"){const p=JSON.parse(value);if(!object(p)||!["ASK","REMEMBER"].includes(p.mode)||typeof p.lastJobId!=="string")throw new Error("Invalid receipt-job preference.");}
+        else if(!Object.prototype.hasOwnProperty.call(choices,key)||!choices[key].includes(value))throw new Error("Unsupported device preference.");
+        preferences[key]=value;
+      }
+    }
+    if(theme&&preferences.SHOP_BOARD_THEME===undefined)preferences.SHOP_BOARD_THEME=theme;
+    return {data:data,stats:stats,exportedAt:exportedAt,theme:theme,preferences:preferences};
   }
 
   function message(value) {
@@ -3191,7 +3377,7 @@ html[data-shop-theme="dark"] .big-btn[style*="background:var(--highlight)"] { ba
     const file = input.files && input.files[0];
     if (!file) return;
     if (!/\.json$/i.test(file.name) || file.size > MAX_BYTES) {
-      message("Choose a .json Shop Board backup smaller than 25 MB. Current records are unchanged.");
+      message("Choose a .json Shop Board backup smaller than 128 MB. Current records are unchanged.");
       return;
     }
     message("Reading and validating backup…");
@@ -3212,38 +3398,18 @@ html[data-shop-theme="dark"] .big-btn[style*="background:var(--highlight)"] { ba
       message("Backup validated. Review the preview and save an export of your current records before proceeding.");
     } catch (e) { message("Cannot restore: " + e.message + " Current records are unchanged."); }
   }
-  function applyRestore() {
+  async function applyRestore() {
     const checkbox = document.getElementById("shopRestoreConfirmed");
     const button = document.getElementById("shopRestoreApply");
     const overlay = document.getElementById("modalOverlay");
     if (!pending || !checkbox || !checkbox.checked || !overlay || overlay.style.display !== "flex" || DATA.currentUser.role !== "Owner") return false;
     button.disabled = true;
     const candidate = pending;
-    let oldStorage, didWrite = false;
-    try {
-      oldStorage = localStorage.getItem("SHOP_BOARD_DATA");
-      const payload = JSON.stringify(candidate.data);
-      localStorage.setItem("SHOP_BOARD_DATA", payload);
-      didWrite = true;
-      if (localStorage.getItem("SHOP_BOARD_DATA") !== payload) throw new Error("Storage verification failed");
-    } catch (e) {
-      let rollbackFailed = false;
-      if (didWrite) {
-        try {
-          if (oldStorage === null) localStorage.removeItem("SHOP_BOARD_DATA");
-          else localStorage.setItem("SHOP_BOARD_DATA", oldStorage);
-        } catch (err) { rollbackFailed = true; }
-      }
-      message(rollbackFailed ? "Restore failed and storage rollback could not be verified. Keep this app open and export your current records before reloading." : "Restore was not completed. Storage may be full or unavailable. Current records were not replaced.");
-      button.disabled = false;
-      return false;
-    }
-    DATA = candidate.data;
-    let themeNote = "";
-    if (candidate.theme && window.ShopBoardAppearance && typeof window.ShopBoardAppearance.choose === "function") {
-      try { if (!window.ShopBoardAppearance.choose(candidate.theme)) themeNote = " Appearance could not be restored; records were restored."; }
-      catch (e) { themeNote = " Appearance could not be restored; records were restored."; }
-    } else if (candidate.theme) { themeNote = " Appearance was left unchanged because the theme add-on is unavailable."; }
+    try {await Storage.setMany({...candidate.preferences,SHOP_BOARD_DATA:JSON.stringify(candidate.data)});}
+    catch(e){message("Restore was not completed: "+e.message+" Current records were not replaced. Do not clear site data.");button.disabled=false;return false;}
+    DATA=candidate.data;
+    let themeNote="";
+    [window.ShopBoardAppearance,window.ShopBoardStartScreen,window.ShopBoardMapsPreference,window.ShopBoardReceiptCategory,window.ShopBoardReceiptJobMemory].forEach(addon=>{if(addon&&typeof addon.reload==="function"){try{addon.reload();}catch(e){themeNote=" Reload to display all restored preferences.";}}});
     resetPending();
     closeModal();
     goHome();
@@ -3297,25 +3463,18 @@ html[data-shop-theme="dark"] .big-btn[style*="background:var(--highlight)"] { ba
   if (sheet && window.MutationObserver) new MutationObserver(insertPanel).observe(sheet, {childList:true});
 })();
 
-</script>
 
-<!-- SHOP BOARD SAVE-ERROR GUARD: insert once before final </body>, after restore add-on -->
-<style id="shopBoardSaveGuardStyles">
-.shop-save-failure {position:sticky;top:0;z-index:1100;padding:14px 16px;background:#FFE7E7;color:#681822;border-bottom:3px solid #A82332;}
-.shop-save-failure p {font-size:14px;font-weight:700;line-height:1.4;margin-bottom:8px;}
-.shop-save-failure button {min-height:44px;padding:8px 12px;border:2px solid #A82332;border-radius:8px;background:#FFF;color:#681822;font:inherit;font-weight:700;cursor:pointer;}
-#shopSaveFailureBanner[hidden] {display:none !important;}
-html[data-shop-theme="dark"] .shop-save-failure {background:#49242A;color:#FFD7DC;}
-</style>
-<script>
+;
 
-(function () {
+
+await (async function () {
   "use strict";
   if (window.ShopBoardSaveGuard) return;
   let epoch = 0;
   let lastWrite = null;
   let lastReadError = null;
   let startupBlocked = false;
+  let actionInFlight=false;
 
   class ShopSaveError extends Error {
     constructor(message, cause) {
@@ -3348,42 +3507,17 @@ html[data-shop-theme="dark"] .shop-save-failure {background:#49242A;color:#FFD7D
     const banner = document.getElementById("shopSaveFailureBanner");
     if (banner) banner.hidden = true;
     const indicator = document.getElementById("savedIndicator");
-    if (indicator) indicator.textContent = "SAVED ON PHONE • LOCAL ONLY";
+    if (indicator) indicator.textContent = "SAVED ON PHONE • "+Storage.backendLabel();
   }
-  function verifiedWrite(key, value) {
-    if (startupBlocked) throw new ShopSaveError("Saved records could not be read at startup. Resolve storage access and reload before saving new changes.");
-    let oldValue = null;
-    let wrote = false;
-    try {
-      oldValue = localStorage.getItem(key);
-      localStorage.setItem(key, value);
-      wrote = true;
-      if (localStorage.getItem(key) !== value) throw new Error("The saved data could not be verified.");
-    } catch (cause) {
-      let rollbackFailed = false;
-      if (wrote) {
-        try {
-          if (oldValue === null) localStorage.removeItem(key);
-          else localStorage.setItem(key, oldValue);
-        } catch (e) { rollbackFailed = true; }
-      }
-      const message = rollbackFailed
-        ? "Storage verification failed and storage rollback could not be verified. Keep the app open and export a backup before reloading."
-        : "This change was not saved. Phone storage may be full or blocked. Keep the form open, keep the original attachment, and retry after storage is available. Do not clear this site's data.";
-      throw new ShopSaveError(message, cause);
-    }
+  async function verifiedWrite(key,value){
+    if(startupBlocked)throw new ShopSaveError("Storage could not be read at startup. Reload after resolving storage access.");
+    try{await Storage.set(key,value);}catch(cause){throw new ShopSaveError("This change was not saved: "+cause.message+" Keep the form open and keep the original attachment. Do not clear site data.",cause);}
   }
-  Storage.get = function (key) {
-    try { return localStorage.getItem(key); }
-    catch (e) { lastReadError = e; return null; }
-  };
-  Storage.set = function (key, value) { verifiedWrite(key, value); return true; };
-
-  window.saveData = function () {
+  window.saveData = async function () {
     let payload;
     try { payload = JSON.stringify(DATA); }
     catch (e) { throw new ShopSaveError("This record could not be prepared for saving. Keep the form open and try again.", e); }
-    verifiedWrite("SHOP_BOARD_DATA", payload);
+    await verifiedWrite("SHOP_BOARD_DATA", payload);
     lastWrite = payload;
     epoch++;
     clearFailure();
@@ -3420,7 +3554,9 @@ html[data-shop-theme="dark"] .shop-save-failure {background:#49242A;color:#FFD7D
   actions.forEach(name => {
     const original = window[name];
     if (typeof original !== "function") return;
-    window[name] = function () {
+    window[name] = async function () {
+      if(actionInFlight){showToast("A save is still in progress. Please wait.");return false;}
+      actionInFlight=true;
       let before, transient;
       const initialEpoch = epoch;
       try {
@@ -3428,9 +3564,10 @@ html[data-shop-theme="dark"] .shop-save-failure {background:#49242A;color:#FFD7D
         transient = captureTransient();
       } catch (e) {
         showFailure("The change could not be started safely. Export a backup and reload only after it is saved.");
+        actionInFlight=false;
         return false;
       }
-      try { return original.apply(this, arguments); }
+      try { return await original.apply(this, arguments); }
       catch (e) {
         if (epoch !== initialEpoch) {
           if (lastWrite) DATA = JSON.parse(lastWrite);
@@ -3441,7 +3578,7 @@ html[data-shop-theme="dark"] .shop-save-failure {background:#49242A;color:#FFD7D
         restoreTransient(transient);
         showFailure(e instanceof ShopSaveError ? e.message : "This action could not be completed. Your unsaved changes were rolled back; keep the form open and retry.");
         return false;
-      }
+      } finally {actionInFlight=false;}
     };
   });
 
@@ -3452,7 +3589,7 @@ html[data-shop-theme="dark"] .shop-save-failure {background:#49242A;color:#FFD7D
     if (raw !== null) {
       const stored = JSON.parse(raw);
       if (!stored || !stored.business || !stored.currentUser || !Array.isArray(stored.clients) || !Array.isArray(stored.jobs) || !Array.isArray(stored.crewMembers)) throw new Error("Saved data is malformed");
-      DATA = loadData();
+      DATA = await loadData();
       DATA.clients.forEach(client => { if (typeof client.projectNotes !== "string") client.projectNotes = ""; });
       DATA.jobs.forEach(job => {
         if (!Array.isArray(job.photos)) job.photos = [];
@@ -3463,20 +3600,16 @@ html[data-shop-theme="dark"] .shop-save-failure {background:#49242A;color:#FFD7D
     }
   } catch (e) {
     startupBlocked = true;
-    showFailure("Existing saved records could not be read safely. Do not clear this site's data or overwrite it with sample records. Keep any backups and resolve the storage problem first.");
+    throw new Error("Existing saved records could not be read safely. Do not clear this site's data or overwrite it with sample records. Keep any backups and resolve the storage problem first.");
   }
   window.ShopBoardSaveGuard = {version:1};
 })();
 
-</script>
 
-<!-- SHOP BOARD START SCREEN: insert once before final </body>, after save-error guard -->
-<style id="shopBoardStartScreenStyles">
-.shop-start-screen-panel {margin-top:18px;padding:14px;background:var(--card-bg);color:var(--text);border:2px solid var(--border-dark);border-radius:12px;}
-</style>
-<script>
+;
 
-(function () {
+
+await (async function () {
   "use strict";
   if (window.ShopBoardStartScreen) return;
   const KEY = "SHOP_BOARD_START_SCREEN";
@@ -3484,19 +3617,19 @@ html[data-shop-theme="dark"] .shop-save-failure {background:#49242A;color:#FFD7D
   const names = {HOME:"Home", TODAY:"Today", JOBS:"Jobs"};
   let preference = "HOME";
   try {
-    const stored = localStorage.getItem(KEY);
+    const stored = Storage.get(KEY);
     if (valid(stored)) preference = stored;
   } catch (e) {}
 
-  function save(value) {
+  async function save(value) {
     const status = document.getElementById("shopStartScreenStatus");
     if (!valid(value)) {
       if (status) status.textContent = "Choose Home, Today, or Jobs.";
       return false;
     }
     try {
-      localStorage.setItem(KEY, value);
-      if (localStorage.getItem(KEY) !== value) throw new Error("Save could not be verified");
+      await Storage.set(KEY, value);
+      if (Storage.get(KEY) !== value) throw new Error("Save could not be verified");
     } catch (e) {
       if (status) status.textContent = "Start screen was not saved. Device storage may be full or blocked. Your previous choice is unchanged.";
       return false;
@@ -3551,7 +3684,7 @@ html[data-shop-theme="dark"] .shop-save-failure {background:#49242A;color:#FFD7D
     }
   }
 
-  window.ShopBoardStartScreen = {save:save, getPreference:()=>preference, insertPanel:insertPanel};
+  window.ShopBoardStartScreen = {reload:()=>{const saved=Storage.get(KEY);if(valid(saved))preference=saved;},save:save, getPreference:()=>preference, insertPanel:insertPanel};
   const originalOpen = window.openCompanySettings;
   if (typeof originalOpen === "function") {
     window.openCompanySettings = function () {
@@ -3566,15 +3699,11 @@ html[data-shop-theme="dark"] .shop-save-failure {background:#49242A;color:#FFD7D
   applyOnLoad();
 })();
 
-</script>
 
-  <!-- SHOP BOARD MAPS PREFERENCE: insert once before final </body>, after start-screen add-on -->
-<style id="shopBoardMapsPreferenceStyles">
-.shop-maps-preference-panel {margin-top:18px;padding:14px;background:var(--card-bg);color:var(--text);border:2px solid var(--border-dark);border-radius:12px;}
-</style>
-<script>
+;
 
-(function () {
+
+await (async function () {
   "use strict";
   if (window.ShopBoardMapsPreference) return;
   const KEY = "SHOP_BOARD_MAPS_SERVICE";
@@ -3582,7 +3711,7 @@ html[data-shop-theme="dark"] .shop-save-failure {background:#49242A;color:#FFD7D
   const labels = {AUTO:"Automatic", APPLE:"Apple Maps", GOOGLE:"Google Maps"};
   let preference = "AUTO";
   try {
-    const saved = localStorage.getItem(KEY);
+    const saved = Storage.get(KEY);
     if (valid(saved)) preference = saved;
   } catch (e) {}
 
@@ -3604,15 +3733,15 @@ html[data-shop-theme="dark"] .shop-save-failure {background:#49242A;color:#FFD7D
     catch (e) { return false; }
   }
 
-  function save(value) {
+  async function save(value) {
     const status = document.getElementById("shopMapsPreferenceStatus");
     if (!valid(value)) {
       if (status) status.textContent = "Choose Automatic, Apple Maps, or Google Maps.";
       return false;
     }
     try {
-      localStorage.setItem(KEY, value);
-      if (localStorage.getItem(KEY) !== value) throw new Error("Save could not be verified");
+      await Storage.set(KEY, value);
+      if (Storage.get(KEY) !== value) throw new Error("Save could not be verified");
     } catch (e) {
       if (status) status.textContent = "Maps preference was not saved. Device storage may be full or blocked. Your previous choice is unchanged.";
       return false;
@@ -3651,7 +3780,7 @@ html[data-shop-theme="dark"] .shop-save-failure {background:#49242A;color:#FFD7D
   }
 
   window.getMapLink = mapLink;
-  window.ShopBoardMapsPreference = {save:save, getPreference:()=>preference, insertPanel:insertPanel, getMapLink:mapLink};
+  window.ShopBoardMapsPreference = {reload:()=>{const saved=Storage.get(KEY);if(valid(saved))preference=saved;},save:save, getPreference:()=>preference, insertPanel:insertPanel, getMapLink:mapLink};
   const originalOpen = window.openCompanySettings;
   if (typeof originalOpen === "function") {
     window.openCompanySettings = function () {
@@ -3666,15 +3795,11 @@ html[data-shop-theme="dark"] .shop-save-failure {background:#49242A;color:#FFD7D
   refreshLinks();
 })();
 
-</script>
 
-  <!-- SHOP BOARD RECEIPT CATEGORY: insert once before final </body>, after Maps-preference add-on -->
-<style id="shopBoardReceiptCategoryStyles">
-.shop-receipt-category-panel {margin-top:18px;padding:14px;background:var(--card-bg);color:var(--text);border:2px solid var(--border-dark);border-radius:12px;}
-</style>
-<script>
+;
 
-(function () {
+
+await (async function () {
   "use strict";
   if (window.ShopBoardReceiptCategory) return;
   const KEY = "SHOP_BOARD_RECEIPT_CATEGORY";
@@ -3690,7 +3815,7 @@ html[data-shop-theme="dark"] .shop-save-failure {background:#49242A;color:#FFD7D
   const labels = Object.fromEntries(categories);
   let preference = "Materials";
   try {
-    const saved = localStorage.getItem(KEY);
+    const saved = Storage.get(KEY);
     if (valid(saved)) preference = saved;
   } catch (e) {}
   const initializedForms = new WeakSet();
@@ -3703,15 +3828,15 @@ html[data-shop-theme="dark"] .shop-save-failure {background:#49242A;color:#FFD7D
     initializedForms.add(select);
   }
 
-  function save(value) {
+  async function save(value) {
     const status = document.getElementById("shopReceiptCategoryStatus");
     if (!valid(value)) {
       if (status) status.textContent = "Choose one of the receipt categories in the list.";
       return false;
     }
     try {
-      localStorage.setItem(KEY, value);
-      if (localStorage.getItem(KEY) !== value) throw new Error("Save could not be verified");
+      await Storage.set(KEY, value);
+      if (Storage.get(KEY) !== value) throw new Error("Save could not be verified");
     } catch (e) {
       if (status) status.textContent = "Default category was not saved. Device storage may be full or blocked. Your previous choice is unchanged.";
       return false;
@@ -3747,7 +3872,7 @@ html[data-shop-theme="dark"] .shop-save-failure {background:#49242A;color:#FFD7D
     document.getElementById("shopReceiptCategorySave").addEventListener("click", () => save(select.value));
   }
 
-  window.ShopBoardReceiptCategory = {save:save, getPreference:()=>preference, insertPanel:insertPanel, applyReceiptDefault:applyReceiptDefault};
+  window.ShopBoardReceiptCategory = {reload:()=>{const saved=Storage.get(KEY);if(valid(saved))preference=saved;},save:save, getPreference:()=>preference, insertPanel:insertPanel, applyReceiptDefault:applyReceiptDefault};
   const originalReceipt = window.openQuickReceiptModal;
   if (typeof originalReceipt === "function") {
     window.openQuickReceiptModal = function () {
@@ -3771,15 +3896,11 @@ html[data-shop-theme="dark"] .shop-save-failure {background:#49242A;color:#FFD7D
   }
 })();
 
-</script>
 
-  <!-- SHOP BOARD RECEIPT JOB MEMORY: insert once before final </body>, after receipt-category add-on -->
-<style id="shopBoardReceiptJobMemoryStyles">
-.shop-receipt-job-memory-panel {margin-top:18px;padding:14px;background:var(--card-bg);color:var(--text);border:2px solid var(--border-dark);border-radius:12px;}
-</style>
-<script>
+;
 
-(function () {
+
+await (async function () {
   "use strict";
   if (window.ShopBoardReceiptJobMemory) return;
   const KEY = "SHOP_BOARD_RECEIPT_JOB_PREFS";
@@ -3787,23 +3908,23 @@ html[data-shop-theme="dark"] .shop-save-failure {background:#49242A;color:#FFD7D
   let mode = "ASK";
   let lastJobId = "";
   try {
-    const stored = JSON.parse(localStorage.getItem(KEY) || "null");
+    const stored = JSON.parse(Storage.get(KEY) || "null");
     if (stored && validMode(stored.mode)) {
       mode = stored.mode;
       if (typeof stored.lastJobId === "string") lastJobId = stored.lastJobId;
     }
   } catch (e) {}
 
-  function writePreferences(nextMode, nextJob) {
+  async function writePreferences(nextMode, nextJob) {
     const payload = JSON.stringify({mode:nextMode, lastJobId:nextJob});
-    localStorage.setItem(KEY, payload);
-    if (localStorage.getItem(KEY) !== payload) throw new Error("Preference save could not be verified");
+    await Storage.set(KEY, payload);
+    if (Storage.get(KEY) !== payload) throw new Error("Preference save could not be verified");
     mode = nextMode; lastJobId = nextJob;
   }
-  function saveMode(value) {
+  async function saveMode(value) {
     const status = document.getElementById("shopReceiptJobMemoryStatus");
     if (!validMode(value)) return false;
-    try { writePreferences(value, lastJobId); }
+    try { await writePreferences(value, lastJobId); }
     catch (e) {
       if (status) status.textContent = "Receipt-job preference was not saved. Device storage may be full or blocked. Your previous choice is unchanged.";
       return false;
@@ -3881,7 +4002,7 @@ html[data-shop-theme="dark"] .shop-save-failure {background:#49242A;color:#FFD7D
   }
   const originalSave = window.saveQuickReceipt;
   if (typeof originalSave === "function") {
-    window.saveQuickReceipt = function () {
+    window.saveQuickReceipt = async function () {
       const select = document.getElementById("receiptJobSelect");
       const jobId = select ? select.value : "";
       const job = typeof DATA !== "undefined" ? DATA.jobs.find(item => item.id === jobId) : null;
@@ -3893,16 +4014,16 @@ html[data-shop-theme="dark"] .shop-save-failure {background:#49242A;color:#FFD7D
         return false;
       }
       const previousIds = new Set((job.expenses || []).map(item => item.id));
-      const result = originalSave.apply(this, arguments);
+      const result = await originalSave.apply(this, arguments);
       if (result === false) return result;
       try {
         const updatedJob = DATA.jobs.find(item => item.id === jobId);
         const created = updatedJob && (updatedJob.expenses || []).find(item => !previousIds.has(item.id));
         if (!created) return result;
-        const savedData = JSON.parse(localStorage.getItem("SHOP_BOARD_DATA") || "null");
+        const savedData = JSON.parse(Storage.get("SHOP_BOARD_DATA") || "null");
         const savedJob = savedData && Array.isArray(savedData.jobs) && savedData.jobs.find(item => item.id === jobId);
         if (!savedJob || !Array.isArray(savedJob.expenses) || !savedJob.expenses.some(item => item.id === created.id)) return result;
-        writePreferences(mode, jobId);
+        await writePreferences(mode, jobId);
       } catch (e) {
         if (typeof window.showToast === "function") window.showToast("Receipt saved, but its job could not be remembered on this device");
       }
@@ -3920,38 +4041,14 @@ html[data-shop-theme="dark"] .shop-save-failure {background:#49242A;color:#FFD7D
   }
   const sheet = document.getElementById("modalSheet");
   if (sheet && window.MutationObserver) new MutationObserver(insertPanel).observe(sheet, {childList:true});
-  window.ShopBoardReceiptJobMemory = {saveMode:saveMode, getMode:()=>mode, getLastJobId:()=>lastJobId, insertPanel:insertPanel};
+  window.ShopBoardReceiptJobMemory = {reload:()=>{const p=JSON.parse(Storage.get(KEY)||"null");if(p&&validMode(p.mode)){mode=p.mode;lastJobId=typeof p.lastJobId==="string"?p.lastJobId:"";}},saveMode:saveMode, getMode:()=>mode, getLastJobId:()=>lastJobId, insertPanel:insertPanel};
 })();
 
-</script>
 
-  <!-- SHOP BOARD SETTINGS LAYOUT: insert once before final </body>, after receipt-job-memory add-on -->
-<style id="shopBoardSettingsLayoutStyles">
+;
 
-.shop-company-profile-card,
-.shop-receipts-settings-card {
-  margin-top:18px;padding:14px;background:var(--card-bg);color:var(--text);
-  border:2px solid var(--border-dark);border-radius:12px;
-}
-.shop-settings-card-heading {font-size:20px;margin:0 0 12px;font-weight:800;}
-.shop-receipt-settings-subheading {font-size:17px;margin:0 0 8px;font-weight:800;}
-#shopReceiptsSettingsCard > #shopReceiptCategoryPanel,
-#shopReceiptsSettingsCard > #shopReceiptJobMemoryPanel {
-  margin:0;padding:0;border:0;border-radius:0;box-shadow:none;background:transparent;
-}
-#shopReceiptsSettingsCard > #shopReceiptJobMemoryPanel {
-  margin-top:16px;padding-top:16px;border-top:1px solid var(--border);
-}
-.shop-settings-footer {
-  margin-top:20px;padding:14px 0 calc(10px + env(safe-area-inset-bottom,0px));
-  border-top:2px solid var(--border);background:var(--bg);
-}
-.shop-settings-footer-note {font-size:13px;color:var(--text-muted);margin:0 0 12px;line-height:1.4;}
-#shopSettingsFooter button {width:100%;}
-</style>
-<script>
 
-(function () {
+await (async function () {
   "use strict";
   if (window.ShopBoardSettingsLayout) return;
   let running = false;
@@ -4050,16 +4147,11 @@ html[data-shop-theme="dark"] .shop-save-failure {background:#49242A;color:#FFD7D
   organizeSettings();
 })();
 
-</script>
 
-  <!-- SHOP BOARD INDEXEDDB STAGE 1: insert once before final </body>, after Settings-layout add-on -->
-<style id="shopBoardIndexedDBPrepStyles">
-.shop-idb-panel {margin-top:18px;padding:14px;background:var(--card-bg);color:var(--text);border:2px solid var(--border-dark);border-radius:12px;}
-#shopIDBPrepare:disabled {opacity:0.6;cursor:wait;}
-</style>
-<script>
+;
 
-(function () {
+
+await (async function () {
   "use strict";
   if (window.ShopBoardIndexedDBPrep) return;
   const DB_NAME = "SHOP_BOARD_LOCAL_DB";
@@ -4119,23 +4211,7 @@ html[data-shop-theme="dark"] .shop-save-failure {background:#49242A;color:#FFD7D
       request.onsuccess = () => setResult(request.result || null);
     });
   }
-  function captureSavedData() {
-    const keys = [];
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && key.startsWith("SHOP_BOARD_")) keys.push(key);
-    }
-    const values = {};
-    keys.sort().forEach(key => {
-      const value = localStorage.getItem(key);
-      if (typeof value !== "string") throw new Error("Saved preferences changed during reading. Try again.");
-      values[key] = value;
-    });
-    if (!values.SHOP_BOARD_DATA) throw new Error("No saved Shop Board records were found. Save your records before preparing the copy.");
-    const data = JSON.parse(values.SHOP_BOARD_DATA);
-    if (!data || !data.business || !data.currentUser || !Array.isArray(data.jobs) || !Array.isArray(data.clients) || !Array.isArray(data.crewMembers)) throw new Error("Existing saved records could not be validated. Export a backup and resolve this before migration.");
-    return values;
-  }
+  function captureSavedData(){const values=Storage.values();Storage.validate(values);return values;}
   function signature(values) {
     return JSON.stringify(Object.keys(values).sort().map(key => [key, values[key]]));
   }
@@ -4155,14 +4231,14 @@ html[data-shop-theme="dark"] .shop-save-failure {background:#49242A;color:#FFD7D
     try {
       const db = await openDatabase();
       const meta = await read(db, "metadata", "verified-copy");
-      if (!meta) { message("Not prepared yet. The current storage system is still active."); return false; }
+      if (!meta) { message("No preparation snapshot yet. Active storage: " + Storage.backendLabel() + "."); return false; }
       const record = await read(db, "snapshots", meta.snapshotId);
       if (!record || !record.values || signature(record.values) !== record.signature) throw new Error("The IndexedDB copy could not be verified.");
       const current = captureSavedData();
       const matches = signature(current) === record.signature;
       message("Verified IndexedDB copy from " + new Date(record.copiedAt).toLocaleString() + ". " + counts(record.values) + ". " +
         (matches ? "It matches your current saved data." : "Your current saved data has changed. Prepare a fresh copy before switching storage.") +
-        " The original storage system is still active.");
+        " Active storage: " + Storage.backendLabel() + ".");
       return matches;
     } catch (e) { message("Could not check the IndexedDB copy: " + e.message + " Original saved records were not changed."); return false; }
   }
@@ -4189,7 +4265,7 @@ html[data-shop-theme="dark"] .shop-save-failure {background:#49242A;color:#FFD7D
         if (previous && previous.snapshotId !== candidateId) tx.objectStore("snapshots").delete(previous.snapshotId);
       });
       published = true;
-      message("IndexedDB copy prepared and read-back verified: " + counts(values) + ". Original records and preferences remain unchanged. Normal saves still use the original storage system; this is a snapshot, not live sync.");
+      message("IndexedDB copy prepared and read-back verified: " + counts(values) + ". Original records and preferences remain unchanged. This is a snapshot, not live sync. Active storage: " + Storage.backendLabel() + ".");
       return true;
     } catch (e) {
       if (db && candidateId && !published) {
@@ -4212,9 +4288,13 @@ html[data-shop-theme="dark"] .shop-save-failure {background:#49242A;color:#FFD7D
     panel.className = "shop-idb-panel";
     panel.setAttribute("aria-label", "IndexedDB storage preparation");
     panel.innerHTML = `
-      <h3 style="font-size:20px;margin-bottom:8px;">Local Storage — IndexedDB Preparation</h3>
-      <p style="font-size:14px;color:var(--text-muted);margin-bottom:12px;">Stage 1: make and verify an IndexedDB snapshot of saved records and device preferences. This does not switch the app's storage or increase its current attachment capacity yet.</p>
+      <h3 style="font-size:20px;margin-bottom:8px;">Storage — IndexedDB</h3>
+      <p style="font-size:14px;color:var(--text-muted);margin-bottom:12px;">Installing this update does not switch storage. Prepare and check a snapshot, save an exported backup, then activate IndexedDB explicitly. After activation the old localStorage copy is historical, not a live backup.</p>
       <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">Export and save a backup first. Unsaved form edits are not copied. Embedded files are included; missing or externally linked files are not downloaded. This is local device storage, not cloud backup.</p>
+      <p id="shopStorageMode" role="status" style="margin:12px 0;"></p>
+      <label style="display:flex;gap:10px;margin:12px 0;"><input id="shopIDBActivationConfirmed" type="checkbox" style="min-width:24px;min-height:24px;"><span>I saved an exported backup and closed other Shop Board tabs before activating.</span></label>
+      <button id="shopIDBActivate" type="button" class="big-btn">Activate IndexedDB Storage</button>
+      <button id="shopIDBVerifyActive" type="button" class="big-btn secondary">Check Active IndexedDB Storage</button>
       <button id="shopIDBPrepare" type="button" class="big-btn">Prepare / Refresh IndexedDB Copy</button>
       <button id="shopIDBCheck" type="button" class="big-btn secondary">Check Copy Against Current Data</button>
       <p id="shopIDBStatus" role="status" aria-live="polite" style="font-size:13px;overflow-wrap:anywhere;color:var(--text-muted);">Checking preparation status…</p>`;
@@ -4222,8 +4302,16 @@ html[data-shop-theme="dark"] .shop-save-failure {background:#49242A;color:#FFD7D
     if (footer && footer.parentNode === sheet) sheet.insertBefore(panel, footer); else sheet.appendChild(panel);
     document.getElementById("shopIDBPrepare").addEventListener("click", prepareCopy);
     document.getElementById("shopIDBCheck").addEventListener("click", () => { if (!busy) checkCopy(); });
+    updateMode();
+    document.getElementById("shopIDBActivate").addEventListener("click",activateStorage);
+    document.getElementById("shopIDBVerifyActive").addEventListener("click",verifyStorage);
     checkCopy();
   }
+
+  function updateMode(){const n=document.getElementById("shopStorageMode");if(n)n.textContent="Active storage: "+Storage.backendLabel()+(Storage.isActive()?". Old localStorage records are historical.":". IndexedDB has not been activated.");const a=document.getElementById("shopIDBActivate"),v=document.getElementById("shopIDBVerifyActive");if(a)a.disabled=Storage.isActive();if(v)v.disabled=!Storage.isActive();}
+  async function activateStorage(){if(busy||Storage.isBusy()||Storage.isActive())return;const c=document.getElementById("shopIDBActivationConfirmed");if(!c||!c.checked){message("Save an exported backup, close other tabs and check the confirmation box first.");return;}busy=true;const b=document.getElementById("shopIDBActivate");b.disabled=true;b.textContent="Verifying and activating…";try{if(!await checkCopy())throw Error("Prepare and check a fresh snapshot before activating.");await Storage.activate(captureSavedData());message("IndexedDB is now active. Reload normally and test a temporary note. The old localStorage copy was not removed or updated.");showToast("IndexedDB storage activated");}catch(e){message("Activation was not completed: "+e.message+" Current storage remains unchanged.");}finally{busy=false;b.textContent="Activate IndexedDB Storage";updateMode();}}
+  async function verifyStorage(){if(busy||Storage.isBusy())return;busy=true;const b=document.getElementById("shopIDBVerifyActive");b.disabled=true;b.textContent="Checking active storage…";message("Reading active saved records and preferences…");try{await Storage.checkActive();message("Active IndexedDB storage verified against this app's committed storage cache.");showToast("Active IndexedDB verified");}catch(e){message("Storage check failed: "+e.message);showToast("Storage check failed—see status");}finally{busy=false;b.textContent="Check Active IndexedDB Storage";updateMode();}}
+
   const originalSettings = window.openCompanySettings;
   if (typeof originalSettings === "function") {
     window.openCompanySettings = function () {
@@ -4237,15 +4325,11 @@ html[data-shop-theme="dark"] .shop-save-failure {background:#49242A;color:#FFD7D
   window.ShopBoardIndexedDBPrep = {prepareCopy:prepareCopy, checkCopy:checkCopy, captureSavedData:captureSavedData};
 })();
 
-</script>
 
-  <!-- Insert once AFTER the existing IndexedDB Stage 1 add-on, before final </body>. Keep Stage 1. -->
-<style>
-#shopIDBCheck:disabled, #shopIDBPrepare:disabled {opacity:0.6;cursor:wait;}
-</style>
-<script>
+;
 
-(function () {
+
+await (async function () {
   "use strict";
   if (window.ShopBoardIndexedDBButtonFeedbackFix) return;
   let active = null;
@@ -4301,7 +4385,7 @@ html[data-shop-theme="dark"] .shop-save-failure {background:#49242A;color:#FFD7D
         toast(operation === "check" ? "Check complete: copy matches saved data" : "IndexedDB copy prepared and verified");
       } else if (result.includes("Your current saved data has changed")) {
         toast("Check complete: refresh the older copy");
-      } else if (result.startsWith("Not prepared yet")) {
+      } else if (result.startsWith("No preparation snapshot yet")) {
         toast("Check complete: prepare a copy first");
       } else {
         if (result === initialText) status("The operation could not start. Confirm that you are in Owner view and that no other preparation is running. Original storage remains active.");
@@ -4323,8 +4407,11 @@ html[data-shop-theme="dark"] .shop-save-failure {background:#49242A;color:#FFD7D
   window.ShopBoardIndexedDBButtonFeedbackFix = {version:1};
 })();
 
-</script>
 
-  
+const indicator=document.getElementById('savedIndicator');if(indicator)indicator.textContent='SAVED ON PHONE • '+Storage.backendLabel();document.body.removeAttribute('data-shop-boot');document.getElementById('shopBootOverlay').hidden=true;
+}
+window.ShopBoardBootPromise=bootShopBoard().catch(error=>{document.getElementById('shopBootStatus').textContent='Shop Board could not safely load saved records: '+error.message+' Do not clear site data. Existing records were not replaced with samples. Close other tabs and reload normally.';document.getElementById('savedIndicator').textContent='STORAGE NOT LOADED • SAVING BLOCKED';});
+
+</script>
 </body>
 </html>

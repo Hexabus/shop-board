@@ -1,6 +1,6 @@
 "use strict";
 
-const VERSION = "v4"; // Change this for every future index.html release.
+const VERSION = "v5"; // Change this for every future index.html release.
 const BASE = new URL(self.registration.scope);
 const APP_URL = new URL("index.html", BASE).href;
 const CACHE_PREFIX = "shop-board-shell:" + BASE.pathname + ":";

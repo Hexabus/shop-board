@@ -4540,8 +4540,8 @@ window.ShopBoardBootPromise=bootShopBoard().catch(error=>{document.getElementByI
 (function () {
   "use strict";
   if (window.ShopBoardAppInfo) return;
-  const APP_VERSION = "0.1.2";
-  const BUILD = "2026-10-16 — owner connection test";
+  const APP_VERSION = "0.1.3";
+  const BUILD = "2026-10-16 — owner connection panel installed";
   const BACKUP_FORMAT = "1";
   const EXPORT_KEY = "shopBoardLastBackupPrepared";
   let generation = 0;
@@ -4691,6 +4691,263 @@ window.ShopBoardBootPromise=bootShopBoard().catch(error=>{document.getElementByI
     insertPanel();
   }
   window.ShopBoardAppInfo = {version:APP_VERSION, refresh:refresh};
+  if (window.ShopBoardBootPromise && typeof window.ShopBoardBootPromise.then === "function") window.ShopBoardBootPromise.then(setup);
+  else setup();
+})();
+
+</script>
+
+<!-- SHOP BOARD OWNER CLOUD CONNECTION TEST: paste once after existing scripts, before FINAL </body> -->
+<style id="shopOwnerCloudStyles">
+.shop-owner-cloud-panel {margin-top:18px;padding:14px;background:var(--card-bg);color:var(--text);border:2px solid var(--border-dark);border-radius:12px;}
+#shopOwnerCloudPanel button:disabled {opacity:0.6;cursor:wait;}
+</style>
+<script>
+
+(function () {
+  "use strict";
+  if (window.ShopBoardOwnerCloud) return;
+  const PROJECT = "https://pgnhbcauvugxbbylxzye.supabase.co";
+  const KEY = "sb_publishable_xvVqeoyGvl-aVyIr8wWnDw_a8LWBtlL";
+  const OWNER = "a2447b13-633c-4a88-874e-f67f99509709";
+  const TABLE_PATH = "/rest/v1/shop_board_owner_access?select=user_id";
+  let session = null, busy = false, expiryTimer = null;
+  let anonymousPassed = false, lastVerified = null;
+  let notice = "Not signed in. This is an owner-access test only; cloud sync is not enabled.";
+
+  function render() {
+    const signed = Boolean(session);
+    const text = document.getElementById("shopOwnerCloudStatus");
+    if (text) text.textContent = notice;
+    const who = document.getElementById("shopOwnerCloudIdentity");
+    if (who) who.textContent = session
+      ? "Cloud owner: " + session.email + ". Last server verification: " + new Date(lastVerified).toLocaleString() +
+        ". Test session expires at " + new Date(session.expiresAt).toLocaleTimeString() + "."
+      : "No cloud session in this open app. Local records remain available.";
+    const anon = document.getElementById("shopOwnerCloudAnonymousResult");
+    if (anon) anon.textContent = anonymousPassed ? "Anonymous table-read test: passed." : "Anonymous table-read test: not yet passed in this open app.";
+    const states = {
+      shopOwnerCloudEmail:busy || signed,
+      shopOwnerCloudPassword:busy || signed,
+      shopOwnerCloudSignIn:busy || signed,
+      shopOwnerCloudRecheck:busy || !signed,
+      shopOwnerCloudSignOut:busy || !signed,
+      shopOwnerCloudTestAnonymous:busy
+    };
+    Object.entries(states).forEach(([id,disabled]) => {
+      const node = document.getElementById(id);
+      if (node && node.disabled !== disabled) node.disabled = disabled;
+    });
+  }
+  function clearSession() {
+    clearTimeout(expiryTimer);
+    expiryTimer = null;
+    session = null;
+    lastVerified = null;
+    render();
+  }
+  function expireIfNeeded() {
+    if (session && Date.now() >= session.expiresAt) {
+      clearSession();
+      notice = "Cloud test session expired. Sign in again while online. Local notes, photos and other records are unchanged.";
+      render();
+    }
+  }
+  async function request(path, options = {}) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 15000);
+    const headers = {apikey:KEY, Accept:"application/json"};
+    if (options.token) headers.Authorization = "Bearer " + options.token;
+    if (options.body !== undefined) headers["Content-Type"] = "application/json";
+    try {
+      const response = await fetch(PROJECT + path, {
+        method:options.method || "GET", headers:headers,
+        body:options.body === undefined ? undefined : JSON.stringify(options.body),
+        cache:"no-store", credentials:"omit", redirect:"error", signal:controller.signal
+      });
+      let data = null;
+      if (response.status !== 204) {
+        const text = await response.text();
+        if (text) {
+          try { data = JSON.parse(text); }
+          catch (e) { throw new Error("Supabase returned an unexpected response. Check the project settings."); }
+        }
+      }
+      return {ok:response.ok, status:response.status, data:data};
+    } catch (e) {
+      if (e.name === "AbortError") throw new Error("Supabase request timed out. Try again with a working connection.");
+      if (e instanceof TypeError) throw new Error("Could not reach Supabase. Check your internet connection.");
+      throw e;
+    } finally { clearTimeout(timer); }
+  }
+  function failure(result, step) {
+    const code = result.data && (result.data.error_code || result.data.code);
+    if (code === "invalid_credentials") return new Error("Email or password was not accepted. Use your Shop Board owner account, not the Supabase dashboard account.");
+    if (code === "email_not_confirmed") return new Error("The owner email is not confirmed. Check the owner's confirmation status in Supabase Authentication → Users.");
+    if (result.status === 429) return new Error("Supabase rate limit reached. Wait before retrying.");
+    return new Error(step + " failed (HTTP " + result.status + (code ? ", code " + String(code) : "") + "). Do not disable RLS or share secret keys.");
+  }
+  async function anonymousRead() {
+    anonymousPassed = false;
+    const result = await request(TABLE_PATH);
+    if ((result.status === 401 || result.status === 403) && result.data && result.data.code === "42501") {
+      anonymousPassed = true;
+      return true;
+    }
+    if (result.ok && Array.isArray(result.data) && result.data.length) {
+      throw new Error("STOP: anonymous access returned owner-access data. Review the table grants and RLS before proceeding.");
+    }
+    if (result.ok) throw new Error("Anonymous request returned successfully. Expected a table permission denial; security test is inconclusive. Do not change policies to bypass this check.");
+    throw failure(result, "Anonymous access test");
+  }
+  async function verify(token) {
+    const user = await request("/auth/v1/user", {token:token});
+    if (!user.ok) throw failure(user, "Signed-in identity check");
+    const rows = await request(TABLE_PATH, {token:token});
+    if (!rows.ok) throw failure(rows, "Owner table read");
+    if (!user.data || user.data.id !== OWNER) throw new Error("Access denied: this account is not the configured Shop Board owner.");
+    if (!Array.isArray(rows.data) || rows.data.length !== 1 || rows.data[0].user_id !== OWNER) {
+      throw new Error("Owner access was not verified. Expected exactly your authorized owner row; do not loosen the policy.");
+    }
+    return {email:typeof user.data.email === "string" ? user.data.email : "Verified owner"};
+  }
+  async function serverSignOut(token) {
+    const result = await request("/auth/v1/logout?scope=local", {method:"POST",token:token});
+    if (!result.ok) throw failure(result, "Server sign-out");
+  }
+  async function run(label, work) {
+    if (busy) return false;
+    busy = true;
+    notice = label;
+    render();
+    try { await work(); return true; }
+    catch (e) { notice = e.message + " Local business records were not changed by this test."; return false; }
+    finally { busy = false; render(); }
+  }
+  async function testAnonymous() {
+    return run("Testing a table read without any owner login token…", async () => {
+      await anonymousRead();
+      notice = "Anonymous read correctly blocked by table permissions. No owner data was returned.";
+    });
+  }
+  async function signIn(email, password) {
+    expireIfNeeded();
+    if (session) { notice = "Already verified in this open app. Use Recheck Owner Access or Sign Out."; render(); return false; }
+    if (typeof email !== "string" || !email.trim() || typeof password !== "string" || !password) {
+      notice = "Enter your owner email and password. Do not paste your password into chat."; render(); return false;
+    }
+    return run("Signing in and verifying owner-only access…", async () => {
+      let candidate = null;
+      try {
+        await anonymousRead();
+        const auth = await request("/auth/v1/token?grant_type=password", {method:"POST", body:{email:email.trim(),password:password}});
+        password = "";
+        if (!auth.ok) throw failure(auth, "Owner sign-in");
+        if (!auth.data || typeof auth.data.access_token !== "string" || !Number.isFinite(auth.data.expires_in) || auth.data.expires_in <= 0) {
+          throw new Error("Supabase returned an invalid test session.");
+        }
+        candidate = auth.data.access_token;
+        const expiresAt = Date.now() + Math.min(auth.data.expires_in, 3600) * 1000;
+        // Refresh tokens are deliberately not retained or persisted in this test release.
+        auth.data.refresh_token = null;
+        const checked = await verify(candidate);
+        if (Date.now() >= expiresAt) throw new Error("The cloud test session expired during verification. Sign in again.");
+        session = {token:candidate,email:checked.email,expiresAt:expiresAt};
+        lastVerified = Date.now();
+        clearTimeout(expiryTimer);
+        expiryTimer = setTimeout(expireIfNeeded, expiresAt - Date.now() + 10);
+        notice = "Owner sign-in and protected table read verified. Cloud sync is NOT enabled; no jobs, clients, receipts or files were uploaded.";
+      } catch (e) {
+        if (candidate) { try { await serverSignOut(candidate); } catch (cleanupError) {} }
+        clearSession();
+        throw e;
+      } finally { password = ""; }
+    });
+  }
+  async function recheck() {
+    expireIfNeeded();
+    if (!session) { notice = "Sign in first. The test session is not kept after reloading."; render(); return false; }
+    const current = session;
+    return run("Rechecking the owner identity and protected table…", async () => {
+      try {
+        await verify(current.token);
+        if (session !== current || Date.now() >= current.expiresAt) throw new Error("The test session expired. Sign in again.");
+        lastVerified = Date.now();
+        notice = "Owner access reverified by Supabase. Cloud sync remains disabled.";
+      } catch (e) { clearSession(); throw e; }
+    });
+  }
+  async function signOut() {
+    if (busy) return false;
+    const token = session && session.token;
+    clearSession();
+    if (!token) { notice = "No cloud session remains in this app. Local records were kept."; render(); return true; }
+    return run("Cloud token cleared from this app. Requesting current-session sign-out…", async () => {
+      try {
+        await serverSignOut(token);
+        notice = "Signed out of this cloud test session. Local job records were kept. This is not a lock or erase feature for the offline app.";
+      } catch (e) {
+        throw new Error("Cloud token was cleared from this app, but server sign-out could not be confirmed. " + e.message);
+      }
+    });
+  }
+  function insertPanel() {
+    if (!document.getElementById("companySettingsForm") || document.getElementById("shopOwnerCloudPanel")) return;
+    const sheet = document.getElementById("modalSheet");
+    if (!sheet) return;
+    const panel = document.createElement("section");
+    panel.id = "shopOwnerCloudPanel";
+    panel.className = "shop-owner-cloud-panel";
+    panel.setAttribute("aria-label", "Owner cloud connection test");
+    panel.innerHTML = `
+      <h3 style="font-size:20px;margin:0 0 10px;">Owner Cloud — Connection Test</h3>
+      <p style="font-size:14px;color:var(--text-muted);margin-bottom:12px;">Stage 1 only: sign in and read the protected owner-access row. No business records are uploaded or synchronized. The current Owner/Crew view switch is separate from this login.</p>
+      <button id="shopOwnerCloudTestAnonymous" type="button" class="big-btn secondary">Test Anonymous Access Is Blocked</button>
+      <p id="shopOwnerCloudAnonymousResult" style="font-size:13px;color:var(--text-muted);margin-bottom:12px;"></p>
+      <label class="input-label" for="shopOwnerCloudEmail">Owner email</label>
+      <input id="shopOwnerCloudEmail" class="text-input" type="email" autocomplete="username" autocapitalize="none" spellcheck="false" style="margin-bottom:12px;">
+      <label class="input-label" for="shopOwnerCloudPassword">Owner password</label>
+      <input id="shopOwnerCloudPassword" class="text-input" type="password" autocomplete="current-password" style="margin-bottom:12px;">
+      <button id="shopOwnerCloudSignIn" type="button" class="big-btn">Sign In &amp; Verify Owner</button>
+      <button id="shopOwnerCloudRecheck" type="button" class="big-btn secondary">Recheck Owner Access</button>
+      <button id="shopOwnerCloudSignOut" type="button" class="big-btn secondary">Sign Out of Cloud Test</button>
+      <p id="shopOwnerCloudIdentity" style="font-size:13px;overflow-wrap:anywhere;margin:10px 0;"></p>
+      <p id="shopOwnerCloudStatus" role="status" aria-live="polite" style="font-size:14px;overflow-wrap:anywhere;margin:10px 0;"></p>
+      <p style="font-size:13px;color:var(--text-muted);">Online connection required for these tests. Tokens stay in this open app's memory only; a reload requires sign-in again. Your password is sent to your Supabase project for sign-in, not written to app storage or backups. Signing out does not erase or lock local records.</p>`;
+    const footer = document.getElementById("shopSettingsFooter");
+    if (footer && footer.parentNode === sheet) sheet.insertBefore(panel, footer); else sheet.appendChild(panel);
+    document.getElementById("shopOwnerCloudTestAnonymous").addEventListener("click", testAnonymous);
+    document.getElementById("shopOwnerCloudSignIn").addEventListener("click", () => {
+      const email = document.getElementById("shopOwnerCloudEmail").value;
+      const input = document.getElementById("shopOwnerCloudPassword");
+      const password = input.value;
+      input.value = "";
+      signIn(email, password);
+    });
+    document.getElementById("shopOwnerCloudRecheck").addEventListener("click", recheck);
+    document.getElementById("shopOwnerCloudSignOut").addEventListener("click", signOut);
+    expireIfNeeded();
+    render();
+  }
+  function setup() {
+    if (document.body.getAttribute("data-shop-boot") === "loading") return;
+    const original = window.openCompanySettings;
+    if (typeof original === "function") {
+      window.openCompanySettings = function () {
+        const result = original.apply(this, arguments);
+        insertPanel();
+        return result;
+      };
+    }
+    const sheet = document.getElementById("modalSheet");
+    if (sheet && window.MutationObserver) new MutationObserver(insertPanel).observe(sheet, {childList:true});
+    document.addEventListener("visibilitychange", expireIfNeeded);
+    insertPanel();
+  }
+  window.ShopBoardOwnerCloud = {
+    testAnonymous:testAnonymous, signIn:signIn, recheck:recheck, signOut:signOut,
+    getState:()=>({signedIn:Boolean(session),anonymousPassed:anonymousPassed,lastVerified:lastVerified,syncEnabled:false})
+  };
   if (window.ShopBoardBootPromise && typeof window.ShopBoardBootPromise.then === "function") window.ShopBoardBootPromise.then(setup);
   else setup();
 })();

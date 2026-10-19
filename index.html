@@ -4540,8 +4540,8 @@ window.ShopBoardBootPromise=bootShopBoard().catch(error=>{document.getElementByI
 (function () {
   "use strict";
   if (window.ShopBoardAppInfo) return;
-const APP_VERSION = "0.1.5";
-const BUILD = "2026-10-16 — verified cloud JSON download";
+const APP_VERSION = "0.1.6";
+const BUILD = "2026-10-19 — direct device cloud backup";
   const BACKUP_FORMAT = "1";
   const EXPORT_KEY = "shopBoardLastBackupPrepared";
   let generation = 0;
@@ -4892,6 +4892,116 @@ render=function(){shopCloudDownloadOriginalRender();shopCloudRenderDownload();};
 const shopCloudDownloadOriginalInsert=insertPanel;
 insertPanel=function(){const result=shopCloudDownloadOriginalInsert.apply(this,arguments);shopCloudInsertDownload();return result;};
 // END SHOP BOARD VERIFIED CLOUD DOWNLOAD v1
+// SHOP BOARD DIRECT DEVICE BACKUP v1 — insert ONCE before the existing function insertPanel(){ line.
+// INSIDE the Owner Cloud script; keep the previous download patch. No script tags.
+let shopDirectMeta=null,shopDirectDBPromise=null,shopDirectRenderedID=null;
+function shopDirectOpen(){
+ if(shopDirectDBPromise)return shopDirectDBPromise;
+ shopDirectDBPromise=new Promise((resolve,reject)=>{
+  if(!window.indexedDB){reject(Error("IndexedDB is unavailable. Direct backup was not started."));return;}
+  let done=false;const req=window.indexedDB.open("SHOP_BOARD_CLOUD_DIRECT_OUTBOX",1);
+  const timer=setTimeout(()=>{if(!done){done=true;reject(Error("Pending-backup storage timed out. Close other Shop Board windows and retry."));}},15000);
+  req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains("pending"))req.result.createObjectStore("pending",{keyPath:"id"});};
+  req.onerror=()=>{if(!done){done=true;clearTimeout(timer);reject(req.error||Error("Pending-backup storage could not open."));}};
+  req.onblocked=()=>{notice="Pending-backup storage is blocked. Close other Shop Board windows and retry.";render();};
+  req.onsuccess=()=>{if(done){req.result.close();return;}done=true;clearTimeout(timer);const db=req.result;db.onversionchange=()=>{db.close();shopDirectDBPromise=null;};resolve(db);};
+ }).catch(e=>{shopDirectDBPromise=null;throw e;});return shopDirectDBPromise;
+}
+async function shopDirectTransaction(mode,work){
+ const db=await shopDirectOpen();return new Promise((resolve,reject)=>{let tx,result,reason;
+  try{tx=db.transaction("pending",mode);}catch(e){shopDirectDBPromise=null;reject(e);return;}
+  const fail=e=>{reason=e;try{tx.abort();}catch(_){reject(e);}};
+  tx.oncomplete=()=>resolve(result);tx.onabort=()=>reject(reason||tx.error||Error("Pending-backup storage transaction aborted."));tx.onerror=()=>{reason=reason||tx.error;};
+  try{work(tx.objectStore("pending"),v=>{result=v;},fail);}catch(e){fail(e);}
+ });
+}
+function shopDirectRead(){return shopDirectTransaction("readonly",(s,finish)=>{const r=s.get("current");r.onsuccess=()=>finish(r.result||null);});}
+function shopDirectStage(p){return shopDirectTransaction("readwrite",(s,finish,fail)=>{const r=s.get("current");r.onsuccess=()=>{if(r.result&&(r.result.row.id!==p.row.id||r.result.row.payload_sha256!==p.row.payload_sha256)){fail(Error("Another direct backup is pending. Resume it before preparing a different upload."));return;}s.put({id:"current",row:p.row,fileName:p.fileName});finish(true);};});}
+function shopDirectRemove(id){return shopDirectTransaction("readwrite",(s,finish,fail)=>{const r=s.get("current");r.onsuccess=()=>{if(r.result&&r.result.row.id!==id){fail(Error("A different pending backup was found; it was not removed."));return;}s.delete("current");finish(true);};});}
+function shopDirectReceiptMatches(row){return Boolean(receipt&&receipt.state==="verified"&&receipt.snapshotId===row.id&&receipt.hash===row.payload_sha256);}
+function shopDirectAPI(){const db=window.ShopBoardDatabase;if(!db||!db.isActive()||typeof db.checkActive!=="function"||typeof db.values!=="function"||typeof db.signature!=="function")throw Error("Direct backup requires active IndexedDB storage. No backup was prepared.");if(db.isBusy())throw Error("A device save is still running. Finish saving, then prepare again.");return db;}
+async function shopDirectCheckUnchanged(signature){const db=shopDirectAPI();await db.checkActive();if(db.isBusy()||db.signature(db.values())!==signature)throw Error("Saved records or preferences changed since this preview. Prepare a fresh direct-device preview before uploading.");}
+async function shopDirectCheckRow(row){
+ if(!row||!UUID.test(row.id)||row.owner_id!==OWNER||row.backup_schema!==1||typeof row.source_device!=="string"||!row.source_device.trim()||Array.from(row.source_device).length>80||!/^[0-9a-f]{64}$/.test(row.payload_sha256))throw Error("Pending direct-backup metadata is invalid. Nothing uploaded; do not clear site data.");
+ const validated=validateBackup(row.payload);if(await checksum(row.payload)!==row.payload_sha256)throw Error("Pending direct-backup content failed its checksum. Nothing uploaded; keep this device's saved records.");
+ const bytes=new TextEncoder().encode(JSON.stringify(row)).byteLength;if(bytes>MAX_BYTES)throw Error("Direct backup exceeds the existing 10 MiB request guard. Nothing uploaded; do not remove attachments to force it through.");return{bytes,summary:summary(validated.stats)};
+}
+function shopDirectSetPreview(row,fileName,checked,signature,resumed){
+ preview={row,fileName,bytes:checked.bytes,summary:checked.summary,verified:false};shopDirectMeta={id:row.id,signature,resumed};
+ const c=node("shopDirectConfirmed");if(c)c.checked=false;const legacy=node("shopSnapshotConfirmed");if(legacy)legacy.checked=false;
+ const source=node("shopDirectSource");if(source)source.value=row.source_device;const id=node("shopSnapshotID");if(id)id.value=row.id;const hash=node("shopSnapshotExpectedHash");if(hash)hash.value=row.payload_sha256;
+ lastResult="";
+}
+async function shopDirectPrepare(){return run("Preparing a snapshot of saved device records; no cloud upload…",async()=>{
+ requireSession();if(receiptError)throw Error(receiptError);
+ // A failed new preview must not leave an older snapshot ready to upload.
+ shopDirectMeta=null;preview=null;const confirmation=node("shopDirectConfirmed");if(confirmation)confirmation.checked=false;
+ let staged=await shopDirectRead();
+ if(staged&&shopDirectReceiptMatches(staged.row)){await shopDirectRemove(staged.row.id);staged=null;}
+ if(staged){const checked=await shopDirectCheckRow(staged.row);shopDirectSetPreview(staged.row,staged.fileName||"Pending direct-device snapshot (not a separately saved JSON file)",checked,null,true);notice="Pending direct backup recovered locally. Review its ORIGINAL source, time and counts, then confirm to check/retry its SAME ID. Newer device edits are not part of this frozen snapshot.";return;}
+ if(receipt&&receipt.state==="pending")throw Error("An earlier file-based upload is unresolved. Check its snapshot ID or retry its original JSON file before preparing a different backup.");
+ const source=(node("shopDirectSource")?.value||"").trim();if(!source||Array.from(source).length>80)throw Error("Enter a device source label of 1–80 characters, for example Main iPhone.");
+ const db=shopDirectAPI();await db.checkActive();if(db.isBusy())throw Error("A save is still running. Wait and prepare again.");
+ const saved=db.values(),signature=db.signature(saved),exporter=window.ShopBoardBackupExport;
+ if(!exporter||typeof exporter.makeBackup!=="function")throw Error("The saved-data backup export API is unavailable.");
+ const result=exporter.makeBackup(),payload=result&&result.backup;
+ validateBackup(payload);
+ if(canonical(payload.data)!==canonical(JSON.parse(saved.SHOP_BOARD_DATA)))throw Error("Export did not match committed device records. Nothing uploaded.");
+ const preferences={...saved};delete preferences.SHOP_BOARD_DATA;
+ if(canonical(payload.deviceSettings?.preferences)!==canonical(preferences))throw Error("Export did not match saved device preferences. Nothing uploaded.");
+ const hash=await checksum(payload),row={id:newID(),owner_id:OWNER,source_device:source,backup_schema:1,payload,payload_sha256:hash};
+ const checked=await shopDirectCheckRow(row);await shopDirectCheckUnchanged(signature);
+ shopDirectSetPreview(row,"Direct device snapshot — "+result.filename+" (prepared in memory; no separate JSON file saved)",checked,signature,false);
+ notice="Direct-device preview ready from saved IndexedDB data. Review it and confirm before uploading. This is a point-in-time snapshot, not automatic sync.";
+ });}
+const shopDirectOriginalUpload=uploadPrepared;
+uploadPrepared=async function(confirmed){
+ if(busy)return false;
+ if(!shopDirectMeta||!preview||preview.row.id!==shopDirectMeta.id)return shopDirectOriginalUpload.apply(this,arguments);
+ if(!confirmed){notice="Review the direct-device preview and explicitly confirm uploading its private contents first.";render();return false;}
+ if(preview.verified)return shopDirectOriginalUpload.apply(this,arguments);
+ const p=preview,meta=shopDirectMeta;
+ const stagedOK=await run("Checking and retaining this confirmed snapshot locally before upload…",async()=>{
+  requireSession();if(receiptError)throw Error(receiptError);await shopDirectCheckRow(p.row);
+  const prior=await shopDirectRead();if(prior&&(prior.row.id!==p.row.id||prior.row.payload_sha256!==p.row.payload_sha256))throw Error("A different direct backup is pending. Resume it first.");
+  if(!prior){if(meta.signature===null)throw Error("The pending local snapshot disappeared. Do not start a different upload until its outcome is checked.");await shopDirectCheckUnchanged(meta.signature);}
+  await shopDirectStage(p);const saved=await shopDirectRead();if(!saved||saved.row.id!==p.row.id||saved.row.source_device!==p.row.source_device||saved.row.payload_sha256!==p.row.payload_sha256)throw Error("Pending snapshot read-back did not match. No cloud upload started.");await shopDirectCheckRow(saved.row);
+ });
+ if(!stagedOK)return false;
+ const result=await shopDirectOriginalUpload.call(this,true);
+ if(p.verified&&shopDirectReceiptMatches(p.row)){try{await shopDirectRemove(p.row.id);}catch(e){notice+=" The verified upload's local pending copy could not be cleaned up; it will be checked again on the next Prepare tap.";render();}}
+ return result;
+};
+function shopDirectRender(){
+ const direct=Boolean(shopDirectMeta&&preview&&preview.row.id===shopDirectMeta.id),id=direct?preview.row.id:null;
+ if(shopDirectRenderedID!==id){const c=node("shopDirectConfirmed");if(c)c.checked=false;shopDirectRenderedID=id;}
+ const prepare=node("shopDirectPrepare"),upload=node("shopDirectUpload"),source=node("shopDirectSource"),confirmation=node("shopDirectConfirmed");
+ if(prepare)prepare.disabled=busy||!session||Boolean(receiptError);
+ if(upload)upload.disabled=busy||!session||!direct||preview.verified||Boolean(receiptError);
+ if(source)source.disabled=busy;if(confirmation)confirmation.disabled=busy||!direct||preview.verified;
+ text("shopDirectPreview",direct?"Source: "+preview.row.source_device+"\nPrepared: "+preview.row.payload.exportedAt+"\n"+preview.summary+"\nRequest size: "+(preview.bytes/1024/1024).toFixed(2)+" MiB\nSnapshot ID: "+preview.row.id+"\nJSON content SHA-256: "+preview.row.payload_sha256+"\n"+(preview.verified?"Cloud upload read back and verified.":shopDirectMeta.resumed?"Recovered pending copy: newer device edits are NOT included. Retry uses this same ID and content.":"Saved records only; unsaved form edits and future changes are NOT included. No separate JSON file has been saved."):"No direct-device preview prepared. A pending direct snapshot, if present, is recovered only when you tap Prepare. Nothing uploads automatically.");
+}
+function shopDirectInsert(){
+ const host=node("shopOwnerCloudPanel");if(!host||node("shopDirectSection"))return;
+ const section=document.createElement("section");section.id="shopDirectSection";
+ section.innerHTML=`<h4 style="font-size:18px;margin:12px 0;">Back Up This Device</h4>
+<p class="shop-cloud-note">Finish saving edits first. Prepare reads saved IndexedDB records and preferences, including embedded attachments, without exporting or selecting a JSON file. Source labels identify your intended device; they are not device authentication.</p>
+<label class="input-label" for="shopDirectSource">This device's source label</label><input id="shopDirectSource" class="text-input" type="text" placeholder="Main iPhone" maxlength="80">
+<button id="shopDirectPrepare" type="button" class="big-btn secondary">Prepare / Resume Device Backup</button>
+<p id="shopDirectPreview" class="shop-cloud-detail"></p>
+<label style="display:flex;gap:10px;margin:14px 0;"><input id="shopDirectConfirmed" type="checkbox" style="min-width:24px;min-height:24px;"><span>I reviewed this snapshot's source, time, counts and size, and approve uploading its private client, financial and embedded-file contents to my Supabase project. This does not restore or merge records.</span></label>
+<button id="shopDirectUpload" type="button" class="big-btn">Upload / Verify This Device Backup</button>
+<p class="shop-cloud-note">The 10 MiB guard still applies. After confirmation, one pending snapshot is retained in a separate local IndexedDB outbox before cloud upload. If interrupted or reloaded, sign in and tap Prepare / Resume to recover its same content and ID—even if newer device edits exist. No background retries. The pending copy is removed only after a matching verified upload receipt. Keep independent JSON recovery copies; the outbox is not a backup history.</p>
+<hr style="margin:16px 0;border:0;border-top:1px solid var(--border);">`;
+ const alternative=host.querySelector("h4");if(alternative){host.insertBefore(section,alternative);alternative.textContent="Alternative: upload an existing backup file";}else host.appendChild(section);
+ node("shopDirectPrepare").addEventListener("click",shopDirectPrepare);node("shopDirectUpload").addEventListener("click",()=>uploadPrepared(Boolean(node("shopDirectConfirmed")?.checked)));
+ shopDirectRender();
+}
+const shopDirectOriginalRender=render;
+render=function(){shopDirectOriginalRender();shopDirectRender();};
+const shopDirectOriginalInsert=insertPanel;
+insertPanel=function(){const result=shopDirectOriginalInsert.apply(this,arguments);shopDirectInsert();return result;};
+// END SHOP BOARD DIRECT DEVICE BACKUP v1
 
 function insertPanel(){if(!node("companySettingsForm")||node("shopOwnerCloudPanel"))return;const sheet=node("modalSheet");if(!sheet)return;const panel=document.createElement("section");panel.id="shopOwnerCloudPanel";panel.className="shop-owner-cloud-panel";panel.setAttribute("aria-label","Owner cloud manual snapshots");panel.innerHTML=`
 <h3 style="font-size:20px;margin:0 0 10px;">Owner Cloud — Manual Snapshot</h3>

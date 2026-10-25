@@ -7,7 +7,7 @@ const OWNER="a2447b13-633c-4a88-874e-f67f99509709";
 const ACCESS="/rest/v1/shop_board_owner_access?select=user_id";
 const SNAP="/rest/v1/shop_board_cloud_snapshots";
 const RECEIPT_KEY="shopBoardCloudSnapshotReceipt";
-const MAX_BYTES=10*1024*1024;
+const MAX_BYTES=25*1024*1024;
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 let session=null,busy=false,expiryTimer=null,anonymousPassed=false,lastVerified=null;
 let preview=null,receipt=null,receiptError="",lastResult="";
@@ -53,10 +53,10 @@ function validateBackup(payload){const api=window.ShopBoardBackupRestore;if(!api
 function summary(stats){return stats.jobs+" jobs • "+stats.clients+" clients • "+stats.crew+" crew • "+stats.photos+" photo records • "+stats.documents+" document records • "+stats.receipts+" expenses • "+stats.notes+" notes • "+stats.bills+" bills";}
 function receiptFor(p,state){return{owner:OWNER,snapshotId:p.row.id,hash:p.row.payload_sha256,source:p.row.source_device,fileName:p.fileName,exportedAt:p.row.payload.exportedAt,state,verifiedAt:state==="verified"?new Date().toISOString():null};}
 async function prepareFile(file,source){return run("Reading and validating the selected backup locally; no upload is being made…",async()=>{
- preview=null;lastResult="";const confirmation=node("shopSnapshotConfirmed");if(confirmation)confirmation.checked=false;requireSession();if(receiptError)throw Error(receiptError);if(!file||typeof file.text!=="function"||typeof file.name!=="string"||!/\.json$/i.test(file.name))throw Error("Choose the fresh JSON backup exported from your main iPhone.");if(file.size>MAX_BYTES)throw Error("This first snapshot release limits files and requests to 10 MiB. Nothing uploaded; do not remove attachments to force it through.");if(typeof source!=="string"||!source.trim()||source.trim().length>80)throw Error("Enter a source label of 1–80 characters, for example Main iPhone.");
- const raw=await file.text();if(new TextEncoder().encode(raw).byteLength>MAX_BYTES)throw Error("Backup exceeds this release's 10 MiB limit. Nothing uploaded.");const payload=JSON.parse(raw),validated=validateBackup(payload),hash=await checksum(payload);
+ preview=null;lastResult="";const confirmation=node("shopSnapshotConfirmed");if(confirmation)confirmation.checked=false;requireSession();if(receiptError)throw Error(receiptError);if(!file||typeof file.text!=="function"||typeof file.name!=="string"||!/\.json$/i.test(file.name))throw Error("Choose the fresh JSON backup exported from your main iPhone.");if(file.size>MAX_BYTES)throw Error("This first snapshot release limits files and requests to 25 MiB. Nothing uploaded; do not remove attachments to force it through.");if(typeof source!=="string"||!source.trim()||source.trim().length>80)throw Error("Enter a source label of 1–80 characters, for example Main iPhone.");
+ const raw=await file.text();if(new TextEncoder().encode(raw).byteLength>MAX_BYTES)throw Error("Backup exceeds this release's 25 MiB limit. Nothing uploaded.");const payload=JSON.parse(raw),validated=validateBackup(payload),hash=await checksum(payload);
  if(receipt&&receipt.state==="pending"&&receipt.hash!==hash)throw Error("An earlier upload is unresolved. Check its snapshot ID first, or reselect the SAME backup file to retry with its existing ID. No new upload was prepared.");
- const reuse=receipt&&receipt.hash===hash;const row={id:reuse?receipt.snapshotId:newID(),owner_id:OWNER,source_device:reuse?receipt.source:source.trim(),backup_schema:1,payload,payload_sha256:hash};const bytes=new TextEncoder().encode(JSON.stringify(row)).byteLength;if(bytes>MAX_BYTES)throw Error("Upload request exceeds the 10 MiB guard. Nothing uploaded.");
+ const reuse=receipt&&receipt.hash===hash;const row={id:reuse?receipt.snapshotId:newID(),owner_id:OWNER,source_device:reuse?receipt.source:source.trim(),backup_schema:1,payload,payload_sha256:hash};const bytes=new TextEncoder().encode(JSON.stringify(row)).byteLength;if(bytes>MAX_BYTES)throw Error("Upload request exceeds the 25 MiB guard. Nothing uploaded.");
  preview={row,bytes,fileName:file.name,summary:summary(validated.stats),verified:Boolean(reuse&&receipt.state==="verified")};const c=node("shopSnapshotConfirmed");if(c)c.checked=false;const id=node("shopSnapshotID");if(id)id.value=row.id;const expected=node("shopSnapshotExpectedHash");if(expected)expected.value=hash;
  notice=preview.verified?"This exact backup was previously verified on this installation. Use Check Snapshot by ID rather than uploading a duplicate.":"Preview ready. Review source, export date, counts and size; then explicitly confirm before uploading.";
  });}
@@ -126,7 +126,7 @@ async function shopCloudPrepareDownload(){
   if(!row)throw Error("No snapshot is visible with that ID. No file was prepared.");
   const checked=await verifyRow(row,inputs.id,inputs.hash);
   const raw=JSON.stringify(row.payload),bytes=new TextEncoder().encode(raw).byteLength;
-  if(bytes>MAX_BYTES)throw Error("Downloaded JSON exceeds this release's 10 MiB guard. No file prepared; do not strip attachments.");
+  if(bytes>MAX_BYTES)throw Error("Downloaded JSON exceeds this release's 25 MiB guard. No file prepared; do not strip attachments.");
   if(await checksum(JSON.parse(raw))!==checked.hash)throw Error("JSON export content did not match the verified snapshot. No file prepared.");
   if(session!==s||Date.now()>=s.expiresAt)throw Error("Session expired during preparation. Sign in and prepare again.");
   if(!window.URL||typeof URL.createObjectURL!=="function"||typeof Blob!=="function")throw Error("This browser cannot prepare a JSON download.");
@@ -143,8 +143,8 @@ async function shopCloudCheckSavedFile(){
   const file=node("shopCloudSavedFile")?.files?.[0];const inputs=shopCloudDownloadInputs();
   if(!file||typeof file.text!=="function"||!/\.json$/i.test(file.name))throw Error("Choose the JSON file you actually saved to Files.");
   if(!/^[0-9a-f]{64}$/.test(inputs.hash))throw Error("Enter the original JSON content checksum above for this local-file check.");
-  if(file.size>MAX_BYTES)throw Error("Selected file exceeds the 10 MiB guard.");
-  const raw=await file.text();if(new TextEncoder().encode(raw).byteLength>MAX_BYTES)throw Error("Selected file exceeds the 10 MiB guard.");
+  if(file.size>MAX_BYTES)throw Error("Selected file exceeds the 25 MiB guard.");
+  const raw=await file.text();if(new TextEncoder().encode(raw).byteLength>MAX_BYTES)throw Error("Selected file exceeds the 25 MiB guard.");
   const payload=JSON.parse(raw),validated=validateBackup(payload),hash=await checksum(payload);
   if(hash!==inputs.hash)throw Error("Saved JSON checksum did NOT match the original. Do not treat this file as a verified recovery copy.");
   shopCloudDownloadMessage="Saved JSON passed backup validation and matched the original content checksum.\nFile: "+file.name+"\n"+summary(validated.stats)+"\nJSON content SHA-256: "+hash+"\nNo local records were restored, replaced or merged.";
@@ -215,7 +215,7 @@ async function shopDirectCheckUnchanged(signature){const db=shopDirectAPI();awai
 async function shopDirectCheckRow(row){
  if(!row||!UUID.test(row.id)||row.owner_id!==OWNER||row.backup_schema!==1||typeof row.source_device!=="string"||!row.source_device.trim()||Array.from(row.source_device).length>80||!/^[0-9a-f]{64}$/.test(row.payload_sha256))throw Error("Pending direct-backup metadata is invalid. Nothing uploaded; do not clear site data.");
  const validated=validateBackup(row.payload);if(await checksum(row.payload)!==row.payload_sha256)throw Error("Pending direct-backup content failed its checksum. Nothing uploaded; keep this device's saved records.");
- const bytes=new TextEncoder().encode(JSON.stringify(row)).byteLength;if(bytes>MAX_BYTES)throw Error("Direct backup exceeds the existing 10 MiB request guard. Nothing uploaded; do not remove attachments to force it through.");return{bytes,summary:summary(validated.stats)};
+ const bytes=new TextEncoder().encode(JSON.stringify(row)).byteLength;if(bytes>MAX_BYTES)throw Error("Direct backup exceeds the existing 25 MiB request guard. Nothing uploaded; do not remove attachments to force it through.");return{bytes,summary:summary(validated.stats)};
 }
 function shopDirectSetPreview(row,fileName,checked,signature,resumed){
  preview={row,fileName,bytes:checked.bytes,summary:checked.summary,verified:false};shopDirectMeta={id:row.id,signature,resumed};
@@ -282,7 +282,7 @@ function shopDirectInsert(){
 <p id="shopDirectPreview" class="shop-cloud-detail"></p>
 <label style="display:flex;gap:10px;margin:14px 0;"><input id="shopDirectConfirmed" type="checkbox" style="min-width:24px;min-height:24px;"><span>I reviewed this snapshot's source, time, counts and size, and approve uploading its private client, financial and embedded-file contents to my Supabase project. This does not restore or merge records.</span></label>
 <button id="shopDirectUpload" type="button" class="big-btn">Upload / Verify This Device Backup</button>
-<p class="shop-cloud-note">The 10 MiB guard still applies. After confirmation, one pending snapshot is retained in a separate local IndexedDB outbox before cloud upload. If interrupted or reloaded, sign in and tap Prepare / Resume to recover its same content and ID—even if newer device edits exist. No background retries. The pending copy is removed only after a matching verified upload receipt. Keep independent JSON recovery copies; the outbox is not a backup history.</p>
+<p class="shop-cloud-note">The 25 MiB guard still applies. After confirmation, one pending snapshot is retained in a separate local IndexedDB outbox before cloud upload. If interrupted or reloaded, sign in and tap Prepare / Resume to recover its same content and ID—even if newer device edits exist. No background retries. The pending copy is removed only after a matching verified upload receipt. Keep independent JSON recovery copies; the outbox is not a backup history.</p>
 <hr style="margin:16px 0;border:0;border-top:1px solid var(--border);">`;
  const alternative=host.querySelector("h4");if(alternative){host.insertBefore(section,alternative);alternative.textContent="Alternative: upload an existing backup file";}else host.appendChild(section);
  node("shopDirectPrepare").addEventListener("click",shopDirectPrepare);node("shopDirectUpload").addEventListener("click",()=>uploadPrepared(Boolean(node("shopDirectConfirmed")?.checked)));
@@ -304,7 +304,7 @@ function insertPanel(){if(!node("companySettingsForm")||node("shopOwnerCloudPane
 <p id="shopOwnerCloudIdentity" class="shop-cloud-note"></p><p id="shopOwnerCloudStatus" role="status" aria-live="polite" class="shop-cloud-note"></p>
 <hr style="margin:16px 0;border:0;border-top:1px solid var(--border);">
 <h4 style="font-size:18px;margin:12px 0;">1. Prepare the main iPhone backup</h4>
-<p class="shop-cloud-note">Export and save a fresh JSON backup from your MAIN iPhone first. Select that file below. This release limits the file/request to 10 MiB and includes embedded photos/documents; external links remain links. Do not strip attachments to fit the limit.</p>
+<p class="shop-cloud-note">Export and save a fresh JSON backup from your MAIN iPhone first. Select that file below. This release limits the file/request to 25 MiB and includes embedded photos/documents; external links remain links. Do not strip attachments to fit the limit.</p>
 <label class="input-label" for="shopSnapshotSource">Source label</label><input id="shopSnapshotSource" class="text-input" type="text" maxlength="80" placeholder="Main iPhone">
 <label class="input-label" for="shopSnapshotFile">Saved JSON backup</label><input id="shopSnapshotFile" class="text-input" type="file" accept=".json,application/json">
 <button id="shopSnapshotPrepare" type="button" class="big-btn secondary">Prepare Selected Backup Preview</button><p id="shopSnapshotPreview" class="shop-cloud-detail"></p>

@@ -737,3 +737,9 @@ img[data-thumb]:not([data-thumb-state="ready"]) { background: var(--border); }
 #zoomHint { position: absolute; bottom: calc(env(safe-area-inset-bottom, 0px) + 20px); left: 0; right: 0; text-align: center; color: #fff; font-size: 13px; opacity: .85; transition: opacity .6s; pointer-events: none; }
 .img-actions { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px 0 4px; }
 .img-actions .comm-btn { flex: 1 1 30%; min-height: 40px; padding: 4px 8px; font-size: 13px; }
+
+/* Low-storage warning */
+#storageWarnOverlay { position: fixed; inset: 0; z-index: 99990; background: rgba(0,0,0,.6); display: flex; align-items: center; justify-content: center; padding: 20px; }
+.storage-warn-box { background: var(--bg, #f4f3ee); color: var(--text, #111); border: 3px solid var(--border-dark, #111); border-radius: 12px; padding: 18px; max-width: 420px; width: 100%; max-height: 85vh; overflow-y: auto; }
+.storage-warn-title { font-family: var(--font-display); font-size: 22px; font-weight: 900; text-transform: uppercase; margin-bottom: 10px; }
+.storage-warn-box p { font-size: 14px; line-height: 1.4; margin: 0 0 10px; }

@@ -1,8 +1,8 @@
 (function () {
   "use strict";
   if (window.ShopBoardAppInfo) return;
-const APP_VERSION = "0.4.3";
-const BUILD = "2026-10-25 — working PDF open/save, Files section";
+const APP_VERSION = "0.5.0";
+const BUILD = "2026-10-25 — 25 MiB cloud limit and low-storage warning";
   const BACKUP_FORMAT = "1";
   const EXPORT_KEY = "shopBoardLastBackupPrepared";
   let generation = 0;
@@ -38,7 +38,7 @@ const BUILD = "2026-10-25 — working PDF open/save, Files section";
     const element = document.getElementById(id);
     if (element) element.textContent = value;
   }
-  const CLOUD_LIMIT = 10 * 1024 * 1024;
+  const CLOUD_LIMIT = (window.ShopBoardLimits && window.ShopBoardLimits.CLOUD_BYTES) || 25 * 1024 * 1024;
   function fmt(bytes) {
     if (bytes >= 1073741824) return (bytes / 1073741824).toFixed(1) + " GB";
     if (bytes >= 1048576) return (bytes / 1048576).toFixed(1) + " MB";
@@ -75,9 +75,9 @@ const BUILD = "2026-10-25 — working PDF open/save, Files section";
       put("shopInfoReceipts", receipts + " receipt images (" + fmt(bytesReceipts) + ")" + (logo ? ", logo " + fmt(logo) : ""), token);
       put("shopInfoLargest", items.length ? items.slice(0, 3).map(i => fmt(i[0]) + " — " + i[1]).join("\n") : "No embedded files yet", token);
       const percent = Math.round(total / CLOUD_LIMIT * 100);
-      put("shopInfoCloudLimit", percent + "% of the 10 MiB cloud snapshot limit used by records alone", token);
+      put("shopInfoCloudLimit", percent + "% of the 25 MiB cloud snapshot limit used by records alone", token);
       let note = "Healthy: storage use is small.";
-      if (percent >= 80) note = "Near the cloud limit: cloud snapshots may soon be refused. Do not delete attachments to fit; tell the developer.";
+      if (percent >= 85) note = "Near the cloud limit: cloud snapshots may soon be refused. Do not delete attachments to fit; tell the developer.";
       else if (percent >= 50) note = "Growing: past half of the cloud snapshot limit. Plan the photo and document storage upgrade.";
       else if (total >= 5 * 1048576) note = "Growing: records are over 5 MB. Keep an eye on this.";
       put("shopInfoAssessment", note, token);

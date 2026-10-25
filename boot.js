@@ -1,0 +1,2 @@
+/* Starts the app after every add-on has registered. Must load after app.js and addons/*.js. */
+window.ShopBoardBootPromise=bootShopBoard().catch(error=>{document.getElementById('shopBootStatus').textContent='Shop Board could not safely load saved records: '+error.message+' Do not clear site data. Existing records were not replaced with samples. Close other tabs and reload normally.';document.getElementById('savedIndicator').textContent='STORAGE NOT LOADED • SAVING BLOCKED';});

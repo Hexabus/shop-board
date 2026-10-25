@@ -1,6 +1,6 @@
 "use strict";
 
-const VERSION = "v11"; // Change this for every future release of any app file.
+const VERSION = "v12"; // Change this for every future release of any app file.
 const BASE = new URL(self.registration.scope);
 const CACHE_PREFIX = "shop-board-shell:" + BASE.pathname + ":";
 const CACHE_NAME = CACHE_PREFIX + VERSION;
@@ -9,7 +9,7 @@ const CACHE_NAME = CACHE_PREFIX + VERSION;
 // version so the page, styles and scripts can never be a mixture of two releases.
 const ASSETS = [
   "index.html", "styles.css", "manifest.webmanifest",
-  "storage.js", "util.js", "thumbs.js", "app.js",
+  "storage.js", "util.js", "thumbs.js", "zoom.js", "app.js",
   "addons/01-appearance.js", "addons/02-backup-export.js", "addons/03-backup-restore.js",
   "addons/04-save-guard.js", "addons/05-start-screen.js", "addons/06-maps-preference.js",
   "addons/07-receipt-category.js", "addons/08-receipt-job-memory.js", "addons/09-settings-layout.js",

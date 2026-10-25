@@ -1,8 +1,8 @@
 (function () {
   "use strict";
   if (window.ShopBoardAppInfo) return;
-const APP_VERSION = "0.4.1";
-const BUILD = "2026-10-25 — full-screen photo zoom";
+const APP_VERSION = "0.4.2";
+const BUILD = "2026-10-25 — photo zoom, open full size, save";
   const BACKUP_FORMAT = "1";
   const EXPORT_KEY = "shopBoardLastBackupPrepared";
   let generation = 0;

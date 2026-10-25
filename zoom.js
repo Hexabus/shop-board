@@ -75,5 +75,44 @@
     document.addEventListener("keydown", key);
     close.addEventListener("click", end);
   }
+
+  function toBlob(src) { return fetch(src).then(function (r) { return r.blob(); }); }
+  function extFor(type) { return type === "image/png" ? "png" : type === "image/webp" ? "webp" : type === "image/gif" ? "gif" : "jpg"; }
+  function openImageFull(src) {
+    if (!src) return;
+    toBlob(src).then(function (b) {
+      var u = URL.createObjectURL(b);
+      var w = window.open(u, "_blank");
+      if (!w) { location.href = u; }
+      setTimeout(function () { URL.revokeObjectURL(u); }, 120000);
+    }).catch(function () { if (window.showToast) showToast("Could not open the image"); });
+  }
+  function saveImage(src, name) {
+    if (!src) return;
+    toBlob(src).then(function (b) {
+      var fname = String(name || "photo").replace(/[^\w\- ]+/g, "").trim().replace(/\s+/g, "-") || "photo";
+      fname += "." + extFor(b.type);
+      var file = new File([b], fname, { type: b.type || "image/jpeg" });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        return navigator.share({ files: [file] }).catch(function (e) { if (e && e.name !== "AbortError") throw e; });
+      }
+      var u = URL.createObjectURL(b), a = document.createElement("a");
+      a.href = u; a.download = fname; document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(u); }, 10000);
+      if (window.showToast) showToast("Saved " + fname);
+    }).catch(function () { if (window.showToast) showToast("Could not save the image"); });
+  }
+  window.openImageFull = openImageFull;
+  window.saveImageToDevice = saveImage;
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest && e.target.closest("[data-ia]");
+    if (!b) return;
+    var img = b.closest("#modalSheet") && b.closest("#modalSheet").querySelector("img");
+    if (!img) return;
+    var kind = b.getAttribute("data-ia");
+    if (kind === "zoom") openImageZoom(img.src);
+    else if (kind === "full") openImageFull(img.src);
+    else if (kind === "save") saveImage(img.src, b.getAttribute("data-name"));
+  });
   window.openImageZoom = openImageZoom;
 })();

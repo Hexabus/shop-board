@@ -1205,6 +1205,7 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
       const modalHtml = `
         <div style="text-align: center;">
           <img src="${esc(photoUrl)}" onclick="openImageZoom(this.src)" style="cursor: zoom-in; width: 100%; max-height: 50vh; object-fit: contain; border-radius: 8px; border: 2px solid var(--border-dark); background: #000;">
+          <div class="img-actions"><button type="button" class="comm-btn" data-ia="zoom">Zoom</button><button type="button" class="comm-btn" data-ia="full">Open full size</button><button type="button" class="comm-btn" data-ia="save" data-name="${esc(photoCaption)}">Save to device</button></div>
           <div style="font-family: var(--font-display); font-size: 20px; font-weight: 800; text-transform: uppercase; margin-top: 10px;">${esc(photoCaption)}</div>
           <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 14px;">Snapped by ${esc(photoAuthor)} • ${esc(photoTime)}</div>
           <button class="big-btn secondary" style="margin-bottom: 8px;" onclick="closeModal()">Close</button>
@@ -1381,6 +1382,7 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
       } else if (isImg) {
         previewContent = `
           <img src="${esc(file.dataUrl)}" onclick="openImageZoom(this.src)" style="cursor:zoom-in; width:100%; max-height:55vh; object-fit:contain; border-radius:8px; border:2px solid var(--border-dark); background:#111; margin:12px 0;">
+          <div class="img-actions"><button type="button" class="comm-btn" data-ia="zoom">Zoom</button><button type="button" class="comm-btn" data-ia="full">Open full size</button><button type="button" class="comm-btn" data-ia="save" data-name="${esc(file.name||"image")}">Save to device</button></div>
         `;
       } else {
         previewContent = `
@@ -2004,7 +2006,8 @@ Sent from Shop Board`;
         </div>
         <div style="font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 4px;">${esc(exp.desc)}</div>
         <div style="font-size: 14px; color: var(--text-muted); margin-bottom: 12px;">Amount: $${(Number(exp.amount) || 0).toFixed(2)} • ${esc(exp.category || 'Materials')}</div>
-        <img src="${esc(exp.photoUrl)}" onclick="openImageZoom(this.src)" style="cursor: zoom-in; width: 100%; max-height: 60vh; object-fit: contain; border-radius: 8px; border: 2px solid var(--border-dark); background: #000; margin-bottom: 14px;">
+        <img src="${esc(exp.photoUrl)}" onclick="openImageZoom(this.src)" style="cursor: zoom-in; width: 100%; max-height: 60vh; object-fit: contain; border-radius: 8px; border: 2px solid var(--border-dark); background: #000; margin-bottom: 8px;">
+        <div class="img-actions"><button type="button" class="comm-btn" data-ia="zoom">Zoom</button><button type="button" class="comm-btn" data-ia="full">Open full size</button><button type="button" class="comm-btn" data-ia="save" data-name="receipt">Save to device</button></div>
         <button class="big-btn secondary" style="margin-bottom: 8px;" onclick="closeModal()">Close</button>
         <button class="big-btn" style="background: var(--alert);" onclick="deleteExpense('${escJs(jobId)}', '${escJs(expId)}')">🗑️ Delete Receipt</button>
       `;

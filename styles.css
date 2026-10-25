@@ -735,3 +735,5 @@ img[data-thumb]:not([data-thumb-state="ready"]) { background: var(--border); }
 #zoomOverlay img { max-width: 100%; max-height: 100%; object-fit: contain; transform-origin: center center; will-change: transform; -webkit-user-drag: none; pointer-events: none; }
 #zoomClose { position: absolute; top: calc(env(safe-area-inset-top, 0px) + 12px); right: 12px; min-height: 44px; padding: 8px 18px; border: 2px solid #fff; border-radius: 10px; background: rgba(0,0,0,.65); color: #fff; font-size: 16px; font-weight: 800; }
 #zoomHint { position: absolute; bottom: calc(env(safe-area-inset-bottom, 0px) + 20px); left: 0; right: 0; text-align: center; color: #fff; font-size: 13px; opacity: .85; transition: opacity .6s; pointer-events: none; }
+.img-actions { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px 0 4px; }
+.img-actions .comm-btn { flex: 1 1 30%; min-height: 40px; padding: 4px 8px; font-size: 13px; }

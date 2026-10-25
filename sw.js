@@ -1,6 +1,6 @@
 "use strict";
 
-const VERSION = "v15"; // Change this for every future release of any app file.
+const VERSION = "v16"; // Change this for every future release of any app file.
 const BASE = new URL(self.registration.scope);
 const CACHE_PREFIX = "shop-board-shell:" + BASE.pathname + ":";
 const CACHE_NAME = CACHE_PREFIX + VERSION;

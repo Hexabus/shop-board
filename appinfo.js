@@ -1,8 +1,8 @@
 (function () {
   "use strict";
   if (window.ShopBoardAppInfo) return;
-const APP_VERSION = "0.3.0";
-const BUILD = "2026-10-25 — split into separate files";
+const APP_VERSION = "0.4.0";
+const BUILD = "2026-10-25 — storage readout and thumbnails";
   const BACKUP_FORMAT = "1";
   const EXPORT_KEY = "shopBoardLastBackupPrepared";
   let generation = 0;
@@ -38,9 +38,67 @@ const BUILD = "2026-10-25 — split into separate files";
     const element = document.getElementById(id);
     if (element) element.textContent = value;
   }
+  const CLOUD_LIMIT = 10 * 1024 * 1024;
+  function fmt(bytes) {
+    if (bytes >= 1073741824) return (bytes / 1073741824).toFixed(1) + " GB";
+    if (bytes >= 1048576) return (bytes / 1048576).toFixed(1) + " MB";
+    return Math.max(1, Math.round(bytes / 1024)) + " KB";
+  }
+  const bytesOf = text => new Blob([String(text)]).size;
+  const isEmbedded = value => typeof value === "string" && /^data:/.test(value);
+  /* Read-only: measures the saved records and never changes them. */
+  async function storageUse(token) {
+    try {
+      const raw = window.ShopBoardDatabase.get("SHOP_BOARD_DATA");
+      const data = JSON.parse(raw);
+      const total = bytesOf(raw);
+      const items = [];
+      let photos = 0, photoLinks = 0, docs = 0, docFiles = 0, receipts = 0, bytesPhotos = 0, bytesDocs = 0, bytesReceipts = 0;
+      (data.jobs || []).forEach(job => {
+        (job.photos || []).forEach(p => {
+          if (isEmbedded(p.url)) { const n = bytesOf(p.url); photos++; bytesPhotos += n; items.push([n, "Photo" + (p.caption ? " “" + p.caption + "”" : "") + " — " + job.name]); }
+          else if (p.url) photoLinks++;
+        });
+        (job.files || []).forEach(f => {
+          docs++;
+          if (isEmbedded(f.dataUrl)) { const n = bytesOf(f.dataUrl); docFiles++; bytesDocs += n; items.push([n, "Document “" + f.name + "” — " + job.name]); }
+        });
+        (job.expenses || []).forEach(e => {
+          if (isEmbedded(e.photoUrl)) { const n = bytesOf(e.photoUrl); receipts++; bytesReceipts += n; items.push([n, "Receipt image — " + job.name]); }
+        });
+      });
+      const logo = data.business && isEmbedded(data.business.logoDataUrl) ? bytesOf(data.business.logoDataUrl) : 0;
+      items.sort((a, b) => b[0] - a[0]);
+      put("shopInfoDataSize", fmt(total) + " (" + (data.jobs || []).length + " jobs, " + (data.clients || []).length + " clients)", token);
+      put("shopInfoPhotos", photos + " saved in app (" + fmt(bytesPhotos) + ")" + (photoLinks ? ", " + photoLinks + " web links" : ""), token);
+      put("shopInfoDocs", docs + (docs === 1 ? " record, " : " records, ") + docFiles + " with files (" + fmt(bytesDocs) + ")", token);
+      put("shopInfoReceipts", receipts + " receipt images (" + fmt(bytesReceipts) + ")" + (logo ? ", logo " + fmt(logo) : ""), token);
+      put("shopInfoLargest", items.length ? items.slice(0, 3).map(i => fmt(i[0]) + " — " + i[1]).join("\n") : "No embedded files yet", token);
+      const percent = Math.round(total / CLOUD_LIMIT * 100);
+      put("shopInfoCloudLimit", percent + "% of the 10 MiB cloud snapshot limit used by records alone", token);
+      let note = "Healthy: storage use is small.";
+      if (percent >= 80) note = "Near the cloud limit: cloud snapshots may soon be refused. Do not delete attachments to fit; tell the developer.";
+      else if (percent >= 50) note = "Growing: past half of the cloud snapshot limit. Plan the photo and document storage upgrade.";
+      else if (total >= 5 * 1048576) note = "Growing: records are over 5 MB. Keep an eye on this.";
+      put("shopInfoAssessment", note, token);
+    } catch (e) {
+      put("shopInfoDataSize", "Could not measure: " + e.message, token);
+    }
+    try {
+      const t = window.ShopBoardThumbs ? await window.ShopBoardThumbs.stats() : null;
+      put("shopInfoThumbs", t ? t.count + " small copies (" + fmt(t.bytes) + "); rebuilt automatically" : "Not available", token);
+    } catch (e) { put("shopInfoThumbs", "Not available", token); }
+    try {
+      if (navigator.storage && navigator.storage.estimate) {
+        const est = await navigator.storage.estimate();
+        put("shopInfoBrowser", fmt(est.usage || 0) + " used of about " + fmt(est.quota || 0) + " allowed (estimate)", token);
+      } else put("shopInfoBrowser", "Estimate not supported in this browser", token);
+    } catch (e) { put("shopInfoBrowser", "Estimate unavailable", token); }
+  }
   async function refresh() {
     if (!document.getElementById("shopAppInfoPanel")) return;
     const token = ++generation;
+    storageUse(token);
     put("shopInfoAppVersion", APP_VERSION, token);
     put("shopInfoBuild", BUILD, token);
     put("shopInfoBackupFormat", BACKUP_FORMAT + " (backup-file schema)", token);
@@ -103,6 +161,18 @@ const BUILD = "2026-10-25 — split into separate files";
         <dt>Controlling offline cache</dt><dd id="shopInfoCache"></dd>
         <dt>Update status</dt><dd id="shopInfoUpdate"></dd>
         <dt>Last backup prepared here</dt><dd id="shopInfoExport"></dd>
+      </dl>
+      <h4 style="font-size:16px;margin:16px 0 8px;">Storage use</h4>
+      <dl class="shop-app-info-list">
+        <dt>Saved records</dt><dd id="shopInfoDataSize"></dd>
+        <dt>Photos</dt><dd id="shopInfoPhotos"></dd>
+        <dt>Documents</dt><dd id="shopInfoDocs"></dd>
+        <dt>Receipt images and logo</dt><dd id="shopInfoReceipts"></dd>
+        <dt>Largest items</dt><dd id="shopInfoLargest"></dd>
+        <dt>Cloud backup limit</dt><dd id="shopInfoCloudLimit"></dd>
+        <dt>Thumbnail cache</dt><dd id="shopInfoThumbs"></dd>
+        <dt>Browser storage</dt><dd id="shopInfoBrowser"></dd>
+        <dt>Assessment</dt><dd id="shopInfoAssessment"></dd>
       </dl>
       <p style="font-size:13px;color:var(--text-muted);margin:12px 0;">This tracks successful backup preparation through the Export Backup button on this installation, starting with this update. It does not verify that a file was saved or restored, and is not shared between devices.</p>
       <button id="shopInfoRefresh" type="button" class="big-btn secondary">Refresh App Information</button>`;

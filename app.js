@@ -548,7 +548,7 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
         photoStripHtml = `
           <div class="photo-strip">
             ${job.photos.map(p => `
-              <img src="${esc(p.url)}" class="photo-thumb" onclick="openPhotoViewer('${escJs(job.id)}', '${escJs(p.id)}')">
+              <img ${thumbAttrs('photo', job.id, p.id, p.url)} class="photo-thumb" onclick="openPhotoViewer('${escJs(job.id)}', '${escJs(p.id)}')">
             `).join('')}
           </div>
         `;
@@ -648,7 +648,7 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
               ${(job.expenses || []).map(exp => `
                 <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px dashed var(--border);">
                   <div style="display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1;">
-                    ${exp.photoUrl ? `<img src="${esc(exp.photoUrl)}" onclick="openReceiptViewerById('${escJs(job.id)}', '${escJs(exp.id)}')" style="width: 44px; height: 44px; object-fit: cover; border-radius: 6px; border: 1.5px solid var(--border-dark); cursor: pointer;" title="Tap to view receipt photo">` : '<span style="font-size: 24px;">🧾</span>'}
+                    ${exp.photoUrl ? `<img ${thumbAttrs('receipt', job.id, exp.id, exp.photoUrl)} onclick="openReceiptViewerById('${escJs(job.id)}', '${escJs(exp.id)}')" style="width: 44px; height: 44px; object-fit: cover; border-radius: 6px; border: 1.5px solid var(--border-dark); cursor: pointer;" title="Tap to view receipt photo">` : '<span style="font-size: 24px;">🧾</span>'}
                     <div style="min-width: 0;">
                       <div style="font-weight: 700; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${esc(exp.desc)}</div>
                       <div style="font-size: 12px; color: var(--text-muted);">${esc(exp.category || 'Materials')} • ${esc(exp.date || 'Today')}</div>
@@ -807,7 +807,7 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
           const client = DATA.clients.find(c => c.id === job.clientId) || { name: 'Client' };
           return `
             <div class="card" onclick="openView('JOB_PHOTOS', '${escJs(job.id)}')" style="cursor:pointer; display:flex; gap:12px; align-items:center;">
-              <img src="${esc(cover.url)}" alt="${esc(job.name)}" style="width:92px; height:92px; object-fit:cover; border-radius:8px; border:2px solid var(--border-dark); flex-shrink:0;">
+              <img ${thumbAttrs('photo', job.id, cover.id, cover.url)} alt="${esc(job.name)}" style="width:92px; height:92px; object-fit:cover; border-radius:8px; border:2px solid var(--border-dark); flex-shrink:0;">
               <div style="min-width:0; flex:1;">
                 <div class="card-title">${esc(job.name)}</div>
                 <div class="card-sub">${esc(client.name)}</div>
@@ -833,7 +833,7 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
           ${job.photos.map(p => `
             <div class="card" style="padding:8px; cursor:pointer;" onclick="openPhotoViewer('${escJs(job.id)}', '${escJs(p.id)}')">
-              <img src="${esc(p.url)}" alt="${esc(p.caption || 'Job photo')}" style="width:100%; height:145px; object-fit:cover; border-radius:6px; border:1px solid var(--border-dark);">
+              <img ${thumbAttrs('photo', job.id, p.id, p.url)} alt="${esc(p.caption || 'Job photo')}" style="width:100%; height:145px; object-fit:cover; border-radius:6px; border:1px solid var(--border-dark);">
               <div style="font-size:12px; color:var(--text-muted); margin-top:6px;">${p.tag ? `[${esc(p.tag)}] ` : ''}${esc(p.caption || 'Job photo')}</div>
             </div>
           `).join('')}

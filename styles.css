@@ -725,3 +725,7 @@ html[data-shop-theme="dark"] .shop-save-failure {background:#49242A;color:#FFD7D
 #shopOwnerCloudPanel button:disabled{opacity:0.6;cursor:wait;}
 #shopOwnerCloudPanel .shop-cloud-note{font-size:13px;color:var(--text-muted);margin:10px 0;overflow-wrap:anywhere;}
 #shopOwnerCloudPanel .shop-cloud-detail{font-size:13px;white-space:pre-wrap;overflow-wrap:anywhere;margin:12px 0;user-select:text;}
+
+/* Thumbnails: neutral background while a small copy is prepared */
+img[data-thumb]:not([data-thumb-state="ready"]) { background: var(--border); }
+#shopInfoLargest { white-space: pre-line; }

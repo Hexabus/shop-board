@@ -747,11 +747,11 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
         <!-- FILES SECTION -->
         <div id="filesSection" style="margin-top: 20px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-            <div style="font-family: var(--font-display); font-size: 20px; font-weight: 900; text-transform: uppercase;">Permits & Files</div>
+            <div style="font-family: var(--font-display); font-size: 20px; font-weight: 900; text-transform: uppercase;">Files</div>
             <button class="comm-btn" style="min-height: 34px; padding: 4px 10px;" onclick="openAddFileModal('${escJs(job.id)}')">+ Add File</button>
           </div>
           <div class="card">
-            ${job.files.length === 0 ? `<div style="font-size: 13px; color: var(--text-muted);">No documents or permits attached yet.</div>` : ''}
+            ${job.files.length === 0 ? `<div style="font-size: 13px; color: var(--text-muted);">No files attached yet.</div>` : ''}
             ${job.files.map(f => `
               <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px dashed var(--border);">
                 <div style="min-width: 0; flex: 1; margin-right: 8px;">
@@ -1265,7 +1265,7 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
           Attach Document / PDF
         </div>
         <div style="font-size: 13px; color: var(--text-muted); font-weight: 600; margin-bottom: 14px;">
-          Upload town permits, signed proposals, specs, or inspection PDFs.
+          Upload permits, signed proposals, specs, plans, or inspection PDFs.
         </div>
 
         <div class="input-group">
@@ -1367,6 +1367,7 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
       if (!file) return;
 
       const hasData = Boolean(file.dataUrl);
+      window.__shopDoc = { src: file.dataUrl || "", name: file.name || "file" };
       const isImg = file.type && file.type.startsWith("image/");
       const isPdf = file.type && (file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf"));
 
@@ -1390,9 +1391,7 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
             <div style="font-size:44px; margin-bottom:8px;">📑</div>
             <div style="font-family:var(--font-display); font-size:18px; font-weight:800;">${esc(file.name)}</div>
             <div style="font-size:13px; color:var(--text-muted); margin:4px 0 16px 0;">${esc(file.size || 'PDF Document')}</div>
-            <a href="${esc(file.dataUrl)}" download="${esc(file.name)}" target="_blank" class="big-btn" style="background:#2E7D32; margin-bottom:0; text-decoration:none;">
-              📥 Open / Download PDF
-            </a>
+            <div class="img-actions"><button type="button" class="comm-btn" data-fa="open">Open</button><button type="button" class="comm-btn" data-fa="save">Save to device</button></div>
           </div>
         `;
       }

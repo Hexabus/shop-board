@@ -76,23 +76,30 @@
     close.addEventListener("click", end);
   }
 
-  function toBlob(src) { return fetch(src).then(function (r) { return r.blob(); }); }
-  function extFor(type) { return type === "image/png" ? "png" : type === "image/webp" ? "webp" : type === "image/gif" ? "gif" : "jpg"; }
-  function openImageFull(src) {
+  function toBlob(src, name) {
+    return fetch(src).then(function (r) { return r.blob(); }).then(function (b) {
+      if (/\.pdf$/i.test(name || "") && b.type !== "application/pdf") b = new Blob([b], { type: "application/pdf" });
+      return b;
+    });
+  }
+  function extFor(type, name) { var m = /\.([A-Za-z0-9]{1,5})$/.exec(name || ""); if (m) return m[1].toLowerCase(); if (type === "application/pdf") return "pdf"; return type === "image/png" ? "png" : type === "image/webp" ? "webp" : type === "image/gif" ? "gif" : "jpg"; }
+  function openImageFull(src, name) {
     if (!src) return;
-    toBlob(src).then(function (b) {
+    toBlob(src, name).then(function (b) {
       var u = URL.createObjectURL(b);
       var w = window.open(u, "_blank");
       if (!w) { location.href = u; }
       setTimeout(function () { URL.revokeObjectURL(u); }, 120000);
-    }).catch(function () { if (window.showToast) showToast("Could not open the image"); });
+    }).catch(function () { if (window.showToast) showToast("Could not open the file"); });
   }
   function saveImage(src, name) {
     if (!src) return;
-    toBlob(src).then(function (b) {
-      var fname = String(name || "photo").replace(/[^\w\- ]+/g, "").trim().replace(/\s+/g, "-") || "photo";
-      fname += "." + extFor(b.type);
-      var file = new File([b], fname, { type: b.type || "image/jpeg" });
+    var base = String(name || "photo");
+    toBlob(src, base).then(function (b) {
+      var ext = extFor(b.type, base);
+      var fname = base.replace(/\.[A-Za-z0-9]{1,5}$/, "").replace(/[^\w\- ]+/g, "").trim().replace(/\s+/g, "-") || "file";
+      fname += "." + ext;
+      var file = new File([b], fname, { type: b.type || "application/octet-stream" });
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         return navigator.share({ files: [file] }).catch(function (e) { if (e && e.name !== "AbortError") throw e; });
       }
@@ -100,11 +107,17 @@
       a.href = u; a.download = fname; document.body.appendChild(a); a.click(); a.remove();
       setTimeout(function () { URL.revokeObjectURL(u); }, 10000);
       if (window.showToast) showToast("Saved " + fname);
-    }).catch(function () { if (window.showToast) showToast("Could not save the image"); });
+    }).catch(function () { if (window.showToast) showToast("Could not save the file"); });
   }
   window.openImageFull = openImageFull;
   window.saveImageToDevice = saveImage;
   document.addEventListener("click", function (e) {
+    var f = e.target.closest && e.target.closest("[data-fa]");
+    if (f && window.__shopDoc) {
+      if (f.getAttribute("data-fa") === "open") openImageFull(window.__shopDoc.src, window.__shopDoc.name);
+      else saveImage(window.__shopDoc.src, window.__shopDoc.name);
+      return;
+    }
     var b = e.target.closest && e.target.closest("[data-ia]");
     if (!b) return;
     var img = b.closest("#modalSheet") && b.closest("#modalSheet").querySelector("img");

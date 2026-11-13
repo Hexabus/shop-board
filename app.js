@@ -386,11 +386,6 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
       DATA.jobs.forEach(j => totalPhotos += (j.photos ? j.photos.length : 0));
 
       return `
-        <div style="margin-bottom: 12px;">
-          <h2 style="font-family: var(--font-display); font-size: 26px; font-weight: 900; text-transform: uppercase;">THE SHOP BOARD</h2>
-          <div style="font-size: 14px; color: var(--text-muted); font-weight: 600;">Tap a tile with a thumb. Big marks, zero fluff.</div>
-        </div>
-
         <div class="board-grid">
           <div class="tile" onclick="openView('TODAY')">
             ${todayCount > 0 ? `<div class="tile-badge">${todayCount}</div>` : ''}
@@ -432,10 +427,9 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
           </div>
         </div>
 
-        <div style="margin-top: 24px; padding: 12px; background: #FFF; border: 2px solid var(--border-dark); border-radius: var(--radius); text-align: center; box-shadow: 2px 2px 0 var(--border-dark);">
-          <div style="font-family: var(--font-display); font-size: 16px; font-weight: 800; text-transform: uppercase;">Quick New Job</div>
-          <button class="big-btn" style="margin: 8px 0 10px 0; background: #2E7D32;" onclick="openQuickReceiptModal()">🧾 Snap Receipt to Job</button>
-      <button class="big-btn secondary" style="margin: 0;" onclick="openNewJobModal()">+ Start a New Job</button>
+        <div class="home-quick-row">
+          <button class="big-btn" style="margin: 0; background: #2E7D32;" onclick="openQuickReceiptModal()">🧾 Snap Receipt</button>
+          <button class="big-btn secondary" style="margin: 0;" onclick="openNewJobModal()">+ New Job</button>
         </div>
       `;
     }

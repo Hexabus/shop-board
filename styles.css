@@ -157,8 +157,8 @@ header.shop-bar {
   background: var(--card-bg);
   border: 3px solid var(--border-dark);
   border-radius: var(--radius);
-  padding: 22px 14px;
-  min-height: 140px;
+  padding: 14px 10px;
+  min-height: 104px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -174,23 +174,36 @@ header.shop-bar {
   background: #FAF8F5;
 }
 .tile-icon {
-  font-size: 40px;
-  margin-bottom: 8px;
+  font-size: 30px;
+  margin-bottom: 4px;
   line-height: 1;
 }
 .tile-label {
   font-family: var(--font-display);
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 900;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   color: var(--text);
 }
 .tile-sub {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text-muted);
   font-weight: 600;
-  margin-top: 2px;
+  margin-top: 1px;
+}
+.home-quick-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 14px;
+}
+.home-quick-row .big-btn { margin: 0; }
+
+/* Desktop: use the extra width instead of a stretched phone layout */
+@media (min-width: 700px) {
+  .container { max-width: 900px; }
+  .board-grid { grid-template-columns: repeat(3, 1fr); }
 }
 .tile-badge {
   position: absolute;
@@ -749,6 +762,9 @@ html[data-shop-theme="dark"] .shop-save-failure {background:#49242A;color:#FFD7D
 #shopOwnerCloudPanel button:disabled{opacity:0.6;cursor:wait;}
 #shopOwnerCloudPanel .shop-cloud-note{font-size:13px;color:var(--text-muted);margin:10px 0;overflow-wrap:anywhere;}
 #shopOwnerCloudPanel .shop-cloud-detail{font-size:13px;white-space:pre-wrap;overflow-wrap:anywhere;margin:12px 0;user-select:text;}
+
+/* ---- offline cache panel: relocated into Settings, see offline.js ---- */
+.shop-offline-panel { margin-top:18px;padding:14px;background:var(--card-bg);color:var(--text);border:2px solid var(--border-dark);border-radius:12px; }
 
 /* Thumbnails: neutral background while a small copy is prepared */
 img[data-thumb]:not([data-thumb-state="ready"]) { background: var(--border); }

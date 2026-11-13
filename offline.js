@@ -1,24 +1,41 @@
 (function () {
   "use strict";
   if (window.ShopBoardOfflineCache) return;
-  const panel = document.createElement("div");
+  const panel = document.createElement("section");
   panel.id = "shopOfflinePanel";
-  panel.style.cssText = "padding:10px 16px;background:var(--card-bg);color:var(--text);border-bottom:1px solid var(--border);font-size:13px;";
+  panel.className = "shop-offline-panel";
+  panel.setAttribute("aria-label", "Offline app setup");
+  const heading = document.createElement("h3");
+  heading.style.cssText = "font-size:20px;margin:0 0 12px;";
+  heading.textContent = "Offline App Setup";
   const label = document.createElement("p");
   label.id = "shopOfflineCacheStatus";
   label.setAttribute("role", "status");
   label.setAttribute("aria-live", "polite");
+  label.style.cssText = "font-size:13px;";
   label.textContent = "Checking offline app setup…";
   const button = document.createElement("button");
   button.type = "button";
   button.textContent = "Check for app updates";
   button.disabled = true;
-  button.style.cssText = "margin-top:6px;padding:8px 12px;min-height:44px;border:1px solid var(--border-dark);border-radius:8px;background:var(--card-bg);color:var(--text);font:inherit;";
+  button.style.cssText = "margin-top:10px;padding:8px 12px;min-height:44px;border:1px solid var(--border-dark);border-radius:8px;background:var(--card-bg);color:var(--text);font:inherit;";
+  panel.appendChild(heading);
   panel.appendChild(label);
   panel.appendChild(button);
-  const strip = document.querySelector(".sync-strip");
-  if (strip) strip.insertAdjacentElement("afterend", panel);
-  else document.body.appendChild(panel);
+  /* This panel is diagnostic, not part of the daily journey — it lives in Settings (App Information),
+     not permanently on every screen, so it mounts into the Settings sheet on first open. */
+  function mountInSettings() {
+    const sheet = document.getElementById("modalSheet");
+    if (sheet && panel.parentNode !== sheet) sheet.appendChild(panel);
+  }
+  const originalOpenSettings = window.openCompanySettings;
+  if (typeof originalOpenSettings === "function") {
+    window.openCompanySettings = function () {
+      const result = originalOpenSettings.apply(this, arguments);
+      mountInSettings();
+      return result;
+    };
+  }
   let registration = null, started = false;
   const workerURL = new URL("./sw.js", document.baseURI);
 

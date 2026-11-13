@@ -46,7 +46,7 @@
       <!-- TILE 1: TODAY -->
       <div class="tile" onclick="openView('TODAY')">
         <div class="tile-badge" id="initTodayBadge">2</div>
-        <div class="tile-icon">☀️</div>
+        <div class="tile-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#F2B705" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em;vertical-align:-0.15em;display:inline-block;" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 2.5v2.5M12 19v2.5M4.5 12H2M22 12h-2.5M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M18.4 5.6l-1.8 1.8M7.4 16.6l-1.8 1.8"/></svg></div>
         <div class="tile-label">TODAY</div>
         <div class="tile-sub">On site & scheduled</div>
       </div>
@@ -54,35 +54,35 @@
       <!-- TILE 2: JOBS -->
       <div class="tile" onclick="openView('JOBS')">
         <div class="tile-badge" id="initJobsBadge">2</div>
-        <div class="tile-icon">📋</div>
+        <div class="tile-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#E65100" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em;vertical-align:-0.15em;display:inline-block;" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1"/><path d="M8.5 11h7M8.5 15h7M8.5 19h4"/></svg></div>
         <div class="tile-label">JOBS</div>
         <div class="tile-sub">Every project</div>
       </div>
 
       <!-- TILE 3: PHOTOS -->
       <div class="tile" onclick="openView('PHOTOS')">
-        <div class="tile-icon">📷</div>
+        <div class="tile-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#1976D2" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em;vertical-align:-0.15em;display:inline-block;" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7l1.3-2.3A1 1 0 0 1 10.2 4h3.6a1 1 0 0 1 .9.7L16 7"/><circle cx="12" cy="13.5" r="3.2"/></svg></div>
         <div class="tile-label">PHOTOS</div>
         <div class="tile-sub">Camera & job roll</div>
       </div>
 
       <!-- TILE 4: MONEY -->
       <div class="tile" onclick="openView('MONEY')">
-        <div class="tile-icon">💵</div>
+        <div class="tile-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#2E7D32" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em;vertical-align:-0.15em;display:inline-block;" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/><path d="M6 9v.01M18 15v.01"/></svg></div>
         <div class="tile-label">MONEY</div>
         <div class="tile-sub">Quotes, bills, paid</div>
       </div>
 
       <!-- TILE 5: PEOPLE -->
       <div class="tile" onclick="openView('CLIENTS')">
-        <div class="tile-icon">👥</div>
+        <div class="tile-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#B36A3C" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em;vertical-align:-0.15em;display:inline-block;" aria-hidden="true"><circle cx="8.5" cy="8" r="3"/><path d="M3 20c0-3 2.5-5.5 5.5-5.5S14 17 14 20"/><circle cx="17" cy="9" r="2.5"/><path d="M15.5 14.2c2.6.4 4.5 2.6 4.5 5.3"/></svg></div>
         <div class="tile-label">CLIENTS</div>
         <div class="tile-sub">Client contacts & crew</div>
       </div>
 
       <!-- TILE 6: NOTES -->
       <div class="tile" onclick="openView('NOTES')">
-        <div class="tile-icon">📝</div>
+        <div class="tile-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#78909C" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em;vertical-align:-0.15em;display:inline-block;" aria-hidden="true"><path d="M6 3h9l4 4v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="M15 3v4h4"/><path d="M8 12.5h8M8 16h5"/></svg></div>
         <div class="tile-label">NOTES</div>
         <div class="tile-sub">Shared clipboard</div>
       </div>
@@ -131,6 +131,7 @@
   <!-- Insert once AFTER the existing IndexedDB Stage 1 add-on, before final </body>. Keep Stage 1. -->
 
   
+<script src="./icons.js"></script>
 <script src="./storage.js"></script>
 <script src="./util.js"></script>
 <script src="./thumbs.js"></script>

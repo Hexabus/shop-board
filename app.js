@@ -389,39 +389,39 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
         <div class="board-grid">
           <div class="tile" onclick="openView('TODAY')">
             ${todayCount > 0 ? `<div class="tile-badge">${todayCount}</div>` : ''}
-            <div class="tile-icon">☀️</div>
+            <div class="tile-icon">${ShopIcon.today}</div>
             <div class="tile-label">TODAY</div>
             <div class="tile-sub">On site & scheduled</div>
           </div>
 
           <div class="tile" onclick="openView('JOBS')">
             <div class="tile-badge">${totalJobs}</div>
-            <div class="tile-icon">📋</div>
+            <div class="tile-icon">${ShopIcon.jobs}</div>
             <div class="tile-label">JOBS</div>
             <div class="tile-sub">Every project</div>
           </div>
 
           <div class="tile" onclick="openView('PHOTOS')">
             <div class="tile-badge">${totalPhotos}</div>
-            <div class="tile-icon">📷</div>
+            <div class="tile-icon">${ShopIcon.photos}</div>
             <div class="tile-label">PHOTOS</div>
             <div class="tile-sub">Camera & job roll</div>
           </div>
 
           <div class="tile" onclick="openView('MONEY')">
-            <div class="tile-icon">💵</div>
+            <div class="tile-icon">${ShopIcon.money}</div>
             <div class="tile-label">MONEY</div>
             <div class="tile-sub">Quotes, bills, paid</div>
           </div>
 
           <div class="tile" onclick="openView('CLIENTS')">
-            <div class="tile-icon">👥</div>
+            <div class="tile-icon">${ShopIcon.clients}</div>
             <div class="tile-label">CLIENTS</div>
             <div class="tile-sub">Client contacts & crew</div>
           </div>
 
           <div class="tile" onclick="openView('NOTES')">
-            <div class="tile-icon">📝</div>
+            <div class="tile-icon">${ShopIcon.notes}</div>
             <div class="tile-label">NOTES</div>
             <div class="tile-sub">Shared clipboard</div>
           </div>

@@ -458,23 +458,28 @@ header.shop-bar {
   background: #FFFFFF;
   border: 2px solid var(--border-dark);
   border-radius: 8px;
-  padding: 10px;
+  padding: 10px 6px;
   text-align: center;
   box-shadow: 1px 1px 0 var(--border-dark);
+  min-width: 0;
 }
 .metric-label {
   font-family: var(--font-display);
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 800;
   text-transform: uppercase;
   color: var(--text-muted);
+  overflow-wrap: break-word;
 }
 .metric-val {
   font-family: var(--font-display);
-  font-size: 22px;
+  font-size: 17px;
   font-weight: 900;
   color: var(--text);
   margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Modal / Form Sheet */

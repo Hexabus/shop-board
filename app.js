@@ -456,7 +456,7 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
                   <div class="card-title">${esc(job.name)}</div>
                   <div class="card-sub">${esc(client.name)}</div>
                 </div>
-                <div style="background: var(--border-dark); color: #FFF; font-family: var(--font-display); font-size: 15px; font-weight: 800; text-transform: uppercase; padding: 4px 10px; border-radius: 6px;">
+                <div style="background: var(--border-dark); color: #FFF; font-family: var(--font-display); font-size: 15px; font-weight: 800; text-transform: uppercase; padding: 4px 10px; border-radius: 6px; white-space: nowrap; flex-shrink: 0; margin-left: 8px;">
                   ${esc(job.status)}
                 </div>
               </div>
@@ -502,13 +502,13 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
                   <div class="card-title">${esc(job.name)}</div>
                   <div class="card-sub">${esc(client.name)} • ${esc(job.trade || 'General')}</div>
                 </div>
-                <div style="border: 2px solid var(--border-dark); font-family: var(--font-display); font-size: 15px; font-weight: 800; text-transform: uppercase; padding: 4px 8px; border-radius: 6px; background: #FFF;">
+                <div style="border: 2px solid var(--border-dark); font-family: var(--font-display); font-size: 15px; font-weight: 800; text-transform: uppercase; padding: 4px 8px; border-radius: 6px; background: #FFF; white-space: nowrap; flex-shrink: 0; margin-left: 8px;">
                   ${esc(job.status)}
                 </div>
               </div>
               <div class="card-meta"><a class="map-address" href="${esc(getMapLink(job.address))}" onclick="event.stopPropagation();">📍 ${esc(job.address)} • Map</a></div>
               <div class="card-meta" style="color: var(--text-muted);">
-                📷 ${job.photos.length} photos • 📝 ${job.notes.length} notes
+                📷 ${job.photos.length} photo${job.photos.length === 1 ? '' : 's'} • 📝 ${job.notes.length} note${job.notes.length === 1 ? '' : 's'}
               </div>
             </div>
           `;
@@ -907,7 +907,7 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
                 <div style="font-size: 13px; color: var(--text-muted); font-weight: 600;">${esc(cr.phone || 'No phone')}</div>
               </div>
               <div style="display: flex; align-items: center; gap: 8px;">
-                <div style="background: var(--border-dark); color: #FFF; font-family: var(--font-display); font-size: 13px; font-weight: 800; text-transform: uppercase; padding: 2px 8px; border-radius: 4px;">
+                <div style="background: var(--border-dark); color: #FFF; font-family: var(--font-display); font-size: 13px; font-weight: 800; text-transform: uppercase; padding: 2px 8px; border-radius: 4px; white-space: nowrap; flex-shrink: 0;">
                   ${esc(cr.role)}
                 </div>
                 ${(DATA.currentUser.role === 'Owner' && cr.role !== 'Owner') ? `

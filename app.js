@@ -1204,10 +1204,12 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
       const photoCaption = photo ? (photo.caption || 'Job Photo') : (caption || 'Job Photo');
       const photoAuthor = photo ? photo.author : author;
       const photoTime = photo ? whenText(photo) : time;
+      const isStored = /^data:image\//.test(photoUrl);
 
       const modalHtml = `
         <div style="text-align: center;">
           <img src="${esc(photoUrl)}" onclick="openImageZoom(this.src)" style="cursor: zoom-in; width: 100%; max-height: 50vh; object-fit: contain; border-radius: 8px; border: 2px solid var(--border-dark); background: #000;">
+          ${!isStored ? `<div style="font-size: 13px; color: var(--alert); font-weight: 700; margin-top: 8px;">${ShopIcon.warning} External link — not stored in the app, may not load without a connection</div>` : ''}
           <div class="img-actions"><button type="button" class="comm-btn" data-ia="zoom">Zoom</button><button type="button" class="comm-btn" data-ia="full">Open full size</button><button type="button" class="comm-btn" data-ia="save" data-name="${esc(photoCaption)}">Save to device</button></div>
           <div style="font-family: var(--font-display); font-size: 20px; font-weight: 800; text-transform: uppercase; margin-top: 10px;">${esc(photoCaption)}</div>
           <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 14px;">Snapped by ${esc(photoAuthor)} • ${esc(photoTime)}</div>

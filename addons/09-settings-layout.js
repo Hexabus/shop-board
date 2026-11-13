@@ -57,7 +57,7 @@ await (async function () {
         footer.className = "shop-settings-footer";
         const note = document.createElement("p");
         note.className = "shop-settings-footer-note";
-        note.textContent = "Save Company Profile saves the name and logo. Other cards use their own save controls. Cancel discards unsaved company edits; already-saved preferences stay saved.";
+        note.textContent = "Saves everything above at once — company profile, appearance, and the other preferences. Cancel discards all unsaved changes on this screen.";
         footer.appendChild(note);
         sheet.appendChild(footer);
       }
@@ -65,7 +65,6 @@ await (async function () {
       if (save) {
         if (save.getAttribute("form") !== "companySettingsForm") save.setAttribute("form", "companySettingsForm");
         if (save.parentNode !== footer) footer.appendChild(save);
-        if (!save.disabled && save.textContent.trim() === "Save Settings") save.textContent = "Save Company Settings";
       }
       const cancel = form.querySelector('button[onclick="cancelCompanySettings()"]');
       if (cancel && cancel.parentNode !== footer) footer.appendChild(cancel);

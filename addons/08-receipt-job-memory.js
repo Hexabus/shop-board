@@ -85,12 +85,16 @@ await (async function () {
         <option value="ASK">Choose each time</option>
         <option value="REMEMBER">Remember last used job</option>
       </select>
-      <button id="shopReceiptJobMemorySave" type="button" class="big-btn" style="margin-top:12px;">Save Receipt Job Preference</button>
-      <p id="shopReceiptJobMemoryStatus" role="status" aria-live="polite" style="font-size:13px;color:var(--text-muted);">Cancelling a receipt does not change the remembered job. This setting is local to this device.</p>`;
+      <p id="shopReceiptJobMemoryStatus" role="status" aria-live="polite" style="font-size:13px;color:var(--text-muted);">Saved with the rest of Settings below. Cancelling a receipt does not change the remembered job.</p>`;
     sheet.appendChild(panel);
     const select = document.getElementById("shopReceiptJobMemorySelect");
     select.value = mode;
-    document.getElementById("shopReceiptJobMemorySave").addEventListener("click", () => saveMode(select.value));
+    let draft = mode;
+    select.addEventListener("change", () => { draft = select.value; });
+    if (window.ShopBoardPendingSettings) {
+      window.ShopBoardPendingSettings.commits.push(() => draft === mode ? true : saveMode(draft));
+      window.ShopBoardPendingSettings.discards.push(() => { draft = mode; });
+    }
   }
 
   const originalReceipt = window.openQuickReceiptModal;

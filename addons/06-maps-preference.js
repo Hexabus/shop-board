@@ -33,10 +33,7 @@ await (async function () {
 
   async function save(value) {
     const status = document.getElementById("shopMapsPreferenceStatus");
-    if (!valid(value)) {
-      if (status) status.textContent = "Choose Automatic, Apple Maps, or Google Maps.";
-      return false;
-    }
+    if (!valid(value)) return false;
     try {
       await Storage.set(KEY, value);
       if (Storage.get(KEY) !== value) throw new Error("Save could not be verified");
@@ -45,9 +42,7 @@ await (async function () {
       return false;
     }
     preference = value;
-    const refreshed = refreshLinks();
-    if (status) status.textContent = labels[value] + " is saved on this device. " +
-      (refreshed ? "Address links are updated now; close Settings to use them." : "The view could not be refreshed. Reopen the current screen to update its links.");
+    refreshLinks();
     return true;
   }
 
@@ -56,25 +51,29 @@ await (async function () {
     if (!document.getElementById("companySettingsForm") || document.getElementById("shopMapsPreferencePanel")) return;
     const sheet = document.getElementById("modalSheet");
     if (!sheet) return;
+    let draft = preference;
     const panel = document.createElement("section");
     panel.id = "shopMapsPreferencePanel";
     panel.className = "shop-maps-preference-panel";
     panel.setAttribute("aria-label", "Preferred Maps service");
     panel.innerHTML = `
       <h3 style="font-size:20px;margin-bottom:8px;">Preferred Maps Service</h3>
-      <p style="font-size:14px;color:var(--text-muted);margin-bottom:12px;">Choose where jobsite and client addresses open. Automatic uses Apple Maps on detected iPhone/iPad devices and Google Maps elsewhere.</p>
+      <p style="font-size:14px;color:var(--text-muted);margin-bottom:12px;">Choose where jobsite and client addresses open. Automatic uses Apple Maps on detected iPhone/iPad devices and Google Maps elsewhere. Saved with the rest of Settings below.</p>
       <label class="input-label" for="shopMapsPreferenceSelect">Open addresses with</label>
       <select id="shopMapsPreferenceSelect" class="text-input">
         <option value="AUTO">Automatic — based on device</option>
         <option value="APPLE">Apple Maps</option>
         <option value="GOOGLE">Google Maps</option>
       </select>
-      <button id="shopMapsPreferenceSave" type="button" class="big-btn" style="margin-top:12px;">Save Maps Preference</button>
-      <p id="shopMapsPreferenceStatus" role="status" aria-live="polite" style="font-size:13px;color:var(--text-muted);">Saved separately on this device. Your phone may open the selected service in its app or browser. This does not change the device's system default Maps app.</p>`;
+      <p id="shopMapsPreferenceStatus" role="status" aria-live="polite" style="font-size:13px;color:var(--text-muted);">Does not change the device's system default Maps app.</p>`;
     sheet.appendChild(panel);
     const select = document.getElementById("shopMapsPreferenceSelect");
     select.value = preference;
-    document.getElementById("shopMapsPreferenceSave").addEventListener("click", () => save(select.value));
+    select.addEventListener("change", () => { draft = select.value; });
+    if (window.ShopBoardPendingSettings) {
+      window.ShopBoardPendingSettings.commits.push(() => draft === preference ? true : save(draft));
+      window.ShopBoardPendingSettings.discards.push(() => { draft = preference; });
+    }
   }
 
   window.getMapLink = mapLink;

@@ -32,10 +32,7 @@ await (async function () {
 
   async function save(value) {
     const status = document.getElementById("shopReceiptCategoryStatus");
-    if (!valid(value)) {
-      if (status) status.textContent = "Choose one of the receipt categories in the list.";
-      return false;
-    }
+    if (!valid(value)) return false;
     try {
       await Storage.set(KEY, value);
       if (Storage.get(KEY) !== value) throw new Error("Save could not be verified");
@@ -44,7 +41,6 @@ await (async function () {
       return false;
     }
     preference = value;
-    if (status) status.textContent = labels[value] + " is saved as the default for new receipts on this device. You can still change it on each receipt.";
     return true;
   }
 
@@ -53,25 +49,27 @@ await (async function () {
     if (!document.getElementById("companySettingsForm") || document.getElementById("shopReceiptCategoryPanel")) return;
     const sheet = document.getElementById("modalSheet");
     if (!sheet) return;
+    let draft = preference;
     const panel = document.createElement("section");
     panel.id = "shopReceiptCategoryPanel";
     panel.className = "shop-receipt-category-panel";
     panel.setAttribute("aria-label", "Default receipt category");
     panel.innerHTML = `
       <h3 style="font-size:20px;margin-bottom:8px;">Default Receipt Category</h3>
-      <p style="font-size:14px;color:var(--text-muted);margin-bottom:12px;">Preselect a category whenever you open Snap Receipt. Existing expenses are not changed, and you can select a different category for any receipt.</p>
+      <p style="font-size:14px;color:var(--text-muted);margin-bottom:12px;">Preselect a category whenever you open Snap Receipt. Existing expenses are not changed, and you can select a different category for any receipt. Saved with the rest of Settings below.</p>
       <label class="input-label" for="shopReceiptCategorySelect">Start new receipts as</label>
       <select id="shopReceiptCategorySelect" class="text-input">
         ${categories.map(item => `<option value="${item[0]}">${item[1]}</option>`).join("")}
       </select>
-      <button id="shopReceiptCategorySave" type="button" class="big-btn" style="margin-top:12px;">Save Receipt Category</button>
-      <p id="shopReceiptCategoryStatus" role="status" aria-live="polite" style="font-size:13px;color:var(--text-muted);">Materials is the initial default. This preference is saved separately on this device.</p>`;
+      <p id="shopReceiptCategoryStatus" role="status" aria-live="polite" style="font-size:13px;color:var(--text-muted);"></p>`;
     sheet.appendChild(panel);
     const select = document.getElementById("shopReceiptCategorySelect");
     select.value = preference;
-    const status = document.getElementById("shopReceiptCategoryStatus");
-    status.textContent = "Current saved default: " + labels[preference] + ". Tap Save Receipt Category to apply a new choice.";
-    document.getElementById("shopReceiptCategorySave").addEventListener("click", () => save(select.value));
+    select.addEventListener("change", () => { draft = select.value; });
+    if (window.ShopBoardPendingSettings) {
+      window.ShopBoardPendingSettings.commits.push(() => draft === preference ? true : save(draft));
+      window.ShopBoardPendingSettings.discards.push(() => { draft = preference; });
+    }
   }
 
   window.ShopBoardReceiptCategory = {reload:()=>{const saved=Storage.get(KEY);if(valid(saved))preference=saved;},save:save, getPreference:()=>preference, insertPanel:insertPanel, applyReceiptDefault:applyReceiptDefault};

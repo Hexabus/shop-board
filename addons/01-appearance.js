@@ -9,9 +9,10 @@ await (async function () {
   const media = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
   let preference = "system";
   try { const saved = Storage.get(KEY); if (valid(saved)) preference = saved; } catch (e) {}
+  let draft = preference;
 
   function apply() {
-    const resolved = preference === "system" ? (media && media.matches ? "dark" : "light") : preference;
+    const resolved = draft === "system" ? (media && media.matches ? "dark" : "light") : draft;
     document.documentElement.setAttribute("data-shop-theme", resolved);
     document.documentElement.style.colorScheme = resolved;
     updatePanel();
@@ -21,52 +22,68 @@ await (async function () {
     const panel = document.getElementById("shopAppearancePanel");
     if (!panel) return;
     panel.querySelectorAll("[data-choice]").forEach(button => {
-      button.setAttribute("aria-pressed", String(button.getAttribute("data-choice") === preference));
+      button.setAttribute("aria-pressed", String(button.getAttribute("data-choice") === draft));
     });
   }
 
-  async function choose(value) {
-    if (!valid(value)) return false;
+  function preview(value) {
+    if (!valid(value)) return;
+    draft = value;
+    apply();
     const panel = document.getElementById("shopAppearancePanel");
     const status = panel ? panel.querySelector("[role=status]") : null;
+    if (status) status.textContent = "Previewing now. Saves when you tap Save Settings below.";
+  }
+
+  async function commitDraft() {
+    if (draft === preference) return true;
     try {
-      await Storage.set(KEY, value);
-      if (Storage.get(KEY) !== value) throw new Error("Theme was not saved");
+      await Storage.set(KEY, draft);
+      if (Storage.get(KEY) !== draft) throw new Error("Theme was not saved");
     } catch (e) {
-      if (status) status.textContent = "Appearance was not saved. Device storage is unavailable; your previous theme is unchanged.";
+      draft = preference;
+      apply();
       return false;
     }
-    preference = value;
-    apply();
-    if (status) status.textContent = "Appearance saved on this device.";
+    preference = draft;
     return true;
+  }
+
+  function discardDraft() {
+    draft = preference;
+    apply();
   }
 
   function insertPanel() {
     if (!document.getElementById("companySettingsForm") || document.getElementById("shopAppearancePanel")) return;
     const sheet = document.getElementById("modalSheet");
     if (!sheet) return;
+    draft = preference;
     const panel = document.createElement("section");
     panel.id = "shopAppearancePanel";
     panel.className = "shop-theme-panel";
     panel.setAttribute("aria-label", "Appearance settings");
     panel.innerHTML = `
       <h3 style="font-size:20px;margin-bottom:6px;">Appearance</h3>
-      <p style="font-size:14px;color:var(--text-muted);">Theme changes save immediately on this device, separately from company name and logo. Company Settings Cancel does not undo a theme change.</p>
+      <p style="font-size:14px;color:var(--text-muted);">Previewed instantly; saved with the rest of Settings below.</p>
       <div class="shop-theme-choices">
         <button type="button" class="shop-theme-choice" data-choice="light" aria-pressed="false">☀️ Light</button>
         <button type="button" class="shop-theme-choice" data-choice="dark" aria-pressed="false">🌙 Dark</button>
         <button type="button" class="shop-theme-choice" data-choice="system" aria-pressed="false">📱 Follow phone settings</button>
       </div>
-      <p class="shop-theme-status" role="status" aria-live="polite">Changes save immediately; no separate Save button needed.</p>`;
+      <p class="shop-theme-status" role="status" aria-live="polite">Previewing now. Saves when you tap Save Settings below.</p>`;
     panel.querySelectorAll("[data-choice]").forEach(button => {
-      button.addEventListener("click", () => choose(button.getAttribute("data-choice")));
+      button.addEventListener("click", () => preview(button.getAttribute("data-choice")));
     });
     sheet.appendChild(panel);
     updatePanel();
+    if (window.ShopBoardPendingSettings) {
+      window.ShopBoardPendingSettings.commits.push(commitDraft);
+      window.ShopBoardPendingSettings.discards.push(discardDraft);
+    }
   }
 
-  window.ShopBoardAppearance = {reload:()=>{const saved=Storage.get(KEY);if(valid(saved))preference=saved;apply();},choose:choose, apply:apply, insertPanel:insertPanel, getPreference:()=>preference};
+  window.ShopBoardAppearance = {reload:()=>{const saved=Storage.get(KEY);if(valid(saved))preference=saved;draft=preference;apply();},choose:preview, apply:apply, insertPanel:insertPanel, getPreference:()=>preference};
   const originalOpen = window.openCompanySettings;
   if (typeof originalOpen === "function") {
     window.openCompanySettings = function () {

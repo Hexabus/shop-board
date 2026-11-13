@@ -15,10 +15,7 @@ await (async function () {
 
   async function save(value) {
     const status = document.getElementById("shopStartScreenStatus");
-    if (!valid(value)) {
-      if (status) status.textContent = "Choose Home, Today, or Jobs.";
-      return false;
-    }
+    if (!valid(value)) return false;
     try {
       await Storage.set(KEY, value);
       if (Storage.get(KEY) !== value) throw new Error("Save could not be verified");
@@ -26,15 +23,8 @@ await (async function () {
       if (status) status.textContent = "Start screen was not saved. Device storage may be full or blocked. Your previous choice is unchanged.";
       return false;
     }
-        preference = value;
-    const applied = applyOnLoad();
-
-    if (status) {
-      status.textContent = applied
-        ? names[value] + " is saved. Close Settings to see it now; it will also open on the next launch."
-        : names[value] + " is saved, but the screen could not be updated. Home is shown for now.";
-    }
-
+    preference = value;
+    applyOnLoad();
     return true;
   }
 
@@ -43,25 +33,29 @@ await (async function () {
     if (!document.getElementById("companySettingsForm") || document.getElementById("shopStartScreenPanel")) return;
     const sheet = document.getElementById("modalSheet");
     if (!sheet) return;
+    let draft = preference;
     const panel = document.createElement("section");
     panel.id = "shopStartScreenPanel";
     panel.className = "shop-start-screen-panel";
     panel.setAttribute("aria-label", "Start screen settings");
     panel.innerHTML = `
       <h3 style="font-size:20px;margin-bottom:8px;">Start Screen</h3>
-      <p style="font-size:14px;color:var(--text-muted);margin-bottom:12px;">Choose your default start screen. After saving, close Settings to see it immediately. It also applies when Shop Board fully loads.</p>
+      <p style="font-size:14px;color:var(--text-muted);margin-bottom:12px;">Choose your default start screen. Saved with the rest of Settings below.</p>
       <label class="input-label" for="shopStartScreenSelect">Open Shop Board to</label>
       <select id="shopStartScreenSelect" class="text-input">
         <option value="HOME">Home — six main tiles</option>
         <option value="TODAY">Today — today's work</option>
         <option value="JOBS">Jobs — all projects</option>
       </select>
-      <button id="shopStartScreenSave" type="button" class="big-btn" style="margin-top:12px;">Save Start Screen</button>
-      <p id="shopStartScreenStatus" role="status" aria-live="polite" style="font-size:13px;color:var(--text-muted);">Saved separately from company name and logo. Choosing an option does not save it until you tap Save Start Screen.</p>`;
+      <p id="shopStartScreenStatus" role="status" aria-live="polite" style="font-size:13px;color:var(--text-muted);"></p>`;
     sheet.appendChild(panel);
     const select = document.getElementById("shopStartScreenSelect");
     select.value = preference;
-    document.getElementById("shopStartScreenSave").addEventListener("click", () => save(select.value));
+    select.addEventListener("change", () => { draft = select.value; });
+    if (window.ShopBoardPendingSettings) {
+      window.ShopBoardPendingSettings.commits.push(() => draft === preference ? true : save(draft));
+      window.ShopBoardPendingSettings.discards.push(() => { draft = preference; });
+    }
   }
 
   function applyOnLoad() {

@@ -2097,6 +2097,7 @@ Sent from Shop Board`;
         showToast("Switch to Owner view to change company settings");
         return;
       }
+      window.ShopBoardPendingSettings = { commits: [], discards: [] };
       COMPANY_LOGO_REQUEST++;
       COMPANY_LOGO_BUSY = false;
       COMPANY_LOGO_DRAFT = DATA.business.logoDataUrl || "";
@@ -2143,6 +2144,8 @@ Sent from Shop Board`;
       COMPANY_LOGO_REQUEST++;
       COMPANY_LOGO_BUSY = false;
       COMPANY_LOGO_DRAFT = "";
+      const pending = (window.ShopBoardPendingSettings && window.ShopBoardPendingSettings.discards) || [];
+      for (const discard of pending) { try { discard(); } catch (e) {} }
       closeModal();
     }
 
@@ -2246,8 +2249,14 @@ Sent from Shop Board`;
       DATA.business = next.business;
       updateHeaderBadges();
       COMPANY_LOGO_REQUEST++;
+      const pending = (window.ShopBoardPendingSettings && window.ShopBoardPendingSettings.commits) || [];
+      let failures = 0;
+      for (const commit of pending) {
+        try { const ok = await commit(); if (ok === false) failures++; }
+        catch (e) { failures++; }
+      }
       closeModal();
-      showToast("Company settings saved on this device");
+      showToast(failures ? "Settings saved — " + failures + " preference" + (failures === 1 ? "" : "s") + " could not be saved" : "Settings saved on this device");
     }
 
     // Run setup

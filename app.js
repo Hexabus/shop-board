@@ -427,10 +427,6 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
           </div>
         </div>
 
-        <div class="home-quick-row">
-          <button class="big-btn" style="margin: 0; background: #2E7D32;" onclick="openQuickReceiptModal()">🧾 Snap Receipt</button>
-          <button class="big-btn secondary" style="margin: 0;" onclick="openNewJobModal()">+ New Job</button>
-        </div>
       `;
     }
 

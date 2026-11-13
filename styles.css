@@ -25,7 +25,7 @@ body {
   font-family: var(--font-body);
   font-size: 16px;
   line-height: 1.4;
-  padding-bottom: 90px;
+  padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px));
   -webkit-font-smoothing: antialiased;
 }
 
@@ -210,13 +210,35 @@ header.shop-bar {
   font-weight: 600;
   margin-top: 1px;
 }
-.home-quick-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+/* Persistent quick-action bar: pinned to the bottom, available from every screen */
+.quick-action-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 150;
+  display: flex;
   gap: 10px;
-  margin-top: 14px;
+  padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px));
+  background: var(--board-header);
+  border-top: 3px solid var(--brand);
+  box-shadow: 0 -2px 8px rgba(0,0,0,0.15);
 }
-.home-quick-row .big-btn { margin: 0; }
+.quick-action-btn {
+  flex: 1;
+  min-height: 44px;
+  background: #2D3330;
+  color: #FFF;
+  border: 2px solid var(--border-dark);
+  border-radius: var(--radius);
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.quick-action-btn:active { opacity: 0.8; }
 
 /* Desktop: use the extra width instead of a stretched phone layout */
 @media (min-width: 700px) {
@@ -629,7 +651,7 @@ html[data-shop-theme="dark"] input[type="file"]::file-selector-button {
 /* Toast */
 #toast {
   position: fixed;
-  bottom: 24px;
+  bottom: calc(84px + env(safe-area-inset-bottom, 0px));
   left: 50%;
   transform: translateX(-50%);
   background: var(--border-dark);

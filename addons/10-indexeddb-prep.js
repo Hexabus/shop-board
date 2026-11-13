@@ -148,8 +148,17 @@ await (async function () {
       <button id="shopIDBPrepare" type="button" class="big-btn">Prepare / Refresh IndexedDB Copy</button>
       <button id="shopIDBCheck" type="button" class="big-btn secondary">Check Copy Against Current Data</button>
       <p id="shopIDBStatus" role="status" aria-live="polite" style="font-size:13px;overflow-wrap:anywhere;color:var(--text-muted);">Checking preparation status…</p>`;
-    const footer = document.getElementById("shopSettingsFooter");
-    if (footer && footer.parentNode === sheet) sheet.insertBefore(panel, footer); else sheet.appendChild(panel);
+    let advanced = document.getElementById("shopAdvancedSection");
+    if (!advanced) {
+      advanced = document.createElement("details");
+      advanced.id = "shopAdvancedSection";
+      advanced.className = "shop-advanced-section";
+      const summary = document.createElement("summary");
+      summary.textContent = "Advanced Settings";
+      advanced.appendChild(summary);
+      sheet.appendChild(advanced);
+    }
+    advanced.appendChild(panel);
     document.getElementById("shopIDBPrepare").addEventListener("click", prepareCopy);
     document.getElementById("shopIDBCheck").addEventListener("click", () => { if (!busy) checkCopy(); });
     updateMode();

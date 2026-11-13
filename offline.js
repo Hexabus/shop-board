@@ -22,11 +22,26 @@
   panel.appendChild(heading);
   panel.appendChild(label);
   panel.appendChild(button);
-  /* This panel is diagnostic, not part of the daily journey — it lives in Settings (App Information),
-     not permanently on every screen, so it mounts into the Settings sheet on first open. */
+  /* This panel is diagnostic, not part of the daily journey — it lives inside
+     Settings > Advanced, not permanently on every screen, so it mounts on first open. */
+  function advancedSection(sheet) {
+    let details = document.getElementById("shopAdvancedSection");
+    if (!details) {
+      details = document.createElement("details");
+      details.id = "shopAdvancedSection";
+      details.className = "shop-advanced-section";
+      const summary = document.createElement("summary");
+      summary.textContent = "Advanced Settings";
+      details.appendChild(summary);
+      sheet.appendChild(details);
+    }
+    return details;
+  }
   function mountInSettings() {
     const sheet = document.getElementById("modalSheet");
-    if (sheet && panel.parentNode !== sheet) sheet.appendChild(panel);
+    if (!sheet) return;
+    const section = advancedSection(sheet);
+    if (panel.parentNode !== section) section.appendChild(panel);
   }
   const originalOpenSettings = window.openCompanySettings;
   if (typeof originalOpenSettings === "function") {

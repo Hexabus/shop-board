@@ -781,6 +781,38 @@ html[data-shop-theme="dark"] .shop-save-failure {background:#49242A;color:#FFD7D
 /* ---- offline cache panel: relocated into Settings, see offline.js ---- */
 .shop-offline-panel { margin-top:18px;padding:14px;background:var(--card-bg);color:var(--text);border:2px solid var(--border-dark);border-radius:12px; }
 
+/* ---- Advanced Settings: collapsed container for technical/diagnostic panels ---- */
+.shop-advanced-section {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 2px dashed var(--border);
+}
+.shop-advanced-section > summary {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  cursor: pointer;
+  list-style: none;
+  padding: 10px 2px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+.shop-advanced-section > summary::-webkit-details-marker { display: none; }
+.shop-advanced-section > summary::before { content: "▸ "; }
+.shop-advanced-section[open] > summary::before { content: "▾ "; }
+.shop-advanced-section[open] > summary { color: var(--text); margin-bottom: 4px; }
+/* The technical panels inside no longer need their own top margin — the section header provides it */
+.shop-advanced-section .shop-idb-panel,
+.shop-advanced-section .shop-app-info-panel,
+.shop-advanced-section .shop-owner-cloud-panel,
+.shop-advanced-section .shop-offline-panel {
+  margin-top: 14px;
+}
+
 /* Thumbnails: neutral background while a small copy is prepared */
 img[data-thumb]:not([data-thumb-state="ready"]) { background: var(--border); }
 #shopInfoLargest { white-space: pre-line; }

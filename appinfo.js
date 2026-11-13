@@ -176,9 +176,17 @@ const BUILD = "2026-10-25 — IndexedDB automatic on new devices";
       </dl>
       <p style="font-size:13px;color:var(--text-muted);margin:12px 0;">This tracks successful backup preparation through the Export Backup button on this installation, starting with this update. It does not verify that a file was saved or restored, and is not shared between devices.</p>
       <button id="shopInfoRefresh" type="button" class="big-btn secondary">Refresh App Information</button>`;
-    const footer = document.getElementById("shopSettingsFooter");
-    if (footer && footer.parentNode === sheet) sheet.insertBefore(panel, footer);
-    else sheet.appendChild(panel);
+    let advanced = document.getElementById("shopAdvancedSection");
+    if (!advanced) {
+      advanced = document.createElement("details");
+      advanced.id = "shopAdvancedSection";
+      advanced.className = "shop-advanced-section";
+      const summary = document.createElement("summary");
+      summary.textContent = "Advanced Settings";
+      advanced.appendChild(summary);
+      sheet.appendChild(advanced);
+    }
+    advanced.appendChild(panel);
     document.getElementById("shopInfoRefresh").addEventListener("click", refresh);
     refresh();
   }

@@ -73,7 +73,8 @@ await (async function () {
       const ids = [
         "companySettingsForm", "shopAppearancePanel", "shopStartScreenPanel",
         "shopMapsPreferencePanel", "shopReceiptsSettingsCard",
-        "shopBackupExportPanel", "shopRestorePanel", "shopSettingsFooter"
+        "shopBackupExportPanel", "shopRestorePanel", "shopSettingsFooter",
+        "shopAdvancedSection"
       ];
       const desired = ids.map(id => document.getElementById(id)).filter(node => node && node.parentNode === sheet);
       const existing = Array.from(sheet.children).filter(node => desired.includes(node));

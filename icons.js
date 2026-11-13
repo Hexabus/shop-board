@@ -14,7 +14,7 @@
     clients: wrap('<circle cx="8.5" cy="8" r="3"/><path d="M3 20c0-3 2.5-5.5 5.5-5.5S14 17 14 20"/><circle cx="17" cy="9" r="2.5"/><path d="M15.5 14.2c2.6.4 4.5 2.6 4.5 5.3"/>', '#B36A3C'),
     notes: wrap('<path d="M6 3h9l4 4v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="M15 3v4h4"/><path d="M8 12.5h8M8 16h5"/>', '#78909C'),
     receipt: wrap('<path d="M6 2.5h12v18.3l-2-1.3-2 1.3-2-1.3-2 1.3-2-1.3-2 1.3V2.5Z"/><path d="M8.5 7h7M8.5 10.5h7M8.5 14h4.5"/>', '#2E7D32'),
-    settings: wrap('<circle cx="12" cy="12" r="3.2"/><path d="M12 3.5v2.2M12 18.3v2.2M20.5 12h-2.2M5.7 12H3.5M17.6 6.4l-1.5 1.5M7.9 16.1l-1.5 1.5M17.6 17.6l-1.5-1.5M7.9 7.9 6.4 6.4"/>'),
+    settings: wrap('<circle cx="12" cy="12" r="6.3"/><circle cx="12" cy="12" r="2.4"/><rect x="10.7" y="2.6" width="2.6" height="3.4" rx="0.6" transform="rotate(0 12 12)"/><rect x="10.7" y="2.6" width="2.6" height="3.4" rx="0.6" transform="rotate(45 12 12)"/><rect x="10.7" y="2.6" width="2.6" height="3.4" rx="0.6" transform="rotate(90 12 12)"/><rect x="10.7" y="2.6" width="2.6" height="3.4" rx="0.6" transform="rotate(135 12 12)"/><rect x="10.7" y="2.6" width="2.6" height="3.4" rx="0.6" transform="rotate(180 12 12)"/><rect x="10.7" y="2.6" width="2.6" height="3.4" rx="0.6" transform="rotate(225 12 12)"/><rect x="10.7" y="2.6" width="2.6" height="3.4" rx="0.6" transform="rotate(270 12 12)"/><rect x="10.7" y="2.6" width="2.6" height="3.4" rx="0.6" transform="rotate(315 12 12)"/>'),
 
     crown: wrap('<path d="M3 18h18M4 18l-1-9 4.5 3L12 6l4.5 6L21 9l-1 9"/>', '#F2B705'),
     hammer: wrap('<path d="M14.5 6.5l3-3 3.5 3.5-3 3"/><path d="M12.5 8.5l3.5 3.5L5 23l-3-3Z"/><path d="M11 9.5l3-3"/>', '#78909C'),

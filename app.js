@@ -755,6 +755,7 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
                 <div style="min-width: 0; flex: 1; margin-right: 8px;">
                   <div style="font-weight: 700; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">📄 ${esc(f.name)}</div>
                   <div style="font-size: 12px; color: var(--text-muted);">Added by ${esc(f.author)} • ${esc(f.date || 'Today')}${f.size ? ` • ${esc(f.size)}` : ''}</div>
+                  ${!f.dataUrl ? `<div style="font-size: 12px; color: var(--alert); font-weight: 700; margin-top: 2px;">⚠ No file stored — name only</div>` : ''}
                 </div>
                 <div style="display: flex; align-items: center; gap: 8px;">
                   <button class="comm-btn" style="min-height: 44px; padding: 2px 10px; font-size: 13px;" onclick="openDocViewerById('${escJs(job.id)}', '${escJs(f.id)}')">View</button>
@@ -1169,9 +1170,16 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
       const job = DATA.jobs.find(j => j.id === jobId);
       if (!job) return;
 
+      if (!TEMP_PHOTO_DATA) {
+        showToast("Take or choose a photo first");
+        const picker = document.getElementById("photoInput");
+        if (picker) picker.focus();
+        return;
+      }
+
       const tag = document.getElementById("photoTag").value;
       const caption = document.getElementById("photoCaption").value.trim();
-      const url = TEMP_PHOTO_DATA || "https://images.unsplash.com/photo-1503387762-592deb58ef4e?auto=format&fit=crop&w=400&q=80";
+      const url = TEMP_PHOTO_DATA;
 
       const now = new Date();
       const timeStr = "Today";
@@ -1332,6 +1340,13 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
     async function saveRealFile(jobId) {
       const job = DATA.jobs.find(j => j.id === jobId);
       if (!job) return;
+
+      if (!TEMP_DOC_DATA) {
+        showToast("Choose a document or photo to attach first");
+        const picker = document.getElementById("filePickerInput");
+        if (picker) picker.focus();
+        return;
+      }
 
       const name = (document.getElementById("docNameInput").value || "").trim() || TEMP_DOC_NAME || "Attached_Document.pdf";
 

@@ -59,7 +59,7 @@ header.shop-bar {
 .brand-title span.chalk-badge {
   background: #343A37;
   color: #A3E635;
-  font-size: 11px;
+  font-size: 12px;
   font-family: var(--font-body);
   padding: 3px 7px;
   border-radius: 4px;
@@ -79,7 +79,7 @@ header.shop-bar {
   display: flex;
   align-items: center;
   gap: 6px;
-  min-height: 38px;
+  min-height: 44px;
 }
 .user-pill:active { background: #3C4440; }
 
@@ -287,27 +287,23 @@ header.shop-bar {
 
 /* Status Pill Strip */
 .status-strip-wrapper {
-  overflow-x: auto;
-  padding-bottom: 8px;
   margin: 12px 0;
-  -webkit-overflow-scrolling: touch;
 }
 .status-strip {
-  display: inline-flex;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   gap: 6px;
-  min-width: 100%;
 }
 .status-step {
-  padding: 10px 14px;
+  padding: 10px 6px;
   font-family: var(--font-display);
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 800;
   text-transform: uppercase;
   border: 2px solid var(--border-dark);
   background: #FFFFFF;
   border-radius: 8px;
   cursor: pointer;
-  white-space: nowrap;
   text-align: center;
   min-height: 44px;
   display: flex;
@@ -408,10 +404,10 @@ header.shop-bar {
 }
 .note-tag {
   display: inline-block;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 800;
   text-transform: uppercase;
-  padding: 2px 6px;
+  padding: 3px 7px;
   border-radius: 4px;
   border: 1px solid var(--border-dark);
   margin-right: 6px;
@@ -496,6 +492,24 @@ textarea.text-input {
   min-height: 90px;
   resize: vertical;
 }
+input[type="file"]::file-selector-button {
+  min-height: 44px;
+  padding: 0 14px;
+  margin-right: 10px;
+  border: 2px solid var(--border-dark);
+  border-radius: 8px;
+  background: #FFF;
+  color: var(--text);
+  font-family: var(--font-display);
+  font-weight: 800;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+html[data-shop-theme="dark"] input[type="file"]::file-selector-button {
+  background: #1E2722;
+  color: var(--text);
+  border-color: var(--border-dark);
+}
 
 /* Pills for Trade Types */
 .trade-pills {
@@ -546,6 +560,16 @@ textarea.text-input {
 .comm-btn:active {
   transform: translate(1px, 1px);
   box-shadow: none;
+}
+@media (max-width: 420px) {
+  .comm-row {
+    flex-wrap: wrap;
+  }
+  .comm-row .comm-btn {
+    flex: 1 1 calc(50% - 4px);
+    font-size: 14px;
+    padding: 8px 4px;
+  }
 }
 
 /* Empty state */

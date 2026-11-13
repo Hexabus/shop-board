@@ -598,7 +598,7 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
 
         <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
           <div style="font-family: var(--font-display); font-size: 18px; font-weight: 800; text-transform: uppercase;">Photos (${job.photos.length})</div>
-          <button style="background: var(--board-header); color: #FFF; border: 2px solid var(--border-dark); border-radius: 6px; padding: 6px 12px; font-family: var(--font-display); font-size: 15px; font-weight: 800; text-transform: uppercase; cursor: pointer;" onclick="openAddPhotoModal('${escJs(job.id)}')">
+          <button style="min-height: 44px; background: var(--board-header); color: #FFF; border: 2px solid var(--border-dark); border-radius: 6px; padding: 6px 12px; font-family: var(--font-display); font-size: 15px; font-weight: 800; text-transform: uppercase; cursor: pointer;" onclick="openAddPhotoModal('${escJs(job.id)}')">
             📷 + Add Photo
           </button>
         </div>
@@ -646,7 +646,7 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
             <div class="card">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                 <div style="font-family: var(--font-display); font-size: 17px; font-weight: 800; text-transform: uppercase;">🧾 Receipts & Expenses</div>
-                <button class="comm-btn" style="min-height: 34px; padding: 4px 10px; background: #2E7D32; color: #FFF;" onclick="openQuickReceiptModal('${escJs(job.id)}')">📷 + Snap Receipt</button>
+                <button class="comm-btn" style="min-height: 44px; padding: 4px 10px; background: #2E7D32; color: #FFF;" onclick="openQuickReceiptModal('${escJs(job.id)}')">📷 + Snap Receipt</button>
               </div>
               ${(!job.expenses || job.expenses.length === 0) ? `<div style="font-size: 13px; color: var(--text-muted);">No receipts logged for this job yet.</div>` : ''}
               ${(job.expenses || []).map(exp => `
@@ -662,7 +662,7 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
                     <div style="font-family: var(--font-display); font-size: 16px; font-weight: 800; color: var(--alert);">
                       $${(Number(exp.amount) || 0).toFixed(2)}
                     </div>
-                    <button style="border: 2px solid var(--alert); background: #FFF; border-radius: 6px; padding: 4px 8px; font-family: var(--font-display); font-size: 13px; font-weight: 800; color: var(--alert); cursor: pointer;" onclick="event.stopPropagation(); deleteExpense('${escJs(job.id)}', '${escJs(exp.id)}')">DELETE</button>
+                    <button style="min-height: 44px; border: 2px solid var(--alert); background: #FFF; border-radius: 6px; padding: 4px 10px; font-family: var(--font-display); font-size: 13px; font-weight: 800; color: var(--alert); cursor: pointer;" onclick="event.stopPropagation(); deleteExpense('${escJs(job.id)}', '${escJs(exp.id)}')">DELETE</button>
                   </div>
                 </div>
               `).join('')}
@@ -672,7 +672,7 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
             <div class="card">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                 <div style="font-family: var(--font-display); font-size: 17px; font-weight: 800; text-transform: uppercase;">Bills & Invoices</div>
-                <button class="comm-btn" style="min-height: 34px; padding: 4px 10px;" onclick="openAddBillModal('${escJs(job.id)}')">+ Add Bill</button>
+                <button class="comm-btn" style="min-height: 44px; padding: 4px 10px;" onclick="openAddBillModal('${escJs(job.id)}')">+ Add Bill</button>
               </div>
               ${job.bills.length === 0 ? `<div style="font-size: 13px; color: var(--text-muted);">No bills yet.</div>` : ''}
               ${job.bills.map(b => `
@@ -682,10 +682,10 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
                     <div style="font-size: 13px; color: var(--text-muted);">$${b.amount.toLocaleString()}</div>
                   </div>
                   <div style="display: flex; align-items: center; gap: 8px;">
-                    <button style="border: 2px solid var(--border-dark); padding: 6px 12px; border-radius: 6px; font-family: var(--font-display); font-size: 14px; font-weight: 800; text-transform: uppercase; cursor: pointer; background: ${b.status === 'Paid' ? '#E8F5E9; color: #2E7D32;' : '#FFF;'}" onclick="toggleBillPaid('${escJs(job.id)}', '${escJs(b.id)}')">
+                    <button style="min-height: 44px; border: 2px solid var(--border-dark); padding: 6px 12px; border-radius: 6px; font-family: var(--font-display); font-size: 14px; font-weight: 800; text-transform: uppercase; cursor: pointer; background: ${b.status === 'Paid' ? '#E8F5E9; color: #2E7D32;' : '#FFF;'}" onclick="toggleBillPaid('${escJs(job.id)}', '${escJs(b.id)}')">
                       ${b.status === 'Paid' ? '✓ PAID' : 'MARK PAID'}
                     </button>
-                    <button style="border: 2px solid var(--alert); background: #FFF; border-radius: 6px; padding: 4px 8px; font-family: var(--font-display); font-size: 13px; font-weight: 800; color: var(--alert); cursor: pointer;" onclick="event.stopPropagation(); deleteBill('${escJs(job.id)}', '${escJs(b.id)}')">DELETE</button>
+                    <button style="min-height: 44px; border: 2px solid var(--alert); background: #FFF; border-radius: 6px; padding: 4px 10px; font-family: var(--font-display); font-size: 13px; font-weight: 800; color: var(--alert); cursor: pointer;" onclick="event.stopPropagation(); deleteBill('${escJs(job.id)}', '${escJs(b.id)}')">DELETE</button>
                   </div>
                 </div>
               `).join('')}
@@ -714,7 +714,7 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
             <div style="font-family: var(--font-display); font-size: 20px; font-weight: 900; text-transform: uppercase;">
               Notes Board
             </div>
-            <button style="background: var(--brand); color: #FFF; border: 2px solid var(--border-dark); border-radius: 6px; padding: 6px 12px; font-family: var(--font-display); font-size: 15px; font-weight: 800; text-transform: uppercase; cursor: pointer;" onclick="openAddNoteModal('${escJs(job.id)}')">
+            <button style="min-height: 44px; background: var(--brand); color: #FFF; border: 2px solid var(--border-dark); border-radius: 6px; padding: 6px 12px; font-family: var(--font-display); font-size: 15px; font-weight: 800; text-transform: uppercase; cursor: pointer;" onclick="openAddNoteModal('${escJs(job.id)}')">
               + Post Note
             </button>
           </div>
@@ -739,7 +739,7 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
                   </div>
                   ${canDelete ? `
                     <div style="text-align: right; margin-top: 4px;">
-                      <button style="background: none; border: none; color: var(--alert); font-size: 11px; font-weight: 800; text-transform: uppercase; cursor: pointer;" onclick="deleteNote('${escJs(job.id)}', '${escJs(n.id)}')">Delete</button>
+                      <button style="min-height: 44px; min-width: 44px; padding: 10px 12px; background: none; border: none; color: var(--alert); font-size: 12px; font-weight: 800; text-transform: uppercase; cursor: pointer;" onclick="deleteNote('${escJs(job.id)}', '${escJs(n.id)}')">Delete</button>
                     </div>
                   ` : ''}
                 </div>
@@ -752,7 +752,7 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
         <div id="filesSection" style="margin-top: 20px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
             <div style="font-family: var(--font-display); font-size: 20px; font-weight: 900; text-transform: uppercase;">Files</div>
-            <button class="comm-btn" style="min-height: 34px; padding: 4px 10px;" onclick="openAddFileModal('${escJs(job.id)}')">+ Add File</button>
+            <button class="comm-btn" style="min-height: 44px; padding: 4px 10px;" onclick="openAddFileModal('${escJs(job.id)}')">+ Add File</button>
           </div>
           <div class="card">
             ${job.files.length === 0 ? `<div style="font-size: 13px; color: var(--text-muted);">No files attached yet.</div>` : ''}
@@ -763,8 +763,8 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
                   <div style="font-size: 12px; color: var(--text-muted);">Added by ${esc(f.author)} • ${esc(f.date || 'Today')}${f.size ? ` • ${esc(f.size)}` : ''}</div>
                 </div>
                 <div style="display: flex; align-items: center; gap: 8px;">
-                  <button class="comm-btn" style="min-height: 32px; padding: 2px 10px; font-size: 13px;" onclick="openDocViewerById('${escJs(job.id)}', '${escJs(f.id)}')">View</button>
-                  <button style="border: 2px solid var(--alert); background: #FFF; border-radius: 6px; padding: 4px 8px; font-family: var(--font-display); font-size: 13px; font-weight: 800; color: var(--alert); cursor: pointer;" onclick="event.stopPropagation(); deleteFile('${escJs(job.id)}', '${escJs(f.id)}')">DELETE</button>
+                  <button class="comm-btn" style="min-height: 44px; padding: 2px 10px; font-size: 13px;" onclick="openDocViewerById('${escJs(job.id)}', '${escJs(f.id)}')">View</button>
+                  <button style="min-height: 44px; border: 2px solid var(--alert); background: #FFF; border-radius: 6px; padding: 4px 10px; font-family: var(--font-display); font-size: 13px; font-weight: 800; color: var(--alert); cursor: pointer;" onclick="event.stopPropagation(); deleteFile('${escJs(job.id)}', '${escJs(f.id)}')">DELETE</button>
                 </div>
               </div>
             `).join('')}
@@ -885,11 +885,11 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
 
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
           <div style="font-family: var(--font-display); font-size: 20px; font-weight: 900; text-transform: uppercase;">Clients</div>
-          <button class="comm-btn" style="min-height: 36px; padding: 4px 12px;" onclick="openNewClientModal()">+ Add Client</button>
+          <button class="comm-btn" style="min-height: 44px; padding: 4px 12px;" onclick="openNewClientModal()">+ Add Client</button>
         </div>
         ${DATA.clients.map(cl => `
           <div class="card">
-            <div class="card-header-row"><div class="card-title">${esc(cl.name)}</div><button class="comm-btn" style="min-height:34px; padding:4px 10px; flex:0 0 auto;" onclick="openEditClientModal('${escJs(cl.id)}')">✏️ Edit</button></div>
+            <div class="card-header-row"><div class="card-title">${esc(cl.name)}</div><button class="comm-btn" style="min-height:44px; padding:4px 10px; flex:0 0 auto;" onclick="openEditClientModal('${escJs(cl.id)}')">✏️ Edit</button></div>
             <div class="card-sub">${cl.address ? `<a class="map-address" href="${esc(getMapLink(cl.address))}">📍 ${esc(cl.address)} • Map</a>` : '📍 No address saved'}</div>
             ${cl.projectNotes ? `<div style="font-size:13px; color:var(--text-muted); margin-top:6px; white-space:pre-wrap;">📝 ${esc(cl.projectNotes)}</div>` : ''}
             <div class="comm-row">
@@ -903,7 +903,7 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
 
         <div style="display: flex; justify-content: space-between; align-items: center; margin: 24px 0 8px 0;">
           <div style="font-family: var(--font-display); font-size: 20px; font-weight: 900; text-transform: uppercase;">Crew Roster</div>
-          ${DATA.currentUser.role === 'Owner' ? `<button class="comm-btn" style="min-height: 36px; padding: 4px 12px;" onclick="openNewCrewModal()">+ Add Crew</button>` : ''}
+          ${DATA.currentUser.role === 'Owner' ? `<button class="comm-btn" style="min-height: 44px; padding: 4px 12px;" onclick="openNewCrewModal()">+ Add Crew</button>` : ''}
         </div>
         ${DATA.crewMembers.map(cr => `
           <div class="card">
@@ -917,7 +917,7 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
                   ${esc(cr.role)}
                 </div>
                 ${(DATA.currentUser.role === 'Owner' && cr.role !== 'Owner') ? `
-                  <button style="border: 2px solid var(--alert); background: #FFF; border-radius: 6px; padding: 4px 8px; font-family: var(--font-display); font-size: 13px; font-weight: 800; color: var(--alert); cursor: pointer;" onclick="event.stopPropagation(); deleteCrewMember('${escJs(cr.id)}')">REMOVE</button>
+                  <button style="min-height: 44px; border: 2px solid var(--alert); background: #FFF; border-radius: 6px; padding: 4px 10px; font-family: var(--font-display); font-size: 13px; font-weight: 800; color: var(--alert); cursor: pointer;" onclick="event.stopPropagation(); deleteCrewMember('${escJs(cr.id)}')">REMOVE</button>
                 ` : ''}
               </div>
             </div>

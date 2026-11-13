@@ -118,7 +118,7 @@
   /* Attributes for a list-screen <img>. Embedded images get a placeholder plus lookup IDs; links are used as is. */
   window.thumbAttrs = function (kind, jobId, itemId, url) {
     url = String(url || "");
-    if (!/^data:image\//.test(url)) return 'src="' + window.esc(url) + '"';
+    if (!/^data:image\//.test(url)) return 'src="' + window.esc(url) + '" alt="" onerror="this.onerror=null;this.removeAttribute(&#39;src&#39;);this.style.background=&#39;var(--border)&#39;;"';
     return 'src="' + PLACEHOLDER + '" data-thumb="' + window.esc(kind) + '" data-job="' + window.esc(jobId) + '" data-item="' + window.esc(itemId) + '"';
   };
   /* Remove thumbnails whose photo no longer exists. They are always rebuildable. */

@@ -386,6 +386,7 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
       DATA.jobs.forEach(j => totalPhotos += (j.photos ? j.photos.length : 0));
 
       return `
+        <div class="home-fill">
         <div class="board-grid">
           <div class="tile" onclick="openView('TODAY')">
             ${todayCount > 0 ? `<div class="tile-badge">${todayCount}</div>` : ''}
@@ -426,7 +427,7 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
             <div class="tile-sub">Shared clipboard</div>
           </div>
         </div>
-
+        </div>
       `;
     }
 

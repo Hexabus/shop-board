@@ -165,11 +165,18 @@ header.shop-bar {
 }
 
 /* 6 Big Tiles */
+.home-fill {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100dvh - 225px);
+}
 .board-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
+  grid-template-rows: repeat(3, 1fr);
   gap: 10px;
   margin-top: 10px;
+  flex: 1;
 }
 .tile {
   background: var(--card-bg);
@@ -243,7 +250,7 @@ header.shop-bar {
 /* Desktop: use the extra width instead of a stretched phone layout */
 @media (min-width: 700px) {
   .container { max-width: 900px; }
-  .board-grid { grid-template-columns: repeat(3, 1fr); }
+  .board-grid { grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, 1fr); }
 }
 .tile-badge {
   position: absolute;

@@ -7,6 +7,10 @@ const OWNER="a2447b13-633c-4a88-874e-f67f99509709";
 const ACCESS="/rest/v1/shop_board_owner_access?select=user_id";
 const SNAP="/rest/v1/shop_board_cloud_snapshots";
 const RECEIPT_KEY="shopBoardCloudSnapshotReceipt";
+const REFRESH_KEY="shopBoardCloudRefreshToken";
+function storeRefreshToken(token){try{if(typeof token==="string"&&token)localStorage.setItem(REFRESH_KEY,token);}catch(e){}}
+function clearRefreshToken(){try{localStorage.removeItem(REFRESH_KEY);}catch(e){}}
+function hasStoredCredential(){try{return Boolean(localStorage.getItem(REFRESH_KEY));}catch(e){return false;}}
 const MAX_BYTES=25*1024*1024;
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 let session=null,busy=false,expiryTimer=null,anonymousPassed=false,lastVerified=null;
@@ -43,9 +47,33 @@ async function serverSignOut(token){const r=await request("/auth/v1/logout?scope
 function requireSession(){expire();if(!session)throw Error("Sign in as the owner first. The session is not retained after reload.");return session;}
 async function checkedSession(){const s=requireSession();await verifyOwner(s.token);if(session!==s||Date.now()>=s.expiresAt)throw Error("Session expired. Sign in again.");lastVerified=Date.now();return s;}
 async function testAnonymous(){return run("Testing anonymous access to both cloud tables…",async()=>{await anonymousRead();notice="Anonymous reads correctly blocked for both tables. No owner or snapshot data returned.";});}
-async function signIn(email,password){expire();if(session){notice="Already signed in; use Recheck Owner Access.";render();return false;}if(typeof email!=="string"||!email.trim()||typeof password!=="string"||!password){notice="Enter your owner email and password. Keep passwords out of chat.";render();return false;}return run("Signing in and checking protected owner access…",async()=>{let candidate=null;try{await anonymousRead();const a=await request("/auth/v1/token?grant_type=password",{method:"POST",body:{email:email.trim(),password}});password="";if(!a.ok)throw failure(a,"Sign-in");if(!a.data||typeof a.data.access_token!=="string"||!Number.isFinite(a.data.expires_in)||a.data.expires_in<=0)throw Error("Invalid session response.");candidate=a.data.access_token;const expiresAt=Date.now()+Math.min(a.data.expires_in,3600)*1000;a.data.refresh_token=null;const ownerEmail=await verifyOwner(candidate);if(Date.now()>=expiresAt)throw Error("Session expired during verification.");session={token:candidate,email:ownerEmail,expiresAt};lastVerified=Date.now();clearTimeout(expiryTimer);expiryTimer=setTimeout(expire,expiresAt-Date.now()+10);notice="Owner access verified. Manual snapshot uploads are available; automatic sync remains disabled.";}catch(e){if(candidate){try{await serverSignOut(candidate);}catch(_){}}clearSession();throw e;}finally{password="";}});}
+async function signIn(email,password){expire();if(session){notice="Already signed in; use Recheck Owner Access.";render();return false;}if(typeof email!=="string"||!email.trim()||typeof password!=="string"||!password){notice="Enter your owner email and password. Keep passwords out of chat.";render();return false;}return run("Signing in and checking protected owner access…",async()=>{let candidate=null;try{await anonymousRead();const a=await request("/auth/v1/token?grant_type=password",{method:"POST",body:{email:email.trim(),password}});password="";if(!a.ok)throw failure(a,"Sign-in");if(!a.data||typeof a.data.access_token!=="string"||!Number.isFinite(a.data.expires_in)||a.data.expires_in<=0)throw Error("Invalid session response.");candidate=a.data.access_token;const expiresAt=Date.now()+Math.min(a.data.expires_in,3600)*1000;const refreshToken=typeof a.data.refresh_token==="string"?a.data.refresh_token:null;a.data.refresh_token=null;const ownerEmail=await verifyOwner(candidate);if(Date.now()>=expiresAt)throw Error("Session expired during verification.");session={token:candidate,email:ownerEmail,expiresAt};lastVerified=Date.now();clearTimeout(expiryTimer);expiryTimer=setTimeout(expire,expiresAt-Date.now()+10);storeRefreshToken(refreshToken);notice="Owner access verified. Manual snapshot uploads are available; automatic sync remains disabled.";}catch(e){if(candidate){try{await serverSignOut(candidate);}catch(_){}}clearSession();throw e;}finally{password="";}});}
+async function restoreSession(){
+ if(session)return true;
+ let refresh;try{refresh=localStorage.getItem(REFRESH_KEY);}catch(e){refresh=null;}
+ if(!refresh)return false;
+ let candidate=null;
+ try{
+  const r=await request("/auth/v1/token?grant_type=refresh_token",{method:"POST",body:{refresh_token:refresh}});
+  if(!r.ok){clearRefreshToken();return false;}
+  if(!r.data||typeof r.data.access_token!=="string"||!Number.isFinite(r.data.expires_in)||r.data.expires_in<=0){clearRefreshToken();return false;}
+  candidate=r.data.access_token;const expiresAt=Date.now()+Math.min(r.data.expires_in,3600)*1000;const nextRefresh=typeof r.data.refresh_token==="string"?r.data.refresh_token:refresh;
+  const ownerEmail=await verifyOwner(candidate);
+  if(Date.now()>=expiresAt)return false;
+  session={token:candidate,email:ownerEmail,expiresAt};lastVerified=Date.now();
+  clearTimeout(expiryTimer);expiryTimer=setTimeout(expire,expiresAt-Date.now()+10);
+  storeRefreshToken(nextRefresh);
+  notice="Owner access restored automatically on this device.";render();
+  return true;
+ }catch(e){
+  if(candidate){try{await serverSignOut(candidate);}catch(_){}}
+  // Network/timeout trouble is not the same as a rejected credential — let the caller
+  // decide whether to trust the stored sign-in offline rather than lock out a signed-in owner.
+  throw e;
+ }
+}
 async function recheck(){return run("Rechecking owner access…",async()=>{try{await checkedSession();notice="Owner access reverified by Supabase. Automatic sync remains disabled.";}catch(e){clearSession();throw e;}});}
-async function signOut(){if(busy)return false;const token=session&&session.token;clearSession();if(!token){notice="No cloud session remains. Local records were kept.";render();return true;}return run("Cleared cloud token here; requesting current-session sign-out…",async()=>{try{await serverSignOut(token);notice="Signed out. Local business records and upload receipts were kept. This does not lock the offline app.";}catch(e){throw Error("Token cleared here, but server sign-out was not confirmed. "+e.message);}});}
+async function signOut(){if(busy)return false;const token=session&&session.token;clearSession();clearRefreshToken();if(!token){notice="No cloud session remains. Local records were kept.";render();return true;}return run("Cleared cloud token here; requesting current-session sign-out…",async()=>{try{await serverSignOut(token);notice="Signed out. Local business records and upload receipts were kept. This does not lock the offline app.";}catch(e){throw Error("Token cleared here, but server sign-out was not confirmed. "+e.message);}});}
 function canonical(v){if(v===null)return"null";if(typeof v==="string"||typeof v==="boolean")return JSON.stringify(v);if(typeof v==="number"&&Number.isFinite(v))return JSON.stringify(v);if(Array.isArray(v))return"["+v.map(canonical).join(",")+"]";if(v&&typeof v==="object")return"{"+Object.keys(v).sort().map(k=>JSON.stringify(k)+":"+canonical(v[k])).join(",")+"}";throw Error("Backup contains an unsupported JSON value.");}
 async function checksum(value){if(!window.crypto||!window.crypto.subtle||typeof TextEncoder==="undefined")throw Error("Secure SHA-256 verification is unavailable in this browser.");const raw=await window.crypto.subtle.digest("SHA-256",new TextEncoder().encode(canonical(value)));return Array.from(new Uint8Array(raw),b=>b.toString(16).padStart(2,"0")).join("");}
 function newID(){if(window.crypto.randomUUID)return window.crypto.randomUUID();const b=window.crypto.getRandomValues(new Uint8Array(16));b[6]=(b[6]&15)|64;b[8]=(b[8]&63)|128;const h=Array.from(b,x=>x.toString(16).padStart(2,"0")).join("");return h.slice(0,8)+"-"+h.slice(8,12)+"-"+h.slice(12,16)+"-"+h.slice(16,20)+"-"+h.slice(20);}
@@ -321,7 +349,7 @@ node("shopOwnerCloudTestAnonymous").addEventListener("click",testAnonymous);node
 node("shopSnapshotPrepare").addEventListener("click",()=>prepareFile(node("shopSnapshotFile").files&&node("shopSnapshotFile").files[0],node("shopSnapshotSource").value));node("shopSnapshotUpload").addEventListener("click",()=>uploadPrepared(node("shopSnapshotConfirmed").checked));node("shopSnapshotVerify").addEventListener("click",()=>verifySnapshot(node("shopSnapshotID").value,node("shopSnapshotExpectedHash").value));
 if(preview)node("shopSnapshotSource").value=preview.row.source_device;else if(receipt)node("shopSnapshotSource").value=receipt.source;if(receipt){node("shopSnapshotID").value=receipt.snapshotId;node("shopSnapshotExpectedHash").value=receipt.hash;}expire();render();}
 function setup(){if(document.body.getAttribute("data-shop-boot")==="loading")return;loadReceipt();const original=window.openCompanySettings;if(typeof original==="function")window.openCompanySettings=function(){const r=original.apply(this,arguments);insertPanel();return r;};const sheet=node("modalSheet");if(sheet&&window.MutationObserver)new MutationObserver(insertPanel).observe(sheet,{childList:true});document.addEventListener("visibilitychange",expire);insertPanel();}
-window.ShopBoardOwnerCloud={testAnonymous,signIn,recheck,signOut,prepareFile,uploadPrepared,verifySnapshot,getState:()=>({signedIn:Boolean(session),anonymousPassed,lastVerified,syncEnabled:false,manualSnapshots:true,preview:preview?{id:preview.row.id,hash:preview.row.payload_sha256,bytes:preview.bytes,verified:preview.verified}:null,receipt:receipt?{snapshotId:receipt.snapshotId,state:receipt.state,hash:receipt.hash}:null})};
+window.ShopBoardOwnerCloud={testAnonymous,signIn,recheck,signOut,prepareFile,uploadPrepared,verifySnapshot,restoreSession,hasStoredCredential,getState:()=>({signedIn:Boolean(session),anonymousPassed,lastVerified,syncEnabled:false,manualSnapshots:true,notice,preview:preview?{id:preview.row.id,hash:preview.row.payload_sha256,bytes:preview.bytes,verified:preview.verified}:null,receipt:receipt?{snapshotId:receipt.snapshotId,state:receipt.state,hash:receipt.hash}:null})};
 if(window.ShopBoardBootPromise&&typeof window.ShopBoardBootPromise.then==="function")window.ShopBoardBootPromise.then(setup);else setup();
 })();
 

@@ -2006,7 +2006,13 @@ Sent from Shop Board`;
         return;
       }
 
-      const amountVal = parseFloat(document.getElementById("receiptAmountInput").value) || 0;
+      const amountInput = document.getElementById("receiptAmountInput");
+      const amountVal = parseFloat(amountInput.value) || 0;
+      if (amountVal <= 0) {
+        showToast("Enter the receipt amount before saving");
+        amountInput.focus();
+        return false;
+      }
       const descVal = (document.getElementById("receiptDescInput").value || "").trim() || "Receipt / Materials";
       const categoryVal = document.getElementById("receiptCategorySelect") ? document.getElementById("receiptCategorySelect").value : "Materials";
 

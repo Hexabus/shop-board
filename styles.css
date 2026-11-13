@@ -78,7 +78,7 @@ header.shop-bar {
   white-space: nowrap;
   min-width: 0;
 }
-@media (max-width: 400px) {
+@media (max-width: 500px) {
   .brand-title span.chalk-badge { display: none; }
 }
 .user-pill {

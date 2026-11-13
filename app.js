@@ -473,7 +473,7 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
 
       return `
         <div class="screen-header">
-          <button class="back-btn" onclick="goHome()">←</button>
+          <button class="back-btn" onclick="goHome()" aria-label="Back">←</button>
           <div class="screen-title">TODAY'S WORK</div>
         </div>
         <div style="font-size: 14px; color: var(--text-muted); font-weight: 600; margin-bottom: 12px;">
@@ -517,7 +517,7 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
 
       return `
         <div class="screen-header">
-          <button class="back-btn" onclick="goHome()">←</button>
+          <button class="back-btn" onclick="goHome()" aria-label="Back">←</button>
           <div class="screen-title">ALL JOBS</div>
         </div>
         <button class="big-btn" onclick="openNewJobModal()">+ New Job</button>
@@ -563,7 +563,7 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
 
       return `
         <div class="screen-header">
-          <button class="back-btn" onclick="openView('JOBS')">←</button>
+          <button class="back-btn" onclick="openView('JOBS')" aria-label="Back">←</button>
           <div class="screen-title" style="font-size: 22px;">${esc(job.name)}</div>
         </div>
 
@@ -790,7 +790,7 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
       const jobsWithPhotos = DATA.jobs.filter(job => (job.photos || []).length > 0);
       return `
         <div class="screen-header">
-          <button class="back-btn" onclick="goHome()">←</button>
+          <button class="back-btn" onclick="goHome()" aria-label="Back">←</button>
           <div class="screen-title">JOB PHOTOS</div>
         </div>
         <div style="font-size: 14px; color: var(--text-muted); font-weight: 600; margin-bottom: 12px;">
@@ -824,7 +824,7 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
       const client = DATA.clients.find(c => c.id === job.clientId) || { name: 'Client' };
       return `
         <div class="screen-header">
-          <button class="back-btn" onclick="openView('PHOTOS')">←</button>
+          <button class="back-btn" onclick="openView('PHOTOS')" aria-label="Back">←</button>
           <div class="screen-title">${esc(job.name)}</div>
         </div>
         <div style="font-size:14px; color:var(--text-muted); font-weight:600; margin-bottom:12px;">${esc(client.name)} • ${job.photos.length} ${job.photos.length === 1 ? 'photo' : 'photos'}</div>
@@ -843,7 +843,7 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
     function renderMoneyView() {
       const isOwner = DATA.currentUser.role === "Owner";
       const canSeeMoney = isOwner || DATA.business.crewSeeMoney;
-      if (!canSeeMoney) return `<div class="screen-header"><button class="back-btn" onclick="goHome()">←</button><div class="screen-title">MONEY</div></div><div class="card" style="text-align:center; padding:30px;"><div style="font-family:var(--font-display); font-size:22px; font-weight:800;">RESTRICTED TO OWNER</div><div style="color:var(--text-muted); margin-top:8px;">Dollar tracking is turned off for crew logins.</div></div>`;
+      if (!canSeeMoney) return `<div class="screen-header"><button class="back-btn" onclick="goHome()" aria-label="Back">←</button><div class="screen-title">MONEY</div></div><div class="card" style="text-align:center; padding:30px;"><div style="font-family:var(--font-display); font-size:22px; font-weight:800;">RESTRICTED TO OWNER</div><div style="color:var(--text-muted); margin-top:8px;">Dollar tracking is turned off for crew logins.</div></div>`;
 
       let totalRevenue = 0, totalExpenses = 0;
       const rows = DATA.jobs.map(job => {
@@ -855,7 +855,7 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
       });
       const netProfit = totalRevenue - totalExpenses;
       return `
-        <div class="screen-header"><button class="back-btn" onclick="goHome()">←</button><div class="screen-title">MONEY BOARD</div></div>
+        <div class="screen-header"><button class="back-btn" onclick="goHome()" aria-label="Back">←</button><div class="screen-title">MONEY BOARD</div></div>
         <div style="font-size:14px; color:var(--text-muted); font-weight:600; margin-bottom:12px;">Revenue is collected money. Expenses come from each job’s expense entries.</div>
         <div class="money-metrics" style="margin-bottom:20px;">
           <div class="metric-box"><div class="metric-label">Total Revenue</div><div class="metric-val" style="color:var(--highlight);">${formatMoney(totalRevenue)}</div></div>
@@ -874,7 +874,7 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
     function renderClientsView() {
       return `
         <div class="screen-header">
-          <button class="back-btn" onclick="goHome()">←</button>
+          <button class="back-btn" onclick="goHome()" aria-label="Back">←</button>
           <div class="screen-title">CLIENTS</div>
         </div>
 
@@ -938,7 +938,7 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
 
       return `
         <div class="screen-header">
-          <button class="back-btn" onclick="goHome()">←</button>
+          <button class="back-btn" onclick="goHome()" aria-label="Back">←</button>
           <div class="screen-title">SHOP CLIPBOARD</div>
         </div>
         <div style="font-size: 14px; color: var(--text-muted); font-weight: 600; margin-bottom: 12px;">

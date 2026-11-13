@@ -233,7 +233,7 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
 
       const badge = document.getElementById("roleBadge");
       const isOwner = DATA.currentUser.role === "Owner";
-      if (badge) badge.innerText = isOwner ? `👑 OWNER` : `🔨 CREW`;
+      if (badge) badge.innerHTML = isOwner ? `${ShopIcon.crown} OWNER` : `${ShopIcon.hammer} CREW`;
 
       const crewStatus = document.getElementById("crewVisibilityStatus");
       if (crewStatus) {
@@ -324,7 +324,7 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
       const link = target && target.closest ? target.closest('a[href="#"]') : null;
       if (!link) return;
       const isMapLink = link.classList.contains("map-address") ||
-        (link.classList.contains("comm-btn") && link.textContent.trim() === "🗺️ Map");
+        (link.classList.contains("comm-btn") && link.textContent.trim() === "Map");
       if (!isMapLink) return;
       event.preventDefault();
       event.stopPropagation();
@@ -456,11 +456,11 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
                   ${esc(job.status)}
                 </div>
               </div>
-              <div class="card-meta"><a class="map-address" href="${esc(getMapLink(job.address))}" onclick="event.stopPropagation();">📍 ${esc(job.address)} • Map</a></div>
-              <div class="card-meta">🔨 ${esc(job.trade || 'General')}</div>
+              <div class="card-meta"><a class="map-address" href="${esc(getMapLink(job.address))}" onclick="event.stopPropagation();">${ShopIcon.pin} ${esc(job.address)} • Map</a></div>
+              <div class="card-meta">${ShopIcon.hammer} ${esc(job.trade || 'General')}</div>
               <div class="comm-row" onclick="event.stopPropagation();">
-                ${client.phone ? `<a href="tel:${esc(client.phone)}" class="comm-btn" style="background: var(--highlight-soft);">📞 Call</a>` : ''}
-                <button class="comm-btn" onclick="openJobEmailModal('${escJs(job.id)}')">✉️ Email Update</button>
+                ${client.phone ? `<a href="tel:${esc(client.phone)}" class="comm-btn" style="background: var(--highlight-soft);">${ShopIcon.call} Call</a>` : ''}
+                <button class="comm-btn" onclick="openJobEmailModal('${escJs(job.id)}')">${ShopIcon.mail} Email Update</button>
               </div>
             </div>
           `;
@@ -502,9 +502,9 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
                   ${esc(job.status)}
                 </div>
               </div>
-              <div class="card-meta"><a class="map-address" href="${esc(getMapLink(job.address))}" onclick="event.stopPropagation();">📍 ${esc(job.address)} • Map</a></div>
+              <div class="card-meta"><a class="map-address" href="${esc(getMapLink(job.address))}" onclick="event.stopPropagation();">${ShopIcon.pin} ${esc(job.address)} • Map</a></div>
               <div class="card-meta" style="color: var(--text-muted);">
-                📷 ${job.photos.length} photo${job.photos.length === 1 ? '' : 's'} • 📝 ${job.notes.length} note${job.notes.length === 1 ? '' : 's'}
+                ${ShopIcon.photos} ${job.photos.length} photo${job.photos.length === 1 ? '' : 's'} • ${ShopIcon.notes} ${job.notes.length} note${job.notes.length === 1 ? '' : 's'}
               </div>
             </div>
           `;
@@ -564,16 +564,16 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
         </div>
 
         <div class="card" style="margin-bottom: 10px;">
-          <div class="card-sub">${esc(client.name)} • <a class="map-address" href="${esc(getMapLink(job.address))}">📍 ${esc(job.address)} • Map</a></div>
+          <div class="card-sub">${esc(client.name)} • <a class="map-address" href="${esc(getMapLink(job.address))}">${ShopIcon.pin} ${esc(job.address)} • Map</a></div>
           <div style="font-family: var(--font-display); font-size: 17px; font-weight: 800; text-transform: uppercase; color: var(--brand); margin-top: 4px;">
             Trade: ${esc(job.trade || 'General Carpentry')}
           </div>
 
           <div class="comm-row">
-            ${client.phone ? `<a href="tel:${esc(client.phone)}" class="comm-btn">📞 Call</a>` : ''}
-            ${client.phone ? `<a href="sms:${esc(client.phone)}" class="comm-btn">💬 Text</a>` : ''}
-            <a href="${esc(getMapLink(job.address))}" class="comm-btn" style="background: var(--highlight-soft); color: #176B3A;">🗺️ Map</a>
-            <button class="comm-btn" onclick="openJobEmailModal('${escJs(job.id)}')">✉️ Email</button>
+            ${client.phone ? `<a href="tel:${esc(client.phone)}" class="comm-btn">${ShopIcon.call} Call</a>` : ''}
+            ${client.phone ? `<a href="sms:${esc(client.phone)}" class="comm-btn">${ShopIcon.text} Text</a>` : ''}
+            <a href="${esc(getMapLink(job.address))}" class="comm-btn" style="background: var(--highlight-soft); color: #176B3A;">${ShopIcon.map} Map</a>
+            <button class="comm-btn" onclick="openJobEmailModal('${escJs(job.id)}')">${ShopIcon.mail} Email</button>
           </div>
         </div>
 
@@ -589,22 +589,22 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
         <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
           <div style="font-family: var(--font-display); font-size: 18px; font-weight: 800; text-transform: uppercase;">Photos (${job.photos.length})</div>
           <button style="min-height: 44px; background: var(--board-header); color: #FFF; border: 2px solid var(--border-dark); border-radius: 6px; padding: 6px 12px; font-family: var(--font-display); font-size: 15px; font-weight: 800; text-transform: uppercase; cursor: pointer;" onclick="openAddPhotoModal('${escJs(job.id)}')">
-            📷 + Add Photo
+            ${ShopIcon.photos} + Add Photo
           </button>
         </div>
         ${photoStripHtml}
 
         <div class="fat-actions-grid">
           <div class="fat-btn active" onclick="scrollToSection('notesSection')">
-            <span class="icon">📝</span>
+            <span class="icon">${ShopIcon.notes}</span>
             <span>Notes (${job.notes.length})</span>
           </div>
           <div class="fat-btn" onclick="scrollToSection('moneySection')">
-            <span class="icon">💵</span>
+            <span class="icon">${ShopIcon.money}</span>
             <span>Money</span>
           </div>
           <div class="fat-btn" onclick="scrollToSection('filesSection')">
-            <span class="icon">📁</span>
+            <span class="icon">${ShopIcon.folder}</span>
             <span>Files (${job.files.length})</span>
           </div>
         </div>
@@ -629,20 +629,20 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
                 <div class="metric-val" style="color: var(--highlight);">$${paidTotal.toLocaleString()}</div>
               </div>
             </div>
-            <button class="comm-btn" style="width:100%; margin-bottom:8px; background:#1565C0; color:#FFF;" onclick="openEditQuoteModal('${escJs(job.id)}')">📝 Edit Quote Line Items</button>
-            <button class="comm-btn" style="width:100%; margin-bottom:14px;" onclick="openEditJobMoneyModal('${escJs(job.id)}')">✏️ Edit Money Billed & Collected</button>
+            <button class="comm-btn" style="width:100%; margin-bottom:8px; background:#1565C0; color:#FFF;" onclick="openEditQuoteModal('${escJs(job.id)}')">${ShopIcon.notes} Edit Quote Line Items</button>
+            <button class="comm-btn" style="width:100%; margin-bottom:14px;" onclick="openEditJobMoneyModal('${escJs(job.id)}')">${ShopIcon.edit} Edit Money Billed & Collected</button>
 
             <!-- Receipts & Material Expenses Card -->
             <div class="card">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                <div style="font-family: var(--font-display); font-size: 17px; font-weight: 800; text-transform: uppercase;">🧾 Receipts & Expenses</div>
-                <button class="comm-btn" style="min-height: 44px; padding: 4px 10px; background: #2E7D32; color: #FFF;" onclick="openQuickReceiptModal('${escJs(job.id)}')">📷 + Snap Receipt</button>
+                <div style="font-family: var(--font-display); font-size: 17px; font-weight: 800; text-transform: uppercase;">${ShopIcon.receipt} Receipts & Expenses</div>
+                <button class="comm-btn" style="min-height: 44px; padding: 4px 10px; background: #2E7D32; color: #FFF;" onclick="openQuickReceiptModal('${escJs(job.id)}')">${ShopIcon.receiptWhite} + Snap Receipt</button>
               </div>
               ${(!job.expenses || job.expenses.length === 0) ? `<div style="font-size: 13px; color: var(--text-muted);">No receipts logged for this job yet.</div>` : ''}
               ${(job.expenses || []).map(exp => `
                 <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px dashed var(--border);">
                   <div style="display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1;">
-                    ${exp.photoUrl ? `<img ${thumbAttrs('receipt', job.id, exp.id, exp.photoUrl)} onclick="openReceiptViewerById('${escJs(job.id)}', '${escJs(exp.id)}')" style="width: 44px; height: 44px; object-fit: cover; border-radius: 6px; border: 1.5px solid var(--border-dark); cursor: pointer;" title="Tap to view receipt photo">` : '<span style="font-size: 24px;">🧾</span>'}
+                    ${exp.photoUrl ? `<img ${thumbAttrs('receipt', job.id, exp.id, exp.photoUrl)} onclick="openReceiptViewerById('${escJs(job.id)}', '${escJs(exp.id)}')" style="width: 44px; height: 44px; object-fit: cover; border-radius: 6px; border: 1.5px solid var(--border-dark); cursor: pointer;" title="Tap to view receipt photo">` : `<span style="font-size: 24px;">${ShopIcon.receipt}</span>`}
                     <div style="min-width: 0;">
                       <div style="font-weight: 700; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${esc(exp.desc)}</div>
                       <div style="font-size: 12px; color: var(--text-muted);">${esc(exp.category || 'Materials')} • ${esc(exp.date || 'Today')}</div>
@@ -688,12 +688,12 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
             </div>
 
             <div class="comm-row" style="margin-bottom: 16px;">
-              <button class="comm-btn" onclick="openQuoteEmailModal('${escJs(job.id)}')">✉️ Email Quote</button>
-              <button class="comm-btn" onclick="openBillEmailModal('${escJs(job.id)}')">✉️ Email Bill</button>
+              <button class="comm-btn" onclick="openQuoteEmailModal('${escJs(job.id)}')">${ShopIcon.mail} Email Quote</button>
+              <button class="comm-btn" onclick="openBillEmailModal('${escJs(job.id)}')">${ShopIcon.mail} Email Bill</button>
             </div>
           ` : `
             <div class="card" style="text-align: center; color: var(--text-muted); padding: 20px;">
-              🔒 Dollar amounts hidden for crew. Owner can enable visibility in top bar.
+              ${ShopIcon.lock} Dollar amounts hidden for crew. Owner can enable visibility in top bar.
             </div>
           `}
         </div>
@@ -749,9 +749,9 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
             ${job.files.map(f => `
               <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px dashed var(--border);">
                 <div style="min-width: 0; flex: 1; margin-right: 8px;">
-                  <div style="font-weight: 700; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">📄 ${esc(f.name)}</div>
+                  <div style="font-weight: 700; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${ShopIcon.document} ${esc(f.name)}</div>
                   <div style="font-size: 12px; color: var(--text-muted);">Added by ${esc(f.author)} • ${esc(f.date || 'Today')}${f.size ? ` • ${esc(f.size)}` : ''}</div>
-                  ${!f.dataUrl ? `<div style="font-size: 12px; color: var(--alert); font-weight: 700; margin-top: 2px;">⚠ No file stored — name only</div>` : ''}
+                  ${!f.dataUrl ? `<div style="font-size: 12px; color: var(--alert); font-weight: 700; margin-top: 2px;">${ShopIcon.warning} No file stored — name only</div>` : ''}
                 </div>
                 <div style="display: flex; align-items: center; gap: 8px;">
                   <button class="comm-btn" style="min-height: 44px; padding: 2px 10px; font-size: 13px;" onclick="openDocViewerById('${escJs(job.id)}', '${escJs(f.id)}')">View</button>
@@ -771,7 +771,7 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
             Permanently remove this job, notes, photos, and records from the board.
           </div>
           <button class="big-btn" style="background: var(--alert); margin-bottom: 0;" onclick="deleteJob('${escJs(job.id)}')">
-            🗑️ Delete Job from Board
+            ${ShopIcon.trashWhite} Delete Job from Board
           </button>
         </div>
       `;
@@ -806,7 +806,7 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
               <div style="min-width:0; flex:1;">
                 <div class="card-title">${esc(job.name)}</div>
                 <div class="card-sub">${esc(client.name)}</div>
-                <div class="card-meta">📷 ${job.photos.length} ${job.photos.length === 1 ? 'photo' : 'photos'} • Tap to open</div>
+                <div class="card-meta">${ShopIcon.photos} ${job.photos.length} ${job.photos.length === 1 ? 'photo' : 'photos'} • Tap to open</div>
               </div>
             </div>
           `;
@@ -824,7 +824,7 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
           <div class="screen-title">${esc(job.name)}</div>
         </div>
         <div style="font-size:14px; color:var(--text-muted); font-weight:600; margin-bottom:12px;">${esc(client.name)} • ${job.photos.length} ${job.photos.length === 1 ? 'photo' : 'photos'}</div>
-        <button class="big-btn" onclick="openAddPhotoModal('${escJs(job.id)}')">📷 + Add Photo</button>
+        <button class="big-btn" onclick="openAddPhotoModal('${escJs(job.id)}')">${ShopIcon.photos} + Add Photo</button>
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
           ${job.photos.map(p => `
             <div class="card" style="padding:8px; cursor:pointer;" onclick="openPhotoViewer('${escJs(job.id)}', '${escJs(p.id)}')">
@@ -880,14 +880,14 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
         </div>
         ${DATA.clients.map(cl => `
           <div class="card">
-            <div class="card-header-row"><div class="card-title">${esc(cl.name)}</div><button class="comm-btn" style="min-height:44px; padding:4px 10px; flex:0 0 auto;" onclick="openEditClientModal('${escJs(cl.id)}')">✏️ Edit</button></div>
-            <div class="card-sub">${cl.address ? `<a class="map-address" href="${esc(getMapLink(cl.address))}">📍 ${esc(cl.address)} • Map</a>` : '📍 No address saved'}</div>
-            ${cl.projectNotes ? `<div style="font-size:13px; color:var(--text-muted); margin-top:6px; white-space:pre-wrap;">📝 ${esc(cl.projectNotes)}</div>` : ''}
+            <div class="card-header-row"><div class="card-title">${esc(cl.name)}</div><button class="comm-btn" style="min-height:44px; padding:4px 10px; flex:0 0 auto;" onclick="openEditClientModal('${escJs(cl.id)}')">${ShopIcon.edit} Edit</button></div>
+            <div class="card-sub">${cl.address ? `<a class="map-address" href="${esc(getMapLink(cl.address))}">${ShopIcon.pin} ${esc(cl.address)} • Map</a>` : `${ShopIcon.pin} No address saved`}</div>
+            ${cl.projectNotes ? `<div style="font-size:13px; color:var(--text-muted); margin-top:6px; white-space:pre-wrap;">${ShopIcon.notes} ${esc(cl.projectNotes)}</div>` : ''}
             <div class="comm-row">
-              ${cl.phone ? `<a href="tel:${esc(cl.phone)}" class="comm-btn">📞 Call</a>` : ''}
-              ${cl.phone ? `<a href="sms:${esc(cl.phone)}" class="comm-btn">💬 Text</a>` : ''}
-              ${cl.address ? `<a href="${esc(getMapLink(cl.address))}" class="comm-btn" style="background: var(--highlight-soft); color: #176B3A;">🗺️ Map</a>` : ''}
-              ${cl.email ? `<a href="mailto:${esc(cl.email)}" class="comm-btn">✉️ Email</a>` : ''}
+              ${cl.phone ? `<a href="tel:${esc(cl.phone)}" class="comm-btn">${ShopIcon.call} Call</a>` : ''}
+              ${cl.phone ? `<a href="sms:${esc(cl.phone)}" class="comm-btn">${ShopIcon.text} Text</a>` : ''}
+              ${cl.address ? `<a href="${esc(getMapLink(cl.address))}" class="comm-btn" style="background: var(--highlight-soft); color: #176B3A;">${ShopIcon.map} Map</a>` : ''}
+              ${cl.email ? `<a href="mailto:${esc(cl.email)}" class="comm-btn">${ShopIcon.mail} Email</a>` : ''}
             </div>
           </div>
         `).join('')}
@@ -913,8 +913,8 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
               </div>
             </div>
             <div class="comm-row">
-              ${cr.phone ? `<a href="tel:${esc(cr.phone)}" class="comm-btn">📞 Call</a>` : ''}
-              ${cr.phone ? `<a href="sms:${esc(cr.phone)}" class="comm-btn">💬 Text</a>` : ''}
+              ${cr.phone ? `<a href="tel:${esc(cr.phone)}" class="comm-btn">${ShopIcon.call} Call</a>` : ''}
+              ${cr.phone ? `<a href="sms:${esc(cr.phone)}" class="comm-btn">${ShopIcon.text} Text</a>` : ''}
             </div>
           </div>
         `).join('')}
@@ -1211,7 +1211,7 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
           <div style="font-family: var(--font-display); font-size: 20px; font-weight: 800; text-transform: uppercase; margin-top: 10px;">${esc(photoCaption)}</div>
           <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 14px;">Snapped by ${esc(photoAuthor)} • ${esc(photoTime)}</div>
           <button class="big-btn secondary" style="margin-bottom: 8px;" onclick="closeModal()">Close</button>
-          <button class="big-btn" style="background: var(--alert);" onclick="deletePhoto('${escJs(jobId)}', '${escJs(photoId)}')">🗑️ Delete Photo</button>
+          <button class="big-btn" style="background: var(--alert);" onclick="deletePhoto('${escJs(jobId)}', '${escJs(photoId)}')">${ShopIcon.trashWhite} Delete Photo</button>
         </div>
       `;
       openModal(modalHtml);
@@ -1384,7 +1384,7 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
       if (!hasData) {
         previewContent = `
           <div style="background:#FFF; padding:24px 14px; border:2px dashed var(--border); border-radius:8px; margin: 12px 0;">
-            <div style="font-size:36px; margin-bottom:8px;">📄</div>
+            <div style="font-size:36px; margin-bottom:8px;">${ShopIcon.document}</div>
             <div style="font-weight:700;">${esc(file.name)}</div>
             <div style="font-size:13px; color:var(--text-muted); margin-top:4px;">Sample record. Real uploaded documents can be viewed and opened directly.</div>
           </div>
@@ -1397,7 +1397,7 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
       } else {
         previewContent = `
           <div style="background:#FFF; padding:20px; border:2px solid var(--border-dark); border-radius:8px; margin:12px 0; text-align:center;">
-            <div style="font-size:44px; margin-bottom:8px;">📑</div>
+            <div style="font-size:44px; margin-bottom:8px;">${ShopIcon.document}</div>
             <div style="font-family:var(--font-display); font-size:18px; font-weight:800;">${esc(file.name)}</div>
             <div style="font-size:13px; color:var(--text-muted); margin:4px 0 16px 0;">${esc(file.size || 'PDF Document')}</div>
             <div class="img-actions"><button type="button" class="comm-btn" data-fa="open">Open</button><button type="button" class="comm-btn" data-fa="save">Save to device</button></div>
@@ -1412,7 +1412,7 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
         <div style="font-size:13px; color:var(--text-muted); font-weight:600;">Added by ${esc(file.author)} • ${esc(file.date || 'Today')}</div>
         ${previewContent}
         <button class="big-btn secondary" style="margin-bottom:8px;" onclick="closeModal()">Close</button>
-        <button class="big-btn" style="background:var(--alert);" onclick="deleteFile('${escJs(jobId)}', '${escJs(fileId)}')">🗑️ Delete Document</button>
+        <button class="big-btn" style="background:var(--alert);" onclick="deleteFile('${escJs(jobId)}', '${escJs(fileId)}')">${ShopIcon.trashWhite} Delete Document</button>
       `;
       openModal(modalHtml);
     }
@@ -1456,7 +1456,7 @@ Sent from Shop Board`;
           <label class="input-label">Draft Preview</label>
           <textarea class="text-input" style="height: 120px;" readonly>${esc(bodyText)}</textarea>
         </div>
-        <a href="${esc(mailtoUrl)}" class="big-btn" onclick="closeModal()">🚀 Open in Mail App</a>
+        <a href="${esc(mailtoUrl)}" class="big-btn" onclick="closeModal()">${ShopIcon.send} Open in Mail App</a>
       `;
       openModal(modalHtml);
     }
@@ -1501,7 +1501,7 @@ Sent from Shop Board`;
           <label class="input-label">Draft Preview</label>
           <textarea class="text-input" style="height: 150px;" readonly>${esc(bodyText)}</textarea>
         </div>
-        <a href="${esc(mailtoUrl)}" class="big-btn" onclick="closeModal()">🚀 Open in Mail App</a>
+        <a href="${esc(mailtoUrl)}" class="big-btn" onclick="closeModal()">${ShopIcon.send} Open in Mail App</a>
       `;
       openModal(modalHtml);
     }
@@ -1540,7 +1540,7 @@ Sent from Shop Board`;
           <label class="input-label">Draft Preview</label>
           <textarea class="text-input" style="height: 150px;" readonly>${esc(bodyText)}</textarea>
         </div>
-        <a href="${esc(mailtoUrl)}" class="big-btn" onclick="closeModal()">🚀 Open in Mail App</a>
+        <a href="${esc(mailtoUrl)}" class="big-btn" onclick="closeModal()">${ShopIcon.send} Open in Mail App</a>
       `;
       openModal(modalHtml);
     }
@@ -1601,7 +1601,7 @@ Sent from Shop Board`;
         <div class="input-group"><label class="input-label">Address</label><input id="editClAddress" class="text-input" value="${esc(client.address || '')}"></div>
         <div class="input-group"><label class="input-label">Project Notes</label><textarea id="editClProjectNotes" class="text-input">${esc(client.projectNotes || '')}</textarea></div>
         <button class="big-btn" onclick="saveClientEdits('${escJs(client.id)}')">Save Changes</button>
-        <button class="big-btn" style="background: var(--alert); margin-top: 10px;" onclick="deleteClient('${escJs(client.id)}')">🗑️ Delete Client</button>`);
+        <button class="big-btn" style="background: var(--alert); margin-top: 10px;" onclick="deleteClient('${escJs(client.id)}')">${ShopIcon.trashWhite} Delete Client</button>`);
     }
 
     async function saveClientEdits(clientId) {
@@ -1740,7 +1740,7 @@ Sent from Shop Board`;
       PENDING_CONFIRM_ACTION = onConfirmFn;
       const modalHtml = `
         <div style="text-align: center; padding: 6px 0;">
-          <div style="font-size: 40px; margin-bottom: 8px;">⚠️</div>
+          <div style="font-size: 40px; margin-bottom: 8px;">${ShopIcon.warning}</div>
           <div style="font-family: var(--font-display); font-size: 24px; font-weight: 900; text-transform: uppercase; color: var(--alert); margin-bottom: 8px;">
             ${esc(title || 'Confirm Deletion')}
           </div>
@@ -1748,7 +1748,7 @@ Sent from Shop Board`;
             ${esc(message)}
           </div>
           <button class="big-btn" style="background: var(--alert); margin-bottom: 10px;" onclick="executeConfirmedAction()">
-            ${esc(btnText || 'Yes, Delete')}
+            ${btnText || 'Yes, Delete'}
           </button>
           <button class="big-btn secondary" style="margin-bottom: 0;" onclick="closeModal()">
             Cancel
@@ -1773,7 +1773,7 @@ Sent from Shop Board`;
       showAppConfirm(
         "Delete Client?",
         `Are you sure you want to delete "${name}"? Existing jobs on your board will remain.`,
-        "🗑️ Yes, Delete Client",
+        `${ShopIcon.trash} Yes, Delete Client`,
         async function() {
           DATA.clients = DATA.clients.filter(c => c.id !== clientId);
           await saveData();
@@ -1793,7 +1793,7 @@ Sent from Shop Board`;
       showAppConfirm(
         "Remove Crew?",
         `Remove "${name}" from your crew roster?`,
-        "🗑️ Yes, Remove Crew",
+        `${ShopIcon.trash} Yes, Remove Crew`,
         async function() {
           DATA.crewMembers = DATA.crewMembers.filter(c => c.id !== crewId);
           await saveData();
@@ -1809,7 +1809,7 @@ Sent from Shop Board`;
       showAppConfirm(
         "Delete Job?",
         `Permanently delete "${name}" and all of its notes, photos, and bills?`,
-        "🗑️ Yes, Delete Job",
+        `${ShopIcon.trash} Yes, Delete Job`,
         async function() {
           DATA.jobs = DATA.jobs.filter(j => j.id !== jobId);
           await saveData();
@@ -1823,7 +1823,7 @@ Sent from Shop Board`;
       showAppConfirm(
         "Delete Photo?",
         "Permanently delete this photo from the job?",
-        "🗑️ Yes, Delete Photo",
+        `${ShopIcon.trash} Yes, Delete Photo`,
         async function() {
           const job = DATA.jobs.find(j => j.id === jobId);
           if (job && job.photos) {
@@ -1840,7 +1840,7 @@ Sent from Shop Board`;
       showAppConfirm(
         "Delete Bill?",
         "Are you sure you want to delete this bill / invoice record?",
-        "🗑️ Yes, Delete Bill",
+        `${ShopIcon.trash} Yes, Delete Bill`,
         async function() {
           const job = DATA.jobs.find(j => j.id === jobId);
           if (job && job.bills) {
@@ -1857,7 +1857,7 @@ Sent from Shop Board`;
       showAppConfirm(
         "Delete Receipt?",
         "Permanently delete this receipt and expense record?",
-        "🗑️ Yes, Delete Receipt",
+        `${ShopIcon.trash} Yes, Delete Receipt`,
         async function() {
           const job = DATA.jobs.find(j => j.id === jobId);
           if (job && job.expenses) {
@@ -1877,7 +1877,7 @@ Sent from Shop Board`;
       showAppConfirm(
         "Delete File?",
         "Remove this document attachment from the job?",
-        "🗑️ Yes, Remove File",
+        `${ShopIcon.trash} Yes, Remove File`,
         async function() {
           const job = DATA.jobs.find(j => j.id === jobId);
           if (job && job.files) {
@@ -1930,7 +1930,7 @@ Sent from Shop Board`;
 
       const modalHtml = `
         <div style="font-family: var(--font-display); font-size: 24px; font-weight: 900; text-transform: uppercase; margin-bottom: 8px;">
-          🧾 Snap Receipt
+          ${ShopIcon.receipt} Snap Receipt
         </div>
         <div style="font-size: 13px; color: var(--text-muted); font-weight: 600; margin-bottom: 14px;">
           Take a photo or choose from camera roll. Auto-compressed for phone storage.
@@ -2078,7 +2078,7 @@ Sent from Shop Board`;
         <img src="${esc(exp.photoUrl)}" onclick="openImageZoom(this.src)" style="cursor: zoom-in; width: 100%; max-height: 60vh; object-fit: contain; border-radius: 8px; border: 2px solid var(--border-dark); background: #000; margin-bottom: 8px;">
         <div class="img-actions"><button type="button" class="comm-btn" data-ia="zoom">Zoom</button><button type="button" class="comm-btn" data-ia="full">Open full size</button><button type="button" class="comm-btn" data-ia="save" data-name="receipt">Save to device</button></div>
         <button class="big-btn secondary" style="margin-bottom: 8px;" onclick="closeModal()">Close</button>
-        <button class="big-btn" style="background: var(--alert);" onclick="deleteExpense('${escJs(jobId)}', '${escJs(expId)}')">🗑️ Delete Receipt</button>
+        <button class="big-btn" style="background: var(--alert);" onclick="deleteExpense('${escJs(jobId)}', '${escJs(expId)}')">${ShopIcon.trashWhite} Delete Receipt</button>
       `;
       openModal(modalHtml);
     }

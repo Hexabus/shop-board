@@ -67,9 +67,9 @@ await (async function () {
       <h3 style="font-size:20px;margin-bottom:6px;">Appearance</h3>
       <p style="font-size:14px;color:var(--text-muted);">Previewed instantly; saved with the rest of Settings below.</p>
       <div class="shop-theme-choices">
-        <button type="button" class="shop-theme-choice" data-choice="light" aria-pressed="false">☀️ Light</button>
-        <button type="button" class="shop-theme-choice" data-choice="dark" aria-pressed="false">🌙 Dark</button>
-        <button type="button" class="shop-theme-choice" data-choice="system" aria-pressed="false">📱 Follow phone settings</button>
+        <button type="button" class="shop-theme-choice" data-choice="light" aria-pressed="false">${ShopIcon.sun} Light</button>
+        <button type="button" class="shop-theme-choice" data-choice="dark" aria-pressed="false">${ShopIcon.moon} Dark</button>
+        <button type="button" class="shop-theme-choice" data-choice="system" aria-pressed="false">${ShopIcon.device} Follow phone settings</button>
       </div>
       <p class="shop-theme-status" role="status" aria-live="polite">Previewing now. Saves when you tap Save Settings below.</p>`;
     panel.querySelectorAll("[data-choice]").forEach(button => {

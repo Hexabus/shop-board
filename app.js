@@ -233,7 +233,7 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
 
       const badge = document.getElementById("roleBadge");
       const isOwner = DATA.currentUser.role === "Owner";
-      if (badge) badge.innerText = isOwner ? `👑 ${DATA.currentUser.name} (OWNER)` : `🔨 ${DATA.currentUser.name} (CREW)`;
+      if (badge) badge.innerText = isOwner ? `👑 OWNER` : `🔨 CREW`;
 
       const crewStatus = document.getElementById("crewVisibilityStatus");
       if (crewStatus) {

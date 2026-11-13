@@ -64,6 +64,9 @@ Object.defineProperty(window,"openEditClientModal",{configurable:true,get:()=>op
 Object.defineProperty(window,"saveClientEdits",{configurable:true,get:()=>saveClientEdits,set:v=>{saveClientEdits=v;}});
 Object.defineProperty(window,"openEditJobMoneyModal",{configurable:true,get:()=>openEditJobMoneyModal,set:v=>{openEditJobMoneyModal=v;}});
 Object.defineProperty(window,"saveJobMoney",{configurable:true,get:()=>saveJobMoney,set:v=>{saveJobMoney=v;}});
+Object.defineProperty(window,"openEditQuoteModal",{configurable:true,get:()=>openEditQuoteModal,set:v=>{openEditQuoteModal=v;}});
+Object.defineProperty(window,"addQuoteLine",{configurable:true,get:()=>addQuoteLine,set:v=>{addQuoteLine=v;}});
+Object.defineProperty(window,"deleteQuoteLine",{configurable:true,get:()=>deleteQuoteLine,set:v=>{deleteQuoteLine=v;}});
 Object.defineProperty(window,"openNewCrewModal",{configurable:true,get:()=>openNewCrewModal,set:v=>{openNewCrewModal=v;}});
 Object.defineProperty(window,"saveNewCrew",{configurable:true,get:()=>saveNewCrew,set:v=>{saveNewCrew=v;}});
 Object.defineProperty(window,"showAppConfirm",{configurable:true,get:()=>showAppConfirm,set:v=>{showAppConfirm=v;}});
@@ -636,6 +639,7 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
                 <div class="metric-val" style="color: var(--highlight);">$${paidTotal.toLocaleString()}</div>
               </div>
             </div>
+            <button class="comm-btn" style="width:100%; margin-bottom:8px; background:#1565C0; color:#FFF;" onclick="openEditQuoteModal('${escJs(job.id)}')">📝 Edit Quote Line Items</button>
             <button class="comm-btn" style="width:100%; margin-bottom:14px;" onclick="openEditJobMoneyModal('${escJs(job.id)}')">✏️ Edit Money Billed & Collected</button>
 
             <!-- Receipts & Material Expenses Card -->
@@ -1625,6 +1629,61 @@ Sent from Shop Board`;
       if (!job || !Number.isFinite(billed) || billed < 0 || !Number.isFinite(collected) || collected < 0) { alert('Enter valid zero-or-greater dollar amounts.'); return; }
       job.moneyBilled = billed; job.moneyCollected = collected;
       await saveData(); closeModal(); renderCurrentView(); showToast('Job money totals updated');
+    }
+
+    function openEditQuoteModal(jobId) {
+      const job = DATA.jobs.find(j => j.id === jobId);
+      if (!job) return;
+      if (!job.quotes || !job.quotes[0]) job.quotes = [{ items: [], status: "Draft" }];
+      const quote = job.quotes[0];
+      const lineTotal = it => (Number(it.qty) || 0) * (Number(it.rate) || 0);
+      const total = quote.items.reduce((sum, it) => sum + lineTotal(it), 0);
+      const rows = quote.items.map((it, i) => `
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px dashed var(--border);">
+          <div style="min-width:0; flex:1; margin-right:8px;">
+            <div style="font-weight:700; font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${esc(it.desc)}</div>
+            <div style="font-size:12px; color:var(--text-muted);">${esc(String(it.qty))} × $${Number(it.rate).toLocaleString()}</div>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <div style="font-family:var(--font-display); font-size:15px; font-weight:800;">$${lineTotal(it).toLocaleString()}</div>
+            <button style="border:2px solid var(--alert); background:#FFF; border-radius:6px; padding:4px 8px; font-family:var(--font-display); font-size:13px; font-weight:800; color:var(--alert); cursor:pointer;" onclick="deleteQuoteLine('${escJs(jobId)}', ${i})">DELETE</button>
+          </div>
+        </div>
+      `).join('');
+      openModal(`
+        <div style="font-family:var(--font-display); font-size:24px; font-weight:900; text-transform:uppercase; margin-bottom:8px;">Edit Quote</div>
+        <div style="font-size:13px; color:var(--text-muted); margin-bottom:12px;">Line items make up the quoted total shown on the job and in the emailed quote.</div>
+        ${quote.items.length === 0 ? `<div style="font-size:13px; color:var(--text-muted); padding:8px 0;">No line items yet. Add one below.</div>` : rows}
+        <div style="display:flex; justify-content:space-between; align-items:center; margin:12px 0; font-family:var(--font-display); font-size:17px; font-weight:900; text-transform:uppercase;">
+          <span>Quote Total</span><span>$${total.toLocaleString()}</span>
+        </div>
+        <div class="input-group"><label class="input-label">Description</label><input type="text" id="quoteLineDesc" class="text-input" placeholder="e.g. Framing labor"></div>
+        <div class="input-group"><label class="input-label">Quantity</label><input type="number" id="quoteLineQty" class="text-input" value="1" min="0" step="0.01"></div>
+        <div class="input-group"><label class="input-label">Rate ($)</label><input type="number" id="quoteLineRate" class="text-input" placeholder="e.g. 65" min="0" step="0.01"></div>
+        <button class="big-btn" onclick="addQuoteLine('${escJs(jobId)}')">+ Add Line Item</button>
+        <button class="big-btn secondary" onclick="closeModal(); renderCurrentView();">Done</button>
+      `);
+    }
+
+    async function addQuoteLine(jobId) {
+      const job = DATA.jobs.find(j => j.id === jobId);
+      if (!job) return;
+      const desc = document.getElementById("quoteLineDesc").value.trim();
+      const qty = parseFloat(document.getElementById("quoteLineQty").value);
+      const rate = parseFloat(document.getElementById("quoteLineRate").value);
+      if (!desc || !Number.isFinite(qty) || qty < 0 || !Number.isFinite(rate) || rate < 0) { alert("Enter a description, quantity, and rate (zero or more)."); return; }
+      if (!job.quotes || !job.quotes[0]) job.quotes = [{ items: [], status: "Draft" }];
+      job.quotes[0].items.push({ desc, qty, rate });
+      await saveData();
+      openEditQuoteModal(jobId);
+    }
+
+    async function deleteQuoteLine(jobId, index) {
+      const job = DATA.jobs.find(j => j.id === jobId);
+      if (!job || !job.quotes || !job.quotes[0]) return;
+      job.quotes[0].items.splice(index, 1);
+      await saveData();
+      openEditQuoteModal(jobId);
     }
 
     function openNewCrewModal() {

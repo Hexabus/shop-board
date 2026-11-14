@@ -1,6 +1,6 @@
 "use strict";
 
-const VERSION = "v18"; // Change this for every future release of any app file.
+const VERSION = "v19"; // Change this for every future release of any app file.
 const BASE = new URL(self.registration.scope);
 const CACHE_PREFIX = "shop-board-shell:" + BASE.pathname + ":";
 const CACHE_NAME = CACHE_PREFIX + VERSION;
@@ -9,11 +9,11 @@ const CACHE_NAME = CACHE_PREFIX + VERSION;
 // version so the page, styles and scripts can never be a mixture of two releases.
 const ASSETS = [
   "index.html", "styles.css", "manifest.webmanifest",
-  "icons.js", "storage.js", "util.js", "thumbs.js", "zoom.js", "storagewarn.js", "app.js",
+  "icons.js", "storage.js", "util.js", "pdf.js", "thumbs.js", "zoom.js", "storagewarn.js", "app.js",
   "addons/01-appearance.js", "addons/02-backup-export.js", "addons/03-backup-restore.js",
   "addons/04-save-guard.js", "addons/05-start-screen.js", "addons/06-maps-preference.js",
   "addons/07-receipt-category.js", "addons/08-receipt-job-memory.js", "addons/09-settings-layout.js",
-  "addons/10-indexeddb-prep.js", "addons/11-indexeddb-button-fix.js", "addons/12-auth-gate.js",
+  "addons/10-indexeddb-prep.js", "addons/11-indexeddb-button-fix.js", "addons/12-auth-gate.js", "addons/13-paperwork.js",
   "boot.js", "offline.js", "appinfo.js", "cloud.js",
   "apple-touch-icon.png", "icon-192.png", "icon-512.png"
 ].map(path => new URL(path, BASE).href);

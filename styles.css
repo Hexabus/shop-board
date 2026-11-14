@@ -653,6 +653,23 @@ input[type="date"].text-input {
     padding: 8px 4px;
   }
 }
+/* Bill buttons stay on one line: two actions plus a square Edit button. */
+.comm-row.bill-actions {
+  flex-wrap: nowrap;
+}
+.comm-row.bill-actions .comm-btn {
+  flex: 1 1 0;
+  min-width: 0;
+  font-size: 13px;
+  padding: 8px 4px;
+}
+.comm-row.bill-actions .bill-edit {
+  flex: 0 0 48px;
+}
+.tile-badge.alert {
+  background: #B3261E;
+  color: #FFF;
+}
 
 /* Empty state */
 .empty-state {

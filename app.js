@@ -95,6 +95,10 @@ Object.defineProperty(window,"toggleNewClientFields",{configurable:true,get:()=>
 Object.defineProperty(window,"setJobsFilter",{configurable:true,get:()=>setJobsFilter,set:v=>{setJobsFilter=v;}});
 Object.defineProperty(window,"filterJobCards",{configurable:true,get:()=>filterJobCards,set:v=>{filterJobCards=v;}});
 Object.defineProperty(window,"useBillsForJobMoney",{configurable:true,get:()=>useBillsForJobMoney,set:v=>{useBillsForJobMoney=v;}});
+Object.defineProperty(window,"assignBillNumber",{configurable:true,get:()=>assignBillNumber,set:v=>{assignBillNumber=v;}});
+Object.defineProperty(window,"expenseDay",{configurable:true,get:()=>expenseDay,set:v=>{expenseDay=v;}});
+Object.defineProperty(window,"localDay",{configurable:true,get:()=>localDay,set:v=>{localDay=v;}});
+Object.defineProperty(window,"dayLabel",{configurable:true,get:()=>dayLabel,set:v=>{dayLabel=v;}});
 
     /* Safe Storage Helper for iOS Files / Sandbox environments */
     const Storage=window.ShopBoardDatabase;
@@ -136,6 +140,52 @@ Object.defineProperty(window,"useBillsForJobMoney",{configurable:true,get:()=>us
     function isClosedJob(job) { return job.status === "Done" || job.status === "Paid"; }
     function isTodayJob(job) { return job.status === "On site" || (job.startDate === localDay() && !isClosedJob(job)); }
 
+    function daysFromToday(count) {
+      const d = new Date();
+      d.setDate(d.getDate() + count);
+      return localDay(d);
+    }
+
+    function billIsOverdue(bill) {
+      return bill.status !== "Paid" && typeof bill.dueDate === "string" && bill.dueDate !== "" && bill.dueDate < localDay();
+    }
+
+    function getQuoteTotal(job) {
+      const quote = job.quotes && job.quotes[0];
+      if (!quote || !Array.isArray(quote.items)) return 0;
+      return quote.items.reduce((sum, it) => sum + (Number(it.qty) || 0) * (Number(it.rate) || 0), 0);
+    }
+
+    /* Invoice numbers count up from 1001 and are never reused. */
+    function assignBillNumber() {
+      let highest = 1000;
+      DATA.jobs.forEach(job => (job.bills || []).forEach(b => { if (Number.isInteger(b.number) && b.number > highest) highest = b.number; }));
+      const saved = DATA.business.nextInvoiceNumber;
+      const next = Math.max(highest + 1, Number.isInteger(saved) ? saved : 1001);
+      DATA.business.nextInvoiceNumber = next + 1;
+      return next;
+    }
+
+    const MONTH_NAMES = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+
+    /* The calendar day (YYYY-MM-DD) a receipt belongs to, or "" when it cannot be known.
+       Older receipts saved only "Nov 12" with no year; those are read as the most recent such date. */
+    function expenseDay(exp) {
+      if (/^\d{4}-\d{2}-\d{2}$/.test(exp.day || "")) return exp.day;
+      if (exp.createdAt && !Number.isNaN(Date.parse(exp.createdAt))) return localDay(new Date(exp.createdAt));
+      const m = /^([A-Za-z]{3}) (\d{1,2})$/.exec(exp.date || "");
+      const month = m ? MONTH_NAMES.indexOf(m[1].toLowerCase()) : -1;
+      if (month < 0) return "";
+      const now = new Date();
+      let d = new Date(now.getFullYear(), month, Number(m[2]));
+      if (d > now) d = new Date(now.getFullYear() - 1, month, Number(m[2]));
+      return localDay(d);
+    }
+
+    function expenseDateText(exp) {
+      return dayLabel(expenseDay(exp)) || exp.date || "";
+    }
+
     async function loadData() {
       const stored = Storage.get("SHOP_BOARD_DATA");
       if (stored) {
@@ -168,6 +218,8 @@ Object.defineProperty(window,"useBillsForJobMoney",{configurable:true,get:()=>us
       if (!Array.isArray(job.photos)) job.photos = [];
       if (!Array.isArray(job.expenses)) job.expenses = [];
       if (typeof job.startDate !== "string") job.startDate = "";
+      // Pin each older receipt to a full date now, while "most recent Nov 12" is still the right year.
+      job.expenses.forEach(exp => { if (!exp.day) { const day = expenseDay(exp); if (day) exp.day = day; } });
     });
     let CURRENT_VIEW = "HOME";
     let ACTIVE_JOB_ID = null;
@@ -450,6 +502,9 @@ Object.defineProperty(window,"useBillsForJobMoney",{configurable:true,get:()=>us
     function renderHome() {
       const todayCount = DATA.jobs.filter(isTodayJob).length;
       const totalJobs = DATA.jobs.filter(j => j.status !== "Paid").length;
+      const canSeeMoney = DATA.currentUser.role === "Owner" || DATA.business.crewSeeMoney;
+      let overdueCount = 0;
+      if (canSeeMoney) DATA.jobs.forEach(j => { if (!hasTypedMoney(j)) overdueCount += (j.bills || []).filter(billIsOverdue).length; });
       let totalPhotos = 0;
       DATA.jobs.forEach(j => totalPhotos += (j.photos ? j.photos.length : 0));
 
@@ -478,6 +533,7 @@ Object.defineProperty(window,"useBillsForJobMoney",{configurable:true,get:()=>us
           </div>
 
           <div class="tile" onclick="openView('MONEY')">
+            ${overdueCount > 0 ? `<div class="tile-badge alert" aria-label="${overdueCount} overdue">${overdueCount}</div>` : ''}
             <div class="tile-icon">${ShopIcon.money}</div>
             <div class="tile-label">MONEY</div>
             <div class="tile-sub">Quotes, bills, paid</div>
@@ -689,10 +745,7 @@ Object.defineProperty(window,"useBillsForJobMoney",{configurable:true,get:()=>us
         photoStripHtml = `<div style="font-size: 13px; color: var(--text-muted); font-weight: 600; padding: 6px 0;">No photos yet. Tap Add Photo below.</div>`;
       }
 
-      let quotedTotal = 0;
-      if (job.quotes && job.quotes[0]) {
-        job.quotes[0].items.forEach(it => quotedTotal += (it.qty * it.rate));
-      }
+      const quotedTotal = getQuoteTotal(job);
       const jobMoney = getJobMoney(job);
       const billedTotal = jobMoney.billed;
       const paidTotal = jobMoney.collected;
@@ -773,6 +826,12 @@ Object.defineProperty(window,"useBillsForJobMoney",{configurable:true,get:()=>us
               </div>
             </div>
             <button class="comm-btn" style="width:100%; margin-bottom:8px; background:#1565C0; color:#FFF;" onclick="openEditQuoteModal('${escJs(job.id)}')">${ShopIcon.notes} Edit Quote Line Items</button>
+            ${quotedTotal > 0 ? `
+              <div class="comm-row" style="margin: 0 0 14px;">
+                <button class="comm-btn" onclick="sendQuotePdf('${escJs(job.id)}')">${ShopIcon.document} Quote PDF</button>
+                <button class="comm-btn" onclick="openAddBillModal('${escJs(job.id)}', null, true)">${ShopIcon.receipt} Bill Quote</button>
+              </div>
+            ` : ''}
             ${typedTotals ? `
               <div class="card" style="border: 2px solid var(--alert); margin-bottom: 14px;">
                 <div style="font-weight: 700; font-size: 14px;">${ShopIcon.warning} Billed and Paid for this job were typed in by hand. Marking bills paid below does not change them.</div>
@@ -799,7 +858,7 @@ Object.defineProperty(window,"useBillsForJobMoney",{configurable:true,get:()=>us
                     ${exp.photoUrl ? `<img ${thumbAttrs('receipt', job.id, exp.id, exp.photoUrl)} onclick="openReceiptViewerById('${escJs(job.id)}', '${escJs(exp.id)}')" style="width: 44px; height: 44px; object-fit: cover; border-radius: 6px; border: 1.5px solid var(--border-dark); cursor: pointer;" title="Tap to view receipt photo">` : `<span style="font-size: 24px;">${ShopIcon.receipt}</span>`}
                     <div style="min-width: 0;">
                       <div style="font-weight: 700; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${esc(exp.desc)}</div>
-                      <div style="font-size: 12px; color: var(--text-muted);">${esc(exp.category || 'Materials')} • ${esc(exp.date || 'Today')}</div>
+                      <div style="font-size: 12px; color: var(--text-muted);">${esc(exp.category || 'Materials')} • ${esc(expenseDateText(exp))}</div>
                     </div>
                   </div>
                   <div style="display: flex; align-items: center; gap: 8px;">
@@ -819,20 +878,28 @@ Object.defineProperty(window,"useBillsForJobMoney",{configurable:true,get:()=>us
                 <button class="comm-btn" style="min-height: 44px; padding: 4px 10px;" onclick="openAddBillModal('${escJs(job.id)}')">+ Add Bill</button>
               </div>
               ${job.bills.length === 0 ? `<div style="font-size: 13px; color: var(--text-muted);">No bills yet.</div>` : ''}
-              ${job.bills.map(b => `
-                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px dashed var(--border);">
-                  <div>
-                    <div style="font-weight: 700; font-size: 15px;">${esc(b.desc)}</div>
-                    <div style="font-size: 13px; color: var(--text-muted);">$${b.amount.toLocaleString()}</div>
+              ${job.bills.map(b => {
+                const paid = b.status === 'Paid';
+                const overdue = billIsOverdue(b);
+                const paidDay = paid && b.paidAt && !Number.isNaN(Date.parse(b.paidAt)) ? dayLabel(localDay(new Date(b.paidAt))) : '';
+                const whenText = paid ? (paidDay ? `Paid ${paidDay}` : 'Paid')
+                  : (b.dueDate ? `${overdue ? 'Overdue, was due' : 'Due'} ${dayLabel(b.dueDate)}` : 'No due date');
+                return `
+                <div style="padding: 10px 0; border-bottom: 1px dashed var(--border);">
+                  <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px;">
+                    <div style="font-weight: 700; font-size: 15px; min-width: 0; overflow-wrap: anywhere;">${esc(b.desc)}</div>
+                    <div style="font-family: var(--font-display); font-size: 16px; font-weight: 800; white-space: nowrap;">${formatMoney(b.amount)}</div>
                   </div>
-                  <div style="display: flex; align-items: center; gap: 8px;">
-                    <button style="min-height: 44px; border: 2px solid var(--border-dark); padding: 6px 12px; border-radius: 6px; font-family: var(--font-display); font-size: 14px; font-weight: 800; text-transform: uppercase; cursor: pointer; background: ${b.status === 'Paid' ? '#E8F5E9; color: #2E7D32;' : '#FFF;'}" onclick="toggleBillPaid('${escJs(job.id)}', '${escJs(b.id)}')">
-                      ${b.status === 'Paid' ? '✓ PAID' : 'MARK PAID'}
-                    </button>
-                    <button style="min-height: 44px; border: 2px solid var(--alert); background: #FFF; border-radius: 6px; padding: 4px 10px; font-family: var(--font-display); font-size: 13px; font-weight: 800; color: var(--alert); cursor: pointer;" onclick="event.stopPropagation(); deleteBill('${escJs(job.id)}', '${escJs(b.id)}')">DELETE</button>
+                  <div style="font-size: 13px; font-weight: 700; margin-top: 2px; color: ${overdue ? 'var(--alert)' : 'var(--text-muted)'};">
+                    ${b.number ? `Invoice #${esc(String(b.number))} • ` : ''}${esc(whenText)}
+                  </div>
+                  <div class="comm-row bill-actions">
+                    <button class="comm-btn" onclick="sendInvoicePdf('${escJs(job.id)}', '${escJs(b.id)}')">${ShopIcon.document} Invoice</button>
+                    <button class="comm-btn" style="${paid ? 'background: #E8F5E9; color: #2E7D32;' : ''}" onclick="toggleBillPaid('${escJs(job.id)}', '${escJs(b.id)}')">${paid ? '✓ Paid' : 'Mark Paid'}</button>
+                    <button class="comm-btn bill-edit" aria-label="Edit bill" title="Edit bill" onclick="openAddBillModal('${escJs(job.id)}', '${escJs(b.id)}')">${ShopIcon.edit}</button>
                   </div>
                 </div>
-              `).join('')}
+              `; }).join('')}
 
               ${billedTotal > 0 && billedTotal === paidTotal && job.status === "Done" ? `
                 <button class="big-btn" style="background: var(--highlight); margin-top: 12px;" onclick="setJobStatus('${escJs(job.id)}', 'Paid')">
@@ -842,8 +909,8 @@ Object.defineProperty(window,"useBillsForJobMoney",{configurable:true,get:()=>us
             </div>
 
             <div class="comm-row" style="margin-bottom: 16px;">
-              <button class="comm-btn" onclick="openQuoteEmailModal('${escJs(job.id)}')">${ShopIcon.mail} Email Quote</button>
-              <button class="comm-btn" onclick="openBillEmailModal('${escJs(job.id)}')">${ShopIcon.mail} Email Bill</button>
+              <button class="comm-btn" onclick="openQuoteEmailModal('${escJs(job.id)}')">${ShopIcon.mail} Email Quote (Text)</button>
+              <button class="comm-btn" onclick="openBillEmailModal('${escJs(job.id)}')">${ShopIcon.mail} Email Bills (Text)</button>
             </div>
           ` : `
             <div class="card" style="text-align: center; color: var(--text-muted); padding: 20px;">
@@ -1004,6 +1071,39 @@ Object.defineProperty(window,"useBillsForJobMoney",{configurable:true,get:()=>us
         return { job, ...money, netProfit };
       });
       const netProfit = totalRevenue - totalExpenses;
+
+      const owed = [];
+      DATA.jobs.forEach(job => {
+        const client = DATA.clients.find(c => c.id === job.clientId) || { name: "No client" };
+        if (hasTypedMoney(job)) {
+          const money = getJobMoney(job);
+          if (money.billed > money.collected) owed.push({ job, client, label: "Typed totals", amount: money.billed - money.collected, due: "", overdue: false });
+          return;
+        }
+        (job.bills || []).forEach(bill => {
+          if (bill.status !== "Paid") owed.push({ job, client, label: bill.desc, amount: Number(bill.amount) || 0, due: bill.dueDate || "", overdue: billIsOverdue(bill) });
+        });
+      });
+      owed.sort((a, b) => (b.overdue - a.overdue) || (a.due || "9999").localeCompare(b.due || "9999"));
+      const owedTotal = owed.reduce((sum, row) => sum + row.amount, 0);
+      const overdueTotal = owed.reduce((sum, row) => sum + (row.overdue ? row.amount : 0), 0);
+      const owedHtml = `
+        <div style="font-family:var(--font-display); font-size:20px; font-weight:900; text-transform:uppercase; margin-bottom:8px;">Who Owes You</div>
+        ${owed.length === 0 ? `<div class="card" style="color:var(--text-muted); font-weight:600;">Nobody owes you right now.</div>` : `
+          <div style="font-size:15px; font-weight:700; margin-bottom:8px;">${formatMoney(owedTotal)} unpaid${overdueTotal > 0 ? ` • <span style="color:var(--alert);">${formatMoney(overdueTotal)} overdue</span>` : ''}</div>
+          ${owed.map(row => `
+            <div class="card" onclick="openView('JOB_DETAIL', '${escJs(row.job.id)}')" style="cursor:pointer;${row.overdue ? ' border-color:var(--alert);' : ''}">
+              <div class="card-header-row">
+                <div class="card-title" style="min-width:0; overflow-wrap:anywhere;">${esc(row.client.name)}</div>
+                <div style="font-family:var(--font-display); font-size:17px; font-weight:800; white-space:nowrap; flex-shrink:0; margin-left:8px;">${formatMoney(row.amount)}</div>
+              </div>
+              <div class="card-sub">${esc(row.job.name)} • ${esc(row.label)}</div>
+              <div style="font-size:13px; font-weight:700; margin-top:4px; color:${row.overdue ? 'var(--alert)' : 'var(--text-muted)'};">${esc(row.overdue ? 'Overdue, was due ' + dayLabel(row.due) : (row.due ? 'Due ' + dayLabel(row.due) : 'No due date'))}</div>
+            </div>
+          `).join('')}
+        `}
+        <div style="height:6px;"></div>
+      `;
       return `
         <div class="screen-header"><button class="back-btn" onclick="goHome()" aria-label="Back">←</button><div class="screen-title">MONEY BOARD</div></div>
         <div style="font-size:14px; color:var(--text-muted); font-weight:600; margin-bottom:12px;">Revenue is collected money. Expenses come from each job’s expense entries.</div>
@@ -1012,12 +1112,14 @@ Object.defineProperty(window,"useBillsForJobMoney",{configurable:true,get:()=>us
           <div class="metric-box"><div class="metric-label">Total Expenses</div><div class="metric-val" style="color:var(--alert);">${formatMoney(totalExpenses)}</div></div>
           <div class="metric-box"><div class="metric-label">Net Profit</div><div class="metric-val" style="color:${netProfit >= 0 ? 'var(--highlight)' : 'var(--alert)'};">${formatMoney(netProfit)}</div></div>
         </div>
+        ${owedHtml}
         <div style="font-family:var(--font-display); font-size:20px; font-weight:900; text-transform:uppercase; margin-bottom:8px;">Profit by Job</div>
         ${rows.length ? rows.map(row => `
           <div class="card" onclick="openView('JOB_DETAIL', '${escJs(row.job.id)}')" style="cursor:pointer;">
             <div class="card-header-row"><div class="card-title">${esc(row.job.name)}</div><div style="font-family:var(--font-display); font-size:17px; font-weight:800; color:${row.netProfit >= 0 ? 'var(--highlight)' : 'var(--alert)'};">${formatMoney(row.netProfit)}</div></div>
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:13px; color:var(--text-muted);"><div>Billed: ${formatMoney(row.billed)}</div><div>Collected: ${formatMoney(row.collected)}</div><div>Expenses: ${formatMoney(row.expenses)}</div><div>Net profit: ${formatMoney(row.netProfit)}</div></div>
           </div>`).join('') : `<div class="empty-state"><div class="empty-text">No jobs on the money board</div></div>`}
+        ${isOwner ? `<button class="big-btn secondary" style="margin-top:16px;" onclick="openTaxExportModal()">Export for Taxes</button>` : ''}
       `;
     }
 
@@ -1133,6 +1235,8 @@ Object.defineProperty(window,"useBillsForJobMoney",{configurable:true,get:()=>us
         const bill = job.bills.find(b => b.id === billId);
         if (bill) {
           bill.status = bill.status === "Paid" ? "Unpaid" : "Paid";
+          if (bill.status === "Paid") bill.paidAt = new Date().toISOString();
+          else delete bill.paidAt;
           await saveData();
           renderCurrentView();
           showToast(`Bill marked as ${bill.status.toUpperCase()}`);
@@ -1466,35 +1570,68 @@ Object.defineProperty(window,"useBillsForJobMoney",{configurable:true,get:()=>us
       openModal(modalHtml);
     }
 
-    function openAddBillModal(jobId) {
-      const modalHtml = `
-        <div style="font-family: var(--font-display); font-size: 24px; font-weight: 900; text-transform: uppercase; margin-bottom: 12px;">Add Bill / Invoice</div>
+    /* Add a bill, edit one (pass billId), or start one from the quote total (fromQuote). */
+    function openAddBillModal(jobId, billId = null, fromQuote = false) {
+      const job = DATA.jobs.find(j => j.id === jobId);
+      if (!job) return;
+      const bill = billId ? (job.bills || []).find(b => b.id === billId) : null;
+      if (billId && !bill) return;
+      let desc = bill ? bill.desc : "";
+      let amount = bill ? bill.amount : "";
+      if (!bill && fromQuote) { desc = "Work per quote"; amount = getQuoteTotal(job) || ""; }
+      const due = bill ? (bill.dueDate || "") : daysFromToday(14);
+      openModal(`
+        <div style="font-family: var(--font-display); font-size: 24px; font-weight: 900; text-transform: uppercase; margin-bottom: 12px;">${bill ? 'Edit Bill' : 'Add Bill / Invoice'}</div>
+        ${!bill && fromQuote ? `<div style="font-size: 13px; color: var(--text-muted); font-weight: 600; margin-bottom: 12px;">Filled in from the quote total. Change the amount to bill a deposit or a part of the job.</div>` : ''}
         <div class="input-group">
-          <label class="input-label">Description</label>
-          <input type="text" id="billDesc" class="text-input" placeholder="e.g. Framing draw #2">
+          <label class="input-label" for="billDesc">Description</label>
+          <input type="text" id="billDesc" class="text-input" placeholder="e.g. Framing draw #2" value="${esc(desc)}">
         </div>
         <div class="input-group">
-          <label class="input-label">Amount ($)</label>
-          <input type="number" id="billAmount" class="text-input" placeholder="e.g. 2500">
+          <label class="input-label" for="billAmount">Amount ($)</label>
+          <input type="number" id="billAmount" class="text-input" min="0" step="0.01" inputmode="decimal" placeholder="e.g. 2500" value="${esc(String(amount))}">
         </div>
-        <button class="big-btn" onclick="saveBill('${escJs(jobId)}')">Add Bill to Job</button>
-      `;
-      openModal(modalHtml);
+        <div class="input-group">
+          <label class="input-label" for="billDue">Due Date</label>
+          <input type="date" id="billDue" class="text-input" value="${esc(due)}">
+          <div style="font-size: 13px; color: var(--text-muted); margin-top: 6px;">Clear the date for no due date.</div>
+        </div>
+        <button class="big-btn" onclick="saveBill('${escJs(jobId)}'${bill ? `, '${escJs(bill.id)}'` : ''})">${bill ? 'Save Changes' : 'Add Bill to Job'}</button>
+        ${bill ? `<button class="big-btn" style="background: var(--alert);" onclick="deleteBill('${escJs(jobId)}', '${escJs(bill.id)}')">${ShopIcon.trashWhite} Delete Bill</button>` : ''}
+        <button class="big-btn secondary" onclick="closeModal()">Cancel</button>
+      `);
     }
 
-    async function saveBill(jobId) {
+    async function saveBill(jobId, billId = null) {
       const job = DATA.jobs.find(j => j.id === jobId);
-      const desc = document.getElementById("billDesc").value.trim();
-      const amount = parseFloat(document.getElementById("billAmount").value) || 0;
-      if (!desc || amount <= 0) { alert("Enter valid description and amount."); return; }
+      if (!job) return;
+      const descInput = document.getElementById("billDesc");
+      const amountInput = document.getElementById("billAmount");
+      const desc = descInput.value.trim();
+      const amount = Math.round((parseFloat(amountInput.value) || 0) * 100) / 100;
+      if (!desc) { showToast("Enter a description for the bill"); descInput.focus(); return; }
+      if (amount <= 0) { showToast("Enter the bill amount"); amountInput.focus(); return; }
+      const dueValue = document.getElementById("billDue").value;
+      const dueDate = /^\d{4}-\d{2}-\d{2}$/.test(dueValue) ? dueValue : "";
 
       if (!job.bills) job.bills = [];
-      job.bills.push({
-        id: uid("b"),
-        desc: desc,
-        amount: amount,
-        status: "Unpaid"
-      });
+      if (billId) {
+        const bill = job.bills.find(b => b.id === billId);
+        if (!bill) return;
+        bill.desc = desc;
+        bill.amount = amount;
+        bill.dueDate = dueDate;
+      } else {
+        job.bills.push({
+          id: uid("b"),
+          desc: desc,
+          amount: amount,
+          status: "Unpaid",
+          number: assignBillNumber(),
+          createdAt: new Date().toISOString(),
+          dueDate: dueDate
+        });
+      }
       await saveData();
       closeModal();
       renderCurrentView();
@@ -2239,6 +2376,11 @@ Sent from Shop Board`;
         </div>
 
         <div class="input-group">
+          <label class="input-label" for="receiptDateInput">Receipt Date</label>
+          <input type="date" id="receiptDateInput" class="text-input" value="${localDay()}" max="${localDay()}">
+        </div>
+
+        <div class="input-group">
           <label class="input-label">Vendor / Description</label>
           <input type="text" id="receiptDescInput" class="text-input" placeholder="e.g. Simpson Ties, Lowe's, Lumber yard">
         </div>
@@ -2298,13 +2440,18 @@ Sent from Shop Board`;
 
       if (!Array.isArray(job.expenses)) job.expenses = [];
 
+      const dateInput = document.getElementById("receiptDateInput");
+      const receiptDay = dateInput && /^\d{4}-\d{2}-\d{2}$/.test(dateInput.value) ? dateInput.value : localDay();
+      const dayParts = receiptDay.split("-").map(Number);
       const expId = uid("e");
       const newExpense = {
         id: expId,
         desc: descVal,
         amount: amountVal,
         category: categoryVal,
-        date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        day: receiptDay,
+        date: new Date(dayParts[0], dayParts[1] - 1, dayParts[2]).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        createdAt: new Date().toISOString(),
         photoUrl: TEMP_RECEIPT_PHOTO || null,
         author: DATA.currentUser ? DATA.currentUser.name : "Crew"
       };

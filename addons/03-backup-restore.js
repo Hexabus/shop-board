@@ -156,6 +156,9 @@ await (async function () {
     if (!pending || !checkbox || !checkbox.checked || !overlay || overlay.style.display !== "flex" || DATA.currentUser.role !== "Owner") return false;
     button.disabled = true;
     const candidate = pending;
+    // Invoice numbers already handed to clients must never be issued twice, so the counter only moves forward.
+    const issued = DATA.business.nextInvoiceNumber;
+    if (Number.isInteger(issued) && !(candidate.data.business.nextInvoiceNumber >= issued)) candidate.data.business.nextInvoiceNumber = issued;
     try {await Storage.setMany({...candidate.preferences,SHOP_BOARD_DATA:JSON.stringify(candidate.data)});}
     catch(e){message("Restore was not completed: "+e.message+" Current records were not replaced. Do not clear site data.");button.disabled=false;return false;}
     DATA=candidate.data;

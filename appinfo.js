@@ -1,8 +1,8 @@
 (function () {
   "use strict";
   if (window.ShopBoardAppInfo) return;
-const APP_VERSION = "0.5.1";
-const BUILD = "2026-10-25 — IndexedDB automatic on new devices";
+const APP_VERSION = "0.6.0";
+const BUILD = "2026-11-13 — Owner sign-in, line icons, bottom quick-action bar";
   const BACKUP_FORMAT = "1";
   const EXPORT_KEY = "shopBoardLastBackupPrepared";
   let generation = 0;

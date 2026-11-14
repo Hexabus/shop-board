@@ -168,7 +168,7 @@ header.shop-bar {
 .home-fill {
   display: flex;
   flex-direction: column;
-  min-height: calc(100dvh - 225px);
+  min-height: calc(100dvh - 225px - env(safe-area-inset-bottom, 0px));
 }
 .board-grid {
   display: grid;

@@ -8,6 +8,9 @@
 (window.ShopBoardAddOns = window.ShopBoardAddOns || []).push(async function () {
   "use strict";
   if (window.ShopBoardAuthGate) return;
+  // This add-on registers before boot so it can never be skipped, but the sign-in code (cloud.js)
+  // loads after boot starts. Wait for every script on the page before deciding anything.
+  if (document.readyState !== "complete") await new Promise(resolve => window.addEventListener("load", resolve, {once: true}));
   const cloud = window.ShopBoardOwnerCloud;
   if (!cloud || typeof cloud.restoreSession !== "function") return; // cloud.js failed to load; never lock the app over that
 
@@ -17,7 +20,7 @@
     } catch (e) {
       // Network/timeout trouble, not a rejected credential — trust a previously
       // signed-in device rather than lock an owner out of their own saved jobs.
-      return cloud.hasStoredCredential();
+      return Boolean(e && e.network) && cloud.hasStoredCredential();
     }
   }
 

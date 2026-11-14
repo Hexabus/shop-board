@@ -11,6 +11,8 @@ const REFRESH_KEY="shopBoardCloudRefreshToken";
 function storeRefreshToken(token){try{if(typeof token==="string"&&token)localStorage.setItem(REFRESH_KEY,token);}catch(e){}}
 function clearRefreshToken(){try{localStorage.removeItem(REFRESH_KEY);}catch(e){}}
 function hasStoredCredential(){try{return Boolean(localStorage.getItem(REFRESH_KEY));}catch(e){return false;}}
+// Marks trouble reaching Supabase (offline, timeout, outage, rate limit) as distinct from a rejected sign-in.
+function offlineError(message){const problem=Error(message);problem.network=true;return problem;}
 const MAX_BYTES=25*1024*1024;
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 let session=null,busy=false,expiryTimer=null,anonymousPassed=false,lastVerified=null;
@@ -37,9 +39,9 @@ async function request(path,options={}){
  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),options.timeout||20000);
  const headers={apikey:KEY,Accept:"application/json"};if(options.token)headers.Authorization="Bearer "+options.token;if(options.body!==undefined)headers["Content-Type"]="application/json";if(options.prefer)headers.Prefer=options.prefer;
  try{const response=await fetch(PROJECT+path,{method:options.method||"GET",headers,body:options.body===undefined?undefined:JSON.stringify(options.body),cache:"no-store",credentials:"omit",redirect:"error",signal:controller.signal});let data=null;if(response.status!==204){const raw=await response.text();if(raw){try{data=JSON.parse(raw);}catch(e){throw Error("Supabase returned a non-JSON response. No verification was completed.");}}}return{ok:response.ok,status:response.status,data};}
- catch(e){if(e.name==="AbortError")throw Error("Supabase request timed out. If an upload was attempted, its server outcome is uncertain; keep the same snapshot ID for checking or retrying.");if(e instanceof TypeError)throw Error("Could not reach Supabase. Check your connection; any attempted upload must be checked with the same snapshot ID.");throw e;}finally{clearTimeout(timer);}
+ catch(e){if(e.name==="AbortError")throw offlineError("Supabase request timed out. If an upload was attempted, its server outcome is uncertain; keep the same snapshot ID for checking or retrying.");if(e instanceof TypeError)throw offlineError("Could not reach Supabase. Check your connection; any attempted upload must be checked with the same snapshot ID.");throw e;}finally{clearTimeout(timer);}
 }
-function failure(r,step){const code=r.data&&(r.data.error_code||r.data.code);if(code==="invalid_credentials")return Error("Email or password was not accepted. Use the project owner account, not the Supabase dashboard account.");if(code==="email_not_confirmed")return Error("Confirm your owner email in Supabase Authentication → Users.");if(r.status===429)return Error("Supabase rate limit reached. Wait before retrying.");return Error(step+" failed (HTTP "+r.status+(code?", code "+String(code):"")+"). Do not disable RLS or share secret keys.");}
+function failure(r,step){const code=r.data&&(r.data.error_code||r.data.code);if(code==="invalid_credentials")return Error("Email or password was not accepted. Use the project owner account, not the Supabase dashboard account.");if(code==="email_not_confirmed")return Error("Confirm your owner email in Supabase Authentication → Users.");if(r.status===429)return offlineError("Supabase rate limit reached. Wait before retrying.");const problem=Error(step+" failed (HTTP "+r.status+(code?", code "+String(code):"")+"). Do not disable RLS or share secret keys.");if(r.status>=500)problem.network=true;return problem;}
 async function run(label,work){if(busy)return false;busy=true;notice=label;render();try{await work();return true;}catch(e){notice=e.message+" Local business records were not replaced or deleted.";return false;}finally{busy=false;render();}}
 async function anonymousRead(){anonymousPassed=false;for(const path of[ACCESS,SNAP+"?select=id&limit=1"]){const r=await request(path);if((r.status===401||r.status===403)&&r.data&&r.data.code==="42501")continue;if(r.ok&&Array.isArray(r.data)&&r.data.length)throw Error("STOP: anonymous access returned cloud data. Review grants and RLS before proceeding.");if(r.ok)throw Error("Anonymous request succeeded instead of receiving the expected table permission denial. Security test is inconclusive.");throw failure(r,"Anonymous access test");}anonymousPassed=true;}
 async function verifyOwner(token){const u=await request("/auth/v1/user",{token});if(!u.ok)throw failure(u,"Owner identity check");const r=await request(ACCESS,{token});if(!r.ok)throw failure(r,"Owner access read");if(!u.data||u.data.id!==OWNER)throw Error("Access denied: this is not the configured owner account.");if(!Array.isArray(r.data)||r.data.length!==1||r.data[0].user_id!==OWNER)throw Error("The protected owner row did not match.");return typeof u.data.email==="string"?u.data.email:"Verified owner";}
@@ -55,21 +57,24 @@ async function restoreSession(){
  let candidate=null;
  try{
   const r=await request("/auth/v1/token?grant_type=refresh_token",{method:"POST",body:{refresh_token:refresh}});
-  if(!r.ok){clearRefreshToken();return false;}
-  if(!r.data||typeof r.data.access_token!=="string"||!Number.isFinite(r.data.expires_in)||r.data.expires_in<=0){clearRefreshToken();return false;}
-  candidate=r.data.access_token;const expiresAt=Date.now()+Math.min(r.data.expires_in,3600)*1000;const nextRefresh=typeof r.data.refresh_token==="string"?r.data.refresh_token:refresh;
+  if(!r.ok)throw failure(r,"Saved sign-in check");
+  if(!r.data||typeof r.data.access_token!=="string"||!Number.isFinite(r.data.expires_in)||r.data.expires_in<=0)throw Error("Invalid session response.");
+  candidate=r.data.access_token;const expiresAt=Date.now()+Math.min(r.data.expires_in,3600)*1000;
+  // Supabase replaces the saved token on every use, so keep the new one before anything else can fail.
+  if(typeof r.data.refresh_token==="string")storeRefreshToken(r.data.refresh_token);
   const ownerEmail=await verifyOwner(candidate);
   if(Date.now()>=expiresAt)return false;
   session={token:candidate,email:ownerEmail,expiresAt};lastVerified=Date.now();
   clearTimeout(expiryTimer);expiryTimer=setTimeout(expire,expiresAt-Date.now()+10);
-  storeRefreshToken(nextRefresh);
   notice="Owner access restored automatically on this device.";render();
   return true;
  }catch(e){
+  // Trouble reaching Supabase is not a rejected sign-in: keep the saved sign-in and let the
+  // caller decide whether to open the app offline. Anything else means it is no longer valid.
+  if(e&&e.network)throw e;
   if(candidate){try{await serverSignOut(candidate);}catch(_){}}
-  // Network/timeout trouble is not the same as a rejected credential — let the caller
-  // decide whether to trust the stored sign-in offline rather than lock out a signed-in owner.
-  throw e;
+  clearRefreshToken();
+  return false;
  }
 }
 async function recheck(){return run("Rechecking owner access…",async()=>{try{await checkedSession();notice="Owner access reverified by Supabase. Automatic sync remains disabled.";}catch(e){clearSession();throw e;}});}

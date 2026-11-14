@@ -89,6 +89,12 @@ Object.defineProperty(window,"cancelCompanySettings",{configurable:true,get:()=>
 Object.defineProperty(window,"removeCompanyLogo",{configurable:true,get:()=>removeCompanyLogo,set:v=>{removeCompanyLogo=v;}});
 Object.defineProperty(window,"pickCompanyLogo",{configurable:true,get:()=>pickCompanyLogo,set:v=>{pickCompanyLogo=v;}});
 Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCompanyName,set:v=>{saveCompanyName=v;}});
+Object.defineProperty(window,"openEditJobModal",{configurable:true,get:()=>openEditJobModal,set:v=>{openEditJobModal=v;}});
+Object.defineProperty(window,"saveJobEdits",{configurable:true,get:()=>saveJobEdits,set:v=>{saveJobEdits=v;}});
+Object.defineProperty(window,"toggleNewClientFields",{configurable:true,get:()=>toggleNewClientFields,set:v=>{toggleNewClientFields=v;}});
+Object.defineProperty(window,"setJobsFilter",{configurable:true,get:()=>setJobsFilter,set:v=>{setJobsFilter=v;}});
+Object.defineProperty(window,"filterJobCards",{configurable:true,get:()=>filterJobCards,set:v=>{filterJobCards=v;}});
+Object.defineProperty(window,"useBillsForJobMoney",{configurable:true,get:()=>useBillsForJobMoney,set:v=>{useBillsForJobMoney=v;}});
 
     /* Safe Storage Helper for iOS Files / Sandbox environments */
     const Storage=window.ShopBoardDatabase;
@@ -98,7 +104,7 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
       business: {
         name: "Field Trade Co.",
         owner: "Shop Owner",
-        phone: "(207) 555-0192",
+        phone: "",
         crewSeeMoney: false
       },
       currentUser: {
@@ -106,69 +112,29 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
         role: "Owner"
       },
       crewMembers: [
-        { id: "c1", name: "Shop Owner", phone: "555-0192", email: "owner@example.com", role: "Owner" },
-        { id: "c2", name: "Dave Miller", phone: "207-555-0144", email: "dave@example.com", role: "Crew" },
-        { id: "c3", name: "Tyler Brooks", phone: "207-555-0188", email: "tyler@example.com", role: "Crew" }
+        { id: "c1", name: "Shop Owner", phone: "", email: "", role: "Owner" }
       ],
-      clients: [
-        { id: "cl1", name: "Mark & Sarah Stevens", phone: "207-555-4321", email: "mark.stevens@example.com", address: "44 Harbor Rd, Cherryfield, ME", projectNotes: "" },
-        { id: "cl2", name: "Bob Higgins", phone: "207-555-7766", email: "bob.higgins@example.com", address: "12 Ridge Lane, Ellsworth, ME", projectNotes: "" }
-      ],
-      jobs: [
-        {
-          id: "j1",
-          name: "Stevens Covered Porch",
-          trade: "Carpentry",
-          clientId: "cl1",
-          address: "44 Harbor Rd, Cherryfield, ME",
-          status: "On site",
-          startDate: new Date().toISOString().split('T')[0],
-          crewAssigned: ["c1", "c2"],
-          photos: [
-            { id: "p1", url: "https://images.unsplash.com/photo-1541888946425-d0fbb18615f7?auto=format&fit=crop&w=400&q=80", tag: "Before", caption: "Framing starts today", author: "Kenyon Kores", timestamp: "Today, 8:15 AM" }
-          ],
-          files: [
-            { id: "f1", name: "Town_Permit_Signed.pdf", author: "Kenyon Kores", date: "Oct 2" }
-          ],
-          notes: [
-            { id: "n1", author: "Kenyon Kores", text: "Lumber delivery arrived 7:30 AM. Joists look straight.", tag: "", timestamp: "Today, 8:00 AM" },
-            { id: "n2", author: "Dave Miller", text: "Need six more 8-inch Simpson ties for the ledger board.", tag: "Waiting on", timestamp: "Today, 11:20 AM" }
-          ],
-          quotes: [
-            { id: "q1", items: [{ desc: "Framing lumber & fasteners", qty: 1, rate: 3200 }, { desc: "Labor (Framing & Decking)", qty: 40, rate: 65 }], status: "Sent" }
-          ],
-          bills: [
-            { id: "b1", desc: "Deposit / Materials", amount: 3200, status: "Paid" },
-            { id: "b2", desc: "Progress Billing #1", amount: 2600, status: "Unpaid" }
-          ],
-          expenses: [
-            { id: "e1", desc: "Hardware store Simpson ties", amount: 78.50, date: "Today" }
-          ]
-        },
-        {
-          id: "j2",
-          name: "Higgins Kitchen Trim & Casing",
-          trade: "Remodel",
-          clientId: "cl2",
-          address: "12 Ridge Lane, Ellsworth, ME",
-          status: "Scheduled",
-          startDate: new Date().toISOString().split('T')[0],
-          crewAssigned: ["c1", "c3"],
-          photos: [],
-          files: [],
-          notes: [
-            { id: "n3", author: "Kenyon Kores", text: "Stock pre-primed poplar delivered into garage yesterday.", tag: "", timestamp: "Yesterday, 4:10 PM" }
-          ],
-          quotes: [
-            { id: "q2", items: [{ desc: "Trim installation & crown", qty: 1, rate: 1950 }], status: "Sent" }
-          ],
-          bills: [
-            { id: "b3", desc: "Full Balance", amount: 1950, status: "Unpaid" }
-          ],
-          expenses: []
-        }
-      ]
+      clients: [],
+      jobs: []
     };
+
+    /* Calendar days use the phone's own clock, never UTC, so an evening entry stays on today's date. */
+    function localDay(d) {
+      d = d || new Date();
+      return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+    }
+
+    function dayLabel(iso) {
+      const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || "");
+      if (!m) return "";
+      const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+      const opts = { weekday: "short", month: "short", day: "numeric" };
+      if (d.getFullYear() !== new Date().getFullYear()) opts.year = "numeric";
+      return d.toLocaleDateString("en-US", opts);
+    }
+
+    function isClosedJob(job) { return job.status === "Done" || job.status === "Paid"; }
+    function isTodayJob(job) { return job.status === "On site" || (job.startDate === localDay() && !isClosedJob(job)); }
 
     async function loadData() {
       const stored = Storage.get("SHOP_BOARD_DATA");
@@ -185,6 +151,9 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
           if (parsed.currentUser && parsed.currentUser.name === "Kenyon Kores") {
             parsed.currentUser.name = "Shop Owner";
           }
+          if (parsed.business && (parsed.business.phone === "(207) 555-0192" || typeof parsed.business.phone !== "string")) {
+            parsed.business.phone = "";
+          }
           return parsed;
         } catch (e) { throw e; }
       }
@@ -198,6 +167,7 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
     DATA.jobs.forEach(job => {
       if (!Array.isArray(job.photos)) job.photos = [];
       if (!Array.isArray(job.expenses)) job.expenses = [];
+      if (typeof job.startDate !== "string") job.startDate = "";
     });
     let CURRENT_VIEW = "HOME";
     let ACTIVE_JOB_ID = null;
@@ -248,9 +218,10 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
 
     async function switchUserRole() {
       if (DATA.currentUser.role === "Owner") {
-        DATA.currentUser.name = "Dave Miller";
+        const crew = DATA.crewMembers.find(c => c.role === "Crew");
+        DATA.currentUser.name = crew ? crew.name : "Crew";
         DATA.currentUser.role = "Crew";
-        showToast("Switched to Dave Miller (Crew View)");
+        showToast(`Switched to ${DATA.currentUser.name} (Crew View)`);
       } else {
         DATA.currentUser.name = DATA.business.owner;
         DATA.currentUser.role = "Owner";
@@ -271,17 +242,101 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
     function goHome() {
       CURRENT_VIEW = "HOME";
       ACTIVE_JOB_ID = null;
+      navRecord("HOME", null);
       renderCurrentView();
     }
 
     function openView(view, jobId = null) {
       CURRENT_VIEW = view;
       ACTIVE_JOB_ID = jobId;
+      navRecord(view, jobId);
       window.scrollTo(0, 0);
       renderCurrentView();
     }
 
+    /* Phone back button: each screen is a history entry, so Back steps to the previous screen instead of leaving the app.
+       A guard entry sits underneath the first screen so Back can still close an open form there before the app is left. */
+    let NAV = [], NAV_AT = 0, NAV_SKIP = 0, NAV_SKIP_TIMER = null, NAV_ON_GUARD = false;
+    const NAV_ID = uid("nav");
+
+    function navState(i) {
+      return { shopBoard: NAV_ID, i: i, view: NAV[i].view, jobId: NAV[i].jobId };
+    }
+
+    function navInit() {
+      NAV = [{ view: CURRENT_VIEW, jobId: ACTIVE_JOB_ID }];
+      NAV_AT = 0;
+      try {
+        history.replaceState({ shopBoard: NAV_ID, guard: true }, "");
+        history.pushState(navState(0), "");
+      } catch (e) { NAV = []; }
+    }
+
+    /* Moves through history without the popstate listener treating it as the user pressing Back. */
+    function navTraverse(delta) {
+      NAV_SKIP++;
+      clearTimeout(NAV_SKIP_TIMER);
+      NAV_SKIP_TIMER = setTimeout(() => { NAV_SKIP = 0; }, 800);
+      history.go(delta);
+    }
+
+    function navLeaveGuard() {
+      if (!NAV_ON_GUARD) return;
+      NAV_ON_GUARD = false;
+      try { history.pushState(navState(NAV_AT), ""); } catch (e) {}
+    }
+
+    function navRecord(view, jobId) {
+      if (!NAV.length) return;
+      navLeaveGuard();
+      const same = entry => entry && entry.view === view && entry.jobId === jobId;
+      if (same(NAV[NAV_AT])) return;
+      try {
+        if (same(NAV[NAV_AT - 1])) { NAV_AT--; navTraverse(-1); return; }
+        if (view === "HOME" && NAV[0].view === "HOME") { const steps = NAV_AT; NAV_AT = 0; navTraverse(-steps); return; }
+        history.pushState({ shopBoard: NAV_ID, i: NAV_AT + 1, view: view, jobId: jobId }, "");
+        NAV_AT++;
+        NAV.length = NAV_AT;
+        NAV[NAV_AT] = { view: view, jobId: jobId };
+      } catch (e) {}
+    }
+
+    /* Closes whatever sits on top of the screen. Returns false when nothing was open. */
+    function navCloseOverlay() {
+      const zoomClose = document.getElementById("zoomClose");
+      const overlay = document.getElementById("modalOverlay");
+      if (zoomClose) { zoomClose.click(); return true; }
+      if (!overlay || overlay.style.display !== "flex") return false;
+      if (document.getElementById("companySettingsForm")) cancelCompanySettings();
+      else closeModal();
+      return true;
+    }
+
+    window.addEventListener("popstate", event => {
+      if (NAV_SKIP > 0) { NAV_SKIP--; return; }
+      const state = event.state;
+      if (!state || state.shopBoard !== NAV_ID || !NAV.length) return;
+      if (state.guard) {
+        if (navCloseOverlay()) { navTraverse(1); return; }
+        // Back on the first screen: step out of the app (or wait here for the next Back press to close it).
+        NAV_ON_GUARD = true;
+        history.back();
+        return;
+      }
+      if (navCloseOverlay()) {
+        if (state.i !== NAV_AT) navTraverse(NAV_AT - state.i);
+        return;
+      }
+      NAV_AT = state.i;
+      NAV[NAV_AT] = { view: state.view, jobId: state.jobId };
+      CURRENT_VIEW = state.view;
+      ACTIVE_JOB_ID = state.jobId;
+      window.scrollTo(0, 0);
+      renderCurrentView();
+    });
+
     function openModal(html) {
+      navLeaveGuard();
       document.getElementById("modalSheet").innerHTML = html;
       document.getElementById("modalOverlay").style.display = "flex";
     }
@@ -292,6 +347,10 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
 
     function closeModalOnOutside(e) {
       if (e.target.id === "modalOverlay") closeModal();
+    }
+
+    function emailSignature() {
+      return [DATA.business.name, DATA.business.phone].filter(Boolean).join("\n");
     }
 
     function formatMoney(amount) {
@@ -332,12 +391,21 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
     }
     document.addEventListener("click", handleMissingMapAddress, true);
 
+    function isTypedAmount(value) {
+      return value !== undefined && value !== null && Number.isFinite(Number(value));
+    }
+
+    /* True when the owner typed Billed/Collected by hand, which replaces the totals added up from bills. */
+    function hasTypedMoney(job) {
+      return isTypedAmount(job.moneyBilled) || isTypedAmount(job.moneyCollected);
+    }
+
     function getJobMoney(job) {
       const legacyBilled = (job.bills || []).reduce((sum, bill) => sum + (Number(bill.amount) || 0), 0);
       const legacyCollected = (job.bills || []).reduce((sum, bill) => sum + (bill.status === "Paid" ? (Number(bill.amount) || 0) : 0), 0);
       return {
-        billed: Number.isFinite(Number(job.moneyBilled)) ? Number(job.moneyBilled) : legacyBilled,
-        collected: Number.isFinite(Number(job.moneyCollected)) ? Number(job.moneyCollected) : legacyCollected,
+        billed: isTypedAmount(job.moneyBilled) ? Number(job.moneyBilled) : legacyBilled,
+        collected: isTypedAmount(job.moneyCollected) ? Number(job.moneyCollected) : legacyCollected,
         expenses: (job.expenses || []).reduce((sum, expense) => sum + (Number(expense.amount) || 0), 0)
       };
     }
@@ -380,8 +448,8 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
     }
 
     function renderHome() {
-      const todayCount = DATA.jobs.filter(j => j.status === "On site" || j.startDate === new Date().toISOString().split('T')[0]).length;
-      const totalJobs = DATA.jobs.length;
+      const todayCount = DATA.jobs.filter(isTodayJob).length;
+      const totalJobs = DATA.jobs.filter(j => j.status !== "Paid").length;
       let totalPhotos = 0;
       DATA.jobs.forEach(j => totalPhotos += (j.photos ? j.photos.length : 0));
 
@@ -396,14 +464,14 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
           </div>
 
           <div class="tile" onclick="openView('JOBS')">
-            <div class="tile-badge">${totalJobs}</div>
+            ${totalJobs > 0 ? `<div class="tile-badge">${totalJobs}</div>` : ''}
             <div class="tile-icon">${ShopIcon.jobs}</div>
             <div class="tile-label">JOBS</div>
             <div class="tile-sub">Every project</div>
           </div>
 
           <div class="tile" onclick="openView('PHOTOS')">
-            <div class="tile-badge">${totalPhotos}</div>
+            ${totalPhotos > 0 ? `<div class="tile-badge">${totalPhotos}</div>` : ''}
             <div class="tile-icon">${ShopIcon.photos}</div>
             <div class="tile-label">PHOTOS</div>
             <div class="tile-sub">Camera & job roll</div>
@@ -432,8 +500,30 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
     }
 
     function renderToday() {
-      const todayDate = new Date().toISOString().split('T')[0];
-      const todayJobs = DATA.jobs.filter(j => j.status === "On site" || j.startDate === todayDate);
+      const todayDate = localDay();
+      const todayJobs = DATA.jobs.filter(isTodayJob);
+      const upcoming = DATA.jobs
+        .filter(j => !isTodayJob(j) && !isClosedJob(j) && j.startDate > todayDate)
+        .sort((a, b) => a.startDate.localeCompare(b.startDate));
+      const upcomingHtml = upcoming.length === 0 ? '' : `
+        <div style="font-family: var(--font-display); font-size: 20px; font-weight: 900; text-transform: uppercase; margin: 20px 0 8px;">Coming Up</div>
+        ${upcoming.map(job => {
+          const client = DATA.clients.find(c => c.id === job.clientId) || { name: "No client" };
+          return `
+            <div class="card" onclick="openView('JOB_DETAIL', '${escJs(job.id)}')" style="cursor: pointer;">
+              <div class="card-header-row">
+                <div style="min-width: 0;">
+                  <div class="card-title">${esc(job.name)}</div>
+                  <div class="card-sub">${esc(client.name)}</div>
+                </div>
+                <div style="font-family: var(--font-display); font-size: 15px; font-weight: 800; text-transform: uppercase; color: var(--brand); white-space: nowrap; flex-shrink: 0; margin-left: 8px;">
+                  ${esc(dayLabel(job.startDate))}
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      `;
 
       let cardsHtml = '';
       if (todayJobs.length === 0) {
@@ -477,10 +567,19 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
           Boots-on list before leaving the driveway.
         </div>
         ${cardsHtml}
+        ${upcomingHtml}
       `;
     }
 
+    let JOBS_FILTER = "ACTIVE";
+    let JOBS_QUERY = "";
+
     function renderJobs() {
+      const counts = { ACTIVE: 0, PAID: 0, ALL: DATA.jobs.length };
+      DATA.jobs.forEach(j => { if (j.status === "Paid") counts.PAID++; else counts.ACTIVE++; });
+      const shown = DATA.jobs.filter(j => JOBS_FILTER === "ALL" || (JOBS_FILTER === "PAID") === (j.status === "Paid"));
+      const query = JOBS_QUERY.trim().toLowerCase();
+      let visible = 0;
       let cardsHtml = '';
       if (DATA.jobs.length === 0) {
         cardsHtml = `
@@ -489,11 +588,21 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
             <button class="big-btn" onclick="openNewJobModal()">+ New Job</button>
           </div>
         `;
+      } else if (shown.length === 0) {
+        cardsHtml = `
+          <div class="empty-state">
+            <div class="empty-text">${JOBS_FILTER === "PAID" ? "No paid jobs yet" : "No open jobs right now"}</div>
+          </div>
+        `;
       } else {
-        cardsHtml = DATA.jobs.map(job => {
-          const client = DATA.clients.find(c => c.id === job.clientId) || { name: "Client" };
+        cardsHtml = shown.map(job => {
+          const client = DATA.clients.find(c => c.id === job.clientId) || { name: "No client" };
+          const searchText = [job.name, client.name, job.address, job.trade, job.status].join(" ").toLowerCase();
+          const match = !query || searchText.includes(query);
+          if (match) visible++;
+          const startLabel = dayLabel(job.startDate);
           return `
-            <div class="card" onclick="openView('JOB_DETAIL', '${escJs(job.id)}')" style="cursor: pointer;">
+            <div class="card job-card" data-search="${esc(searchText)}" onclick="openView('JOB_DETAIL', '${escJs(job.id)}')" style="cursor: pointer;${match ? '' : ' display: none;'}">
               <div class="card-header-row">
                 <div>
                   <div class="card-title">${esc(job.name)}</div>
@@ -505,21 +614,51 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
               </div>
               <div class="card-meta"><a class="map-address" href="${esc(getMapLink(job.address))}" onclick="event.stopPropagation();">${ShopIcon.pin} ${esc(job.address)} • Map</a></div>
               <div class="card-meta" style="color: var(--text-muted);">
-                ${ShopIcon.photos} ${job.photos.length} photo${job.photos.length === 1 ? '' : 's'} • ${ShopIcon.notes} ${job.notes.length} note${job.notes.length === 1 ? '' : 's'}
+                ${startLabel ? `<span style="white-space: nowrap;">Start: ${esc(startLabel)} •</span>` : ''}${ShopIcon.photos} ${job.photos.length} photo${job.photos.length === 1 ? '' : 's'} • ${ShopIcon.notes} ${job.notes.length} note${job.notes.length === 1 ? '' : 's'}
               </div>
             </div>
           `;
         }).join('');
       }
 
+      const filters = [["ACTIVE", "Open"], ["PAID", "Paid"], ["ALL", "All"]];
       return `
         <div class="screen-header">
           <button class="back-btn" onclick="goHome()" aria-label="Back">←</button>
           <div class="screen-title">ALL JOBS</div>
         </div>
         <button class="big-btn" onclick="openNewJobModal()">+ New Job</button>
+        ${DATA.jobs.length === 0 ? '' : `
+          <input type="search" id="jobSearchInput" class="text-input" style="margin-bottom: 10px;" placeholder="Search jobs, clients, addresses" aria-label="Search jobs" value="${esc(JOBS_QUERY)}" oninput="filterJobCards(this.value)">
+          <div class="trade-pills">
+            ${filters.map(f => `<button type="button" class="trade-pill filter-pill ${JOBS_FILTER === f[0] ? 'selected' : ''}" aria-pressed="${JOBS_FILTER === f[0]}" onclick="setJobsFilter('${f[0]}')">${f[1]} (${counts[f[0]]})</button>`).join('')}
+          </div>
+        `}
         ${cardsHtml}
+        <div id="jobsNoMatch" class="empty-state" style="${shown.length > 0 && visible === 0 ? '' : 'display: none;'}">
+          <div class="empty-text">No jobs match that search</div>
+        </div>
       `;
+    }
+
+    function setJobsFilter(filter) {
+      JOBS_FILTER = filter;
+      renderCurrentView();
+    }
+
+    /* Filters the cards already on screen so the search box keeps focus while typing. */
+    function filterJobCards(value) {
+      JOBS_QUERY = value;
+      const query = value.trim().toLowerCase();
+      const cards = document.querySelectorAll(".job-card");
+      let visible = 0;
+      cards.forEach(card => {
+        const match = !query || (card.getAttribute("data-search") || "").includes(query);
+        card.style.display = match ? "" : "none";
+        if (match) visible++;
+      });
+      const none = document.getElementById("jobsNoMatch");
+      if (none) none.style.display = cards.length > 0 && visible === 0 ? "" : "none";
     }
 
     function renderJobDetail() {
@@ -557,6 +696,8 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
       const jobMoney = getJobMoney(job);
       const billedTotal = jobMoney.billed;
       const paidTotal = jobMoney.collected;
+      const typedTotals = hasTypedMoney(job);
+      const startLabel = dayLabel(job.startDate);
 
       return `
         <div class="screen-header">
@@ -567,7 +708,7 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
         <div class="card" style="margin-bottom: 10px;">
           <div class="card-sub">${esc(client.name)} • <a class="map-address" href="${esc(getMapLink(job.address))}">${ShopIcon.pin} ${esc(job.address)} • Map</a></div>
           <div style="font-family: var(--font-display); font-size: 17px; font-weight: 800; text-transform: uppercase; color: var(--brand); margin-top: 4px;">
-            Trade: ${esc(job.trade || 'General Carpentry')}
+            Trade: ${esc(job.trade || 'General')}${startLabel ? ` • Start: ${esc(startLabel)}` : ''}
           </div>
 
           <div class="comm-row">
@@ -576,6 +717,7 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
             <a href="${esc(getMapLink(job.address))}" class="comm-btn" style="background: var(--highlight-soft); color: #176B3A;">${ShopIcon.map} Map</a>
             <button class="comm-btn" onclick="openJobEmailModal('${escJs(job.id)}')">${ShopIcon.mail} Email</button>
           </div>
+          <button class="comm-btn" style="width: 100%; margin-top: 8px;" onclick="openEditJobModal('${escJs(job.id)}')">${ShopIcon.edit} Edit Job Details</button>
         </div>
 
         <div style="font-family: var(--font-display); font-size: 16px; font-weight: 800; text-transform: uppercase;">
@@ -631,7 +773,18 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
               </div>
             </div>
             <button class="comm-btn" style="width:100%; margin-bottom:8px; background:#1565C0; color:#FFF;" onclick="openEditQuoteModal('${escJs(job.id)}')">${ShopIcon.notes} Edit Quote Line Items</button>
-            <button class="comm-btn" style="width:100%; margin-bottom:14px;" onclick="openEditJobMoneyModal('${escJs(job.id)}')">${ShopIcon.edit} Edit Money Billed & Collected</button>
+            ${typedTotals ? `
+              <div class="card" style="border: 2px solid var(--alert); margin-bottom: 14px;">
+                <div style="font-weight: 700; font-size: 14px;">${ShopIcon.warning} Billed and Paid for this job were typed in by hand. Marking bills paid below does not change them.</div>
+                <div class="comm-row" style="flex-direction: column;">
+                  <button class="comm-btn" onclick="useBillsForJobMoney('${escJs(job.id)}')">Use Bills Instead</button>
+                  <button class="comm-btn" onclick="openEditJobMoneyModal('${escJs(job.id)}')">${ShopIcon.edit} Edit Typed Totals</button>
+                </div>
+              </div>
+            ` : `
+              <div style="font-size: 13px; color: var(--text-muted); font-weight: 600; margin-bottom: 8px;">Billed and Paid add up from the bills below.</div>
+              <button class="comm-btn" style="width:100%; margin-bottom:14px;" onclick="openEditJobMoneyModal('${escJs(job.id)}')">${ShopIcon.edit} Type Totals by Hand Instead</button>
+            `}
 
             <!-- Receipts & Material Expenses Card -->
             <div class="card">
@@ -817,7 +970,7 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
 
     function renderJobPhotosView() {
       const job = DATA.jobs.find(j => j.id === ACTIVE_JOB_ID);
-      if (!job) { openView('PHOTOS'); return ''; }
+      if (!job) { CURRENT_VIEW = "PHOTOS"; ACTIVE_JOB_ID = null; return renderPhotosView(); }
       const client = DATA.clients.find(c => c.id === job.clientId) || { name: 'Client' };
       return `
         <div class="screen-header">
@@ -879,6 +1032,7 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
           <div style="font-family: var(--font-display); font-size: 20px; font-weight: 900; text-transform: uppercase;">Clients</div>
           <button class="comm-btn" style="min-height: 44px; padding: 4px 12px;" onclick="openNewClientModal()">+ Add Client</button>
         </div>
+        ${DATA.clients.length === 0 ? `<div class="empty-state"><div class="empty-text">No clients yet</div></div>` : ''}
         ${DATA.clients.map(cl => `
           <div class="card">
             <div class="card-header-row"><div class="card-title">${esc(cl.name)}</div><button class="comm-btn" style="min-height:44px; padding:4px 10px; flex:0 0 auto;" onclick="openEditClientModal('${escJs(cl.id)}')">${ShopIcon.edit} Edit</button></div>
@@ -996,63 +1150,127 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
       }
     }
 
-    function openNewJobModal() {
-      const clientsOptions = DATA.clients.map(c => `<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('');
-      const modalHtml = `
-        <div style="font-family: var(--font-display); font-size: 24px; font-weight: 900; text-transform: uppercase; margin-bottom: 12px;">New Job on Board</div>
+    const JOB_TRADES = ["Carpentry", "Plumbing", "Electrical", "Painting", "Remodel"];
+    const NEW_CLIENT = "__new__";
+
+    /* Form fields shared by New Job and Edit Job. Pass a job to prefill it. */
+    function jobFormHtml(job) {
+      const trade = job ? (job.trade || "") : JOB_TRADES[0];
+      const hasClient = Boolean(job) && DATA.clients.some(c => c.id === job.clientId);
+      const selectedId = hasClient ? job.clientId : (job ? "" : (DATA.clients[0] ? DATA.clients[0].id : NEW_CLIENT));
+      const clientsOptions = DATA.clients.map(c => `<option value="${esc(c.id)}" ${c.id === selectedId ? 'selected' : ''}>${esc(c.name)}</option>`).join('');
+      const address = job && !/^on site$/i.test(job.address || "") ? job.address : "";
+      return `
         <div class="input-group">
-          <label class="input-label">Job Name</label>
-          <input type="text" id="newJobName" class="text-input" placeholder="e.g. Peterson Deck & Railing">
+          <label class="input-label" for="newJobName">Job Name</label>
+          <input type="text" id="newJobName" class="text-input" placeholder="e.g. Peterson Deck & Railing" value="${esc(job ? job.name : '')}">
         </div>
         <div class="input-group">
           <label class="input-label">Trade / Type</label>
           <div class="trade-pills">
-            <span class="trade-pill selected" onclick="selectTradePill(this)">Carpentry</span>
-            <span class="trade-pill" onclick="selectTradePill(this)">Plumbing</span>
-            <span class="trade-pill" onclick="selectTradePill(this)">Electrical</span>
-            <span class="trade-pill" onclick="selectTradePill(this)">Painting</span>
-            <span class="trade-pill" onclick="selectTradePill(this)">Remodel</span>
+            ${JOB_TRADES.map(t => `<span class="trade-pill ${t === trade ? 'selected' : ''}" onclick="selectTradePill(this)">${t}</span>`).join('')}
           </div>
-          <input type="hidden" id="newJobTrade" value="Carpentry">
+          <input type="hidden" id="newJobTrade" value="${esc(trade)}">
         </div>
         <div class="input-group">
-          <label class="input-label">Client</label>
-          <select id="newJobClientId" class="text-input">
+          <label class="input-label" for="newJobClientId">Client</label>
+          <select id="newJobClientId" class="text-input" onchange="toggleNewClientFields()">
+            ${job && !hasClient ? `<option value="" selected>No client</option>` : ''}
             ${clientsOptions}
+            <option value="${NEW_CLIENT}" ${selectedId === NEW_CLIENT ? 'selected' : ''}>+ New client…</option>
           </select>
         </div>
-        <div class="input-group">
-          <label class="input-label">Site Address</label>
-          <input type="text" id="newJobAddress" class="text-input" placeholder="e.g. 104 Main St">
+        <div id="newJobClientFields" ${selectedId === NEW_CLIENT ? '' : 'hidden'}>
+          <div class="input-group">
+            <label class="input-label" for="newJobClientName">New Client Name</label>
+            <input type="text" id="newJobClientName" class="text-input" placeholder="e.g. John Smith">
+          </div>
+          <div class="input-group">
+            <label class="input-label" for="newJobClientPhone">New Client Phone (Optional)</label>
+            <input type="tel" id="newJobClientPhone" class="text-input" placeholder="e.g. 207-555-0100">
+          </div>
         </div>
-        <button class="big-btn" onclick="saveNewJob()">Create Job</button>
+        <div class="input-group">
+          <label class="input-label" for="newJobAddress">Site Address</label>
+          <input type="text" id="newJobAddress" class="text-input" placeholder="e.g. 104 Main St" value="${esc(address)}">
+        </div>
+        <div class="input-group">
+          <label class="input-label" for="newJobStart">Start Date</label>
+          <input type="date" id="newJobStart" class="text-input" value="${esc(job ? job.startDate : localDay())}">
+        </div>
       `;
-      openModal(modalHtml);
+    }
+
+    function toggleNewClientFields() {
+      const select = document.getElementById("newJobClientId");
+      const fields = document.getElementById("newJobClientFields");
+      if (!select || !fields) return;
+      fields.hidden = select.value !== NEW_CLIENT;
+      if (!fields.hidden) document.getElementById("newJobClientName").focus();
+    }
+
+    /* Reads and checks the job form. Returns null (after telling the user why) when something is missing. */
+    function readJobForm() {
+      const nameInput = document.getElementById("newJobName");
+      const name = nameInput.value.trim();
+      if (!name) { showToast("Enter a job name"); nameInput.focus(); return null; }
+      const address = document.getElementById("newJobAddress").value.trim();
+      let clientId = document.getElementById("newJobClientId").value;
+      let newClient = null;
+      if (clientId === NEW_CLIENT) {
+        const clientInput = document.getElementById("newJobClientName");
+        const clientName = clientInput.value.trim();
+        if (!clientName) { showToast("Enter the new client's name"); clientInput.focus(); return null; }
+        newClient = {
+          id: uid("cl"),
+          name: clientName,
+          phone: document.getElementById("newJobClientPhone").value.trim(),
+          email: "",
+          address: address,
+          projectNotes: ""
+        };
+        clientId = newClient.id;
+      }
+      const startDate = document.getElementById("newJobStart").value;
+      return {
+        name: name,
+        trade: document.getElementById("newJobTrade").value,
+        clientId: clientId,
+        address: address || "On Site",
+        startDate: /^\d{4}-\d{2}-\d{2}$/.test(startDate) ? startDate : "",
+        newClient: newClient
+      };
+    }
+
+    function openNewJobModal() {
+      openModal(`
+        <div style="font-family: var(--font-display); font-size: 24px; font-weight: 900; text-transform: uppercase; margin-bottom: 12px;">New Job on Board</div>
+        ${jobFormHtml(null)}
+        <button class="big-btn" onclick="saveNewJob()">Create Job</button>
+      `);
     }
 
     function selectTradePill(el) {
-      document.querySelectorAll('.trade-pill').forEach(p => p.classList.remove('selected'));
+      el.parentElement.querySelectorAll('.trade-pill').forEach(p => p.classList.remove('selected'));
       el.classList.add('selected');
       document.getElementById('newJobTrade').value = el.innerText;
     }
 
     async function saveNewJob() {
-      const name = document.getElementById("newJobName").value.trim();
-      const trade = document.getElementById("newJobTrade").value;
-      const clientId = document.getElementById("newJobClientId").value;
-      const address = document.getElementById("newJobAddress").value.trim();
-
-      if (!name) { alert("Please enter a job name."); return; }
+      const form = readJobForm();
+      if (!form) return;
+      if (form.newClient) DATA.clients.push(form.newClient);
+      const owner = DATA.crewMembers.find(c => c.role === "Owner");
 
       const newJob = {
         id: uid("j"),
-        name: name,
-        trade: trade,
-        clientId: clientId,
-        address: address || "On Site",
+        name: form.name,
+        trade: form.trade,
+        clientId: form.clientId,
+        address: form.address,
         status: "Lead",
-        startDate: new Date().toISOString().split('T')[0],
-        crewAssigned: ["c1"],
+        startDate: form.startDate,
+        crewAssigned: owner ? [owner.id] : [],
         photos: [],
         files: [],
         notes: [
@@ -1067,6 +1285,34 @@ Object.defineProperty(window,"saveCompanyName",{configurable:true,get:()=>saveCo
       await saveData();
       closeModal();
       openView('JOB_DETAIL', newJob.id);
+    }
+
+    function openEditJobModal(jobId) {
+      const job = DATA.jobs.find(j => j.id === jobId);
+      if (!job) return;
+      openModal(`
+        <div style="font-family: var(--font-display); font-size: 24px; font-weight: 900; text-transform: uppercase; margin-bottom: 12px;">Edit Job</div>
+        ${jobFormHtml(job)}
+        <button class="big-btn" onclick="saveJobEdits('${escJs(job.id)}')">Save Changes</button>
+        <button class="big-btn secondary" onclick="closeModal()">Cancel</button>
+      `);
+    }
+
+    async function saveJobEdits(jobId) {
+      const job = DATA.jobs.find(j => j.id === jobId);
+      if (!job) return;
+      const form = readJobForm();
+      if (!form) return;
+      if (form.newClient) DATA.clients.push(form.newClient);
+      job.name = form.name;
+      job.trade = form.trade;
+      job.clientId = form.clientId;
+      job.address = form.address;
+      job.startDate = form.startDate;
+      await saveData();
+      closeModal();
+      renderCurrentView();
+      showToast("Job updated");
     }
 
     function openAddNoteModal(jobId) {
@@ -1436,8 +1682,7 @@ Status: ${job.status}
 Note:
 
 
-${DATA.business.name}
-${DATA.business.phone}
+${emailSignature()}
 Sent from Shop Board`;
 
       const mailtoUrl = `mailto:${client.email || ''}?subject=${subject}&body=${encodeURIComponent(bodyText)}`;
@@ -1492,8 +1737,7 @@ Total: $${total.toLocaleString()}
 Note:
 
 
-${DATA.business.name}
-${DATA.business.phone}
+${emailSignature()}
 Sent from Shop Board`;
 
       const mailtoUrl = `mailto:${client.email || ''}?subject=${subject}&body=${encodeURIComponent(bodyText)}`;
@@ -1531,8 +1775,7 @@ Here is the current billing breakdown for ${job.name}:
 ${billsText}
 Total: $${total.toLocaleString()}
 
-${DATA.business.name}
-${DATA.business.phone}
+${emailSignature()}
 Sent from Shop Board`;
 
       const mailtoUrl = `mailto:${client.email || ''}?subject=${subject}&body=${encodeURIComponent(bodyText)}`;
@@ -1624,7 +1867,7 @@ Sent from Shop Board`;
       if (!job) return;
       const money = getJobMoney(job);
       openModal(`<div style="font-family:var(--font-display); font-size:24px; font-weight:900; text-transform:uppercase; margin-bottom:12px;">Edit Job Money</div>
-        <div style="font-size:13px; color:var(--text-muted); margin-bottom:12px;">These direct totals drive the job and Money Board. Existing invoice history remains unchanged.</div>
+        <div style="font-size:13px; color:var(--text-muted); margin-bottom:12px;">Typing totals here replaces the totals added up from this job's bills, on the job and on the Money Board. You can switch back to bills any time.</div>
         <div class="input-group"><label class="input-label">Money Billed ($)</label><input type="number" min="0" step="0.01" id="editMoneyBilled" class="text-input" value="${money.billed}"></div>
         <div class="input-group"><label class="input-label">Money Collected ($)</label><input type="number" min="0" step="0.01" id="editMoneyCollected" class="text-input" value="${money.collected}"></div>
         <button class="big-btn" onclick="saveJobMoney('${escJs(job.id)}')">Save Money Totals</button>`);
@@ -1637,6 +1880,24 @@ Sent from Shop Board`;
       if (!job || !Number.isFinite(billed) || billed < 0 || !Number.isFinite(collected) || collected < 0) { alert('Enter valid zero-or-greater dollar amounts.'); return; }
       job.moneyBilled = billed; job.moneyCollected = collected;
       await saveData(); closeModal(); renderCurrentView(); showToast('Job money totals updated');
+    }
+
+    function useBillsForJobMoney(jobId) {
+      const job = DATA.jobs.find(j => j.id === jobId);
+      if (!job) return;
+      const money = getJobMoney(job);
+      showAppConfirm(
+        "Use Bills Instead?",
+        `Billed and Paid will add up from this job's bills again. The typed totals (${formatMoney(money.billed)} billed, ${formatMoney(money.collected)} collected) will be cleared.`,
+        "Yes, Use Bills",
+        async function() {
+          delete job.moneyBilled;
+          delete job.moneyCollected;
+          await saveData();
+          renderCurrentView();
+          showToast("Totals now come from bills");
+        }
+      );
     }
 
     function openEditQuoteModal(jobId) {
@@ -1924,6 +2185,11 @@ Sent from Shop Board`;
     }
 
     function openQuickReceiptModal(preselectedJobId = null) {
+      if (DATA.jobs.length === 0) {
+        openNewJobModal();
+        showToast("Add a job first — receipts are saved to a job");
+        return;
+      }
       const targetJobId = preselectedJobId || ACTIVE_JOB_ID || (DATA.jobs[0] ? DATA.jobs[0].id : '');
       TEMP_RECEIPT_PHOTO = null;
 
@@ -2102,11 +2368,15 @@ Sent from Shop Board`;
       COMPANY_LOGO_DRAFT = DATA.business.logoDataUrl || "";
       openModal(`
         <div style="font-family:var(--font-display);font-size:24px;font-weight:900;margin-bottom:12px;">Company Settings</div>
-        <p style="font-size:14px;color:var(--text-muted);margin-bottom:14px;">Company name appears in the header and new email drafts. Your logo appears in the header. Changes apply after saving.</p>
+        <p style="font-size:14px;color:var(--text-muted);margin-bottom:14px;">Company name appears in the header and new email drafts. Your phone number is added to the bottom of client emails. Your logo appears in the header. Changes apply after saving.</p>
         <form id="companySettingsForm" onsubmit="event.preventDefault();saveCompanyName();">
           <div class="input-group">
             <label class="input-label" for="companyNameInput">Company Name</label>
             <input id="companyNameInput" class="text-input" type="text" maxlength="80" autocomplete="organization" required aria-describedby="companyNameError">
+          </div>
+          <div class="input-group">
+            <label class="input-label" for="companyPhoneInput">Business Phone (Optional)</label>
+            <input id="companyPhoneInput" class="text-input" type="tel" maxlength="30" autocomplete="tel">
           </div>
           <div class="input-group">
             <label class="input-label" for="companyLogoInput">Company Logo</label>
@@ -2122,6 +2392,7 @@ Sent from Shop Board`;
         </form>
       `);
       document.getElementById("companyNameInput").value = DATA.business.name || "";
+      document.getElementById("companyPhoneInput").value = DATA.business.phone || "";
       refreshCompanyLogoPreview();
     }
 
@@ -2235,7 +2506,9 @@ Sent from Shop Board`;
         error.hidden = false;
         return;
       }
-      const next = {...DATA, business: {...DATA.business, name: name, companyNameCustomized: true, logoDataUrl: COMPANY_LOGO_DRAFT}};
+      const phoneInput = document.getElementById("companyPhoneInput");
+      const phone = phoneInput ? phoneInput.value.trim().slice(0, 30) : (DATA.business.phone || "");
+      const next = {...DATA, business: {...DATA.business, name: name, phone: phone, companyNameCustomized: true, logoDataUrl: COMPANY_LOGO_DRAFT}};
       try {
         const payload = JSON.stringify(next);
         await Storage.set("SHOP_BOARD_DATA", payload);
@@ -2328,5 +2601,6 @@ Sent from Shop Board`;
 
 
 for (const runAddOn of (window.ShopBoardAddOns || [])) await runAddOn();
+navInit();
 const indicator=document.getElementById('savedIndicator');if(indicator)indicator.textContent='SAVED ON PHONE • '+Storage.backendLabel();document.body.removeAttribute('data-shop-boot');document.getElementById('shopBootOverlay').hidden=true;
 }

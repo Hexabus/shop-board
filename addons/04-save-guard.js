@@ -84,7 +84,7 @@ await (async function () {
     CURRENT_VIEW = state.view; ACTIVE_JOB_ID = state.job;
     document.getElementById("modalOverlay").style.display = state.modalDisplay;
   }
-  const actions = ["saveNewJob", "saveNewClient", "saveClientEdits", "saveNewCrew", "saveNote", "savePhoto", "saveBill", "saveJobMoney", "saveRealFile", "saveFile", "saveQuickReceipt", "setJobStatus", "toggleBillPaid", "deleteNote", "toggleMoneyForCrew", "switchUserRole", "executeConfirmedAction", "deleteClient", "deleteCrewMember", "deleteJob", "deletePhoto", "deleteBill", "deleteExpense", "deleteFile"];
+  const actions = ["saveNewJob", "saveJobEdits", "saveNewClient", "saveClientEdits", "saveNewCrew", "saveNote", "savePhoto", "saveBill", "saveJobMoney", "saveRealFile", "saveFile", "saveQuickReceipt", "setJobStatus", "toggleBillPaid", "deleteNote", "toggleMoneyForCrew", "switchUserRole", "executeConfirmedAction", "deleteClient", "deleteCrewMember", "deleteJob", "deletePhoto", "deleteBill", "deleteExpense", "deleteFile"];
   actions.forEach(name => {
     const original = window[name];
     if (typeof original !== "function") return;

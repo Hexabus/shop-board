@@ -14,7 +14,10 @@
   const cloud = window.ShopBoardOwnerCloud;
   if (!cloud || typeof cloud.restoreSession !== "function") return; // cloud.js failed to load; never lock the app over that
 
+  const member = window.ShopBoardMember;
   async function tryRestore() {
+    // A lead or crew login is not the owner account, so the owner check below would reject it.
+    if (member && member.isMemberDevice()) return member.hasCredential();
     try {
       return await cloud.restoreSession();
     } catch (e) {
@@ -38,19 +41,20 @@
     gate.style.cssText = "max-width:380px; width:100%; text-align:left;";
     gate.innerHTML = `
       <div style="font-family:var(--font-display); font-size:26px; font-weight:900; text-transform:uppercase; margin-bottom:6px; text-align:center;">Shop Board</div>
-      <div style="font-size:14px; color:var(--text-muted); text-align:center; margin-bottom:20px;">Sign in as the owner to open this device.</div>
+      <div style="font-size:14px; color:var(--text-muted); text-align:center; margin-bottom:20px;">Sign in to open Shop Board on this device.</div>
       <label class="input-label" for="shopGateEmail">Email</label>
       <input id="shopGateEmail" class="text-input" type="email" autocomplete="username" autocapitalize="none" spellcheck="false" style="margin-bottom:14px;">
       <label class="input-label" for="shopGatePassword">Password</label>
       <input id="shopGatePassword" class="text-input" type="password" autocomplete="current-password" style="margin-bottom:14px;">
       <button id="shopGateSignIn" type="button" class="big-btn">Sign In</button>
-      <p id="shopGateStatus" role="status" aria-live="polite" style="font-size:13px; color:var(--text-muted); margin-top:12px; text-align:center;"></p>`;
+      <p id="shopGateStatus" role="status" aria-live="polite" style="font-size:14px; color:var(--text-muted); margin-top:12px; text-align:center;"></p>`;
     overlay.appendChild(gate);
 
     const btn = document.getElementById("shopGateSignIn");
     const emailEl = document.getElementById("shopGateEmail");
     const passEl = document.getElementById("shopGatePassword");
     const statusEl = document.getElementById("shopGateStatus");
+    emailEl.focus();
 
     async function attempt() {
       btn.disabled = true; btn.textContent = "Signing in…";
@@ -59,9 +63,16 @@
       let ok = false;
       try { ok = await cloud.signIn(email, password); }
       catch (e) { ok = false; }
+      let memberNote = "";
+      if (ok && member) member.clear(); // the owner signed in: this is not (or no longer) a lead/crew phone
+      // Not the owner account: try it as a lead or crew login (a wrong password is not retried).
+      if (!ok && member && !/not accepted|Enter your owner email/i.test(cloud.getState().notice || "")) {
+        const tried = await member.signIn(email, password);
+        ok = tried.ok; memberNote = tried.message;
+      }
       if (ok) { gate.remove(); if (loadingText) loadingText.style.display = ""; resolve(); return; }
       const state = cloud.getState();
-      statusEl.textContent = state.notice || "Sign-in failed. Try again.";
+      statusEl.textContent = memberNote || (/not accepted/i.test(state.notice || "") ? "Email or password was not accepted." : state.notice) || "Sign-in failed. Try again.";
       btn.disabled = false; btn.textContent = "Sign In";
     }
     btn.addEventListener("click", attempt);

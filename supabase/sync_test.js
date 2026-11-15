@@ -36,9 +36,9 @@ function sampleData() {
 
 /* ---- stand-in server ---- */
 function fakeServer() {
-  const db = { sb_members: [], sb_companies: [{ id: COMPANY, name: "Field Trade Co.", phone: "", logo: "", next_invoice_number: 1001, edited_at: "2026-01-01T00:00:00.000Z", updated_at: "2026-01-01T00:00:00.000Z" }] };
+  const db = { sb_members: [], sb_companies: [{ id: COMPANY, name: "Field Trade Co.", phone: "", logo: "", seat_limit: 2, next_invoice_number: 1001, edited_at: "2026-01-01T00:00:00.000Z", updated_at: "2026-01-01T00:00:00.000Z" }] };
   Sync.TABLES.forEach(t => (db[t] = []));
-  const tokens = {}, log = [], files = {};
+  const tokens = {}, log = [], files = {}, logins = {};
   let clock = Date.parse("2026-11-14T12:00:00.000Z"), down = false, refreshCount = 0, phones = 0;
   const tick = () => new Date((clock += 1000)).toISOString();
   const roleOf = uid => { const m = db.sb_members.find(x => x.user_id === uid && x.status === "active"); return m ? m.role : null; };
@@ -78,8 +78,13 @@ function fakeServer() {
     const uid = tokens[(init.headers.Authorization || "").replace("Bearer ", "")] || null;
     log.push({ method, path: u.pathname, query: u.search, prefer: init.headers.Prefer || "", body, uid });
     if (u.pathname === "/auth/v1/token") {
+      if (u.searchParams.get("grant_type") === "password") { // only made-up test logins exist here
+        const who = logins[body.email];
+        if (!who || body.password !== "made-up-test-password") return reply(400, { error_code: "invalid_credentials" });
+        const n = ++refreshCount; tokens["access-" + n] = who; tokens["refresh:r-" + n] = who;
+        return reply(200, { access_token: "access-" + n, refresh_token: "r-" + n, expires_in: 3600 });
+      }
       const uidFor = tokens["refresh:" + body.refresh_token];
-      if (body.password !== undefined) throw Error("test must never send a password");
       if (!uidFor) return reply(400, { error_code: "refresh_token_not_found" });
       delete tokens["refresh:" + body.refresh_token];
       const n = ++refreshCount; tokens["access-" + n] = uidFor; tokens["refresh:r-" + n] = uidFor;
@@ -102,6 +107,7 @@ function fakeServer() {
       files[name] = { bytes: init.body, mime: init.headers["Content-Type"], owner: uid };
       return reply(200, { Key: "shop-board/" + name });
     }
+    if (u.pathname === "/auth/v1/logout") return reply(204);
     if (u.pathname === "/auth/v1/user") return reply(200, { id: uid, email: "person@example.com" });
     if (u.pathname === "/rest/v1/rpc/sb_create_company") {
       if (uid !== USERS.owner) return reply(400, { code: "P0001", message: "Creating a company is not open yet." });
@@ -113,7 +119,8 @@ function fakeServer() {
     const q = u.searchParams;
     if (method === "GET") {
       let rows = db[table];
-      if (table === "sb_members") rows = roleOf(uid) ? rows.filter(r => "eq." + r.user_id === q.get("user_id")) : [];
+      if (table === "sb_members") rows = roleOf(uid) ? rows.filter(r => (!q.get("user_id") || "eq." + r.user_id === q.get("user_id")) &&
+        (!q.get("status") || "eq." + r.status === q.get("status")) && (!q.get("role") || "neq." + r.role !== q.get("role"))) : [];
       else if (table === "sb_companies") rows = roleOf(uid) ? rows : [];
       else rows = rows.filter(r => canSelect(uid, table, r));
       const since = q.get("updated_at");
@@ -121,6 +128,38 @@ function fakeServer() {
       rows = rows.slice().sort((a, b) => Date.parse(a.updated_at) - Date.parse(b.updated_at));
       const from = Number(q.get("offset") || 0);
       return reply(200, rows.slice(from, from + Number(q.get("limit") || 1000)));
+    }
+    if (table === "sb_members" && method !== "GET") { // owner only, seat limit, a company keeps an owner
+      if (roleOf(uid) !== "owner") return method === "POST" ? denied() : reply(200, []);
+      const seatsFull = (id, row) => row.status === "active" && row.role !== "owner" &&
+        db.sb_members.filter(m => m.status === "active" && m.role !== "owner" && m.user_id !== id).length >= db.sb_companies[0].seat_limit;
+      const full = () => reply(400, { code: "P0001", message: "This company has used all 2 of its crew seats." });
+      if (method === "POST") {
+        const r = body[0], old = db.sb_members.find(m => m.user_id === r.user_id);
+        if (!Object.values(USERS).concat(Object.values(logins)).includes(r.user_id)) return reply(409, { code: "23503", message: "violates foreign key constraint: Key is not present in table \"users\"" });
+        if (seatsFull(r.user_id, r)) return full();
+        if (old) Object.assign(old, r); else db.sb_members.push(Object.assign({ created_at: tick() }, r));
+        return reply(201, [{ user_id: r.user_id }]);
+      }
+      const row = db.sb_members.find(m => "eq." + m.user_id === q.get("user_id"));
+      if (!row) return reply(200, []);
+      const next = Object.assign({}, row, body);
+      if (seatsFull(row.user_id, next)) return full();
+      if (row.role === "owner" && (next.role !== "owner" || next.status !== "active")) return reply(400, { code: "P0001", message: "A company must keep at least one owner." });
+      Object.assign(row, body);
+      return reply(200, [{ user_id: row.user_id }]);
+    }
+    if (method === "PATCH" && table === "sb_crew" && "user_id" in body) { // matching a crew name to a login
+      if (roleOf(uid) !== "owner") return reply(200, []);
+      const eq = k => (q.get(k) || "").startsWith("eq.") ? q.get(k).slice(3) : null, not = (q.get("id") || "").startsWith("neq.") ? q.get("id").slice(4) : null;
+      const out = [];
+      db.sb_crew.forEach(r => {
+        if (eq("id") !== null && r.id !== eq("id")) return;
+        if (eq("user_id") !== null && r.user_id !== eq("user_id")) return;
+        if (not !== null && r.id === not) return;
+        Object.assign(r, body, { updated_at: tick() }); out.push({ id: r.id });
+      });
+      return reply(200, out);
     }
     if (method === "PATCH" && table === "sb_companies") {
       if (roleOf(uid) !== "owner") return reply(200, []);
@@ -159,11 +198,11 @@ function fakeServer() {
   }
   function signedIn(role) {
     const mem = {};
-    const storage = { getItem: k => (k in mem ? mem[k] : null), setItem: (k, v) => { mem[k] = String(v); }, mem };
+    const storage = { getItem: k => (k in mem ? mem[k] : null), setItem: (k, v) => { mem[k] = String(v); }, removeItem: k => { delete mem[k]; }, mem };
     if (role) { const t = "start-" + role + "-" + (++phones); mem.shopBoardCloudRefreshToken = t; tokens["refresh:" + t] = USERS[role]; }
     return storage;
   }
-  return { db, log, tokens, files, fetch, signedIn, addMember: (role, status) => db.sb_members.push({ company_id: COMPANY, user_id: USERS[role], role, status: status || "active" }), setDown: v => { down = v; } };
+  return { db, log, tokens, files, logins, fetch, signedIn, addMember: (role, status) => db.sb_members.push({ company_id: COMPANY, user_id: USERS[role], role, status: status || "active" }), setDown: v => { down = v; } };
 }
 
 const tests = [];

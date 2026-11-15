@@ -502,7 +502,7 @@ Object.defineProperty(window,"dayLabel",{configurable:true,get:()=>dayLabel,set:
     function renderHome() {
       const todayCount = DATA.jobs.filter(isTodayJob).length;
       const totalJobs = DATA.jobs.filter(j => j.status !== "Paid").length;
-      const canSeeMoney = DATA.currentUser.role === "Owner" || DATA.business.crewSeeMoney;
+      const canSeeMoney = DATA.currentUser.role === "Owner" || (DATA.business.crewSeeMoney && !document.body.dataset.shopRole);
       let overdueCount = 0;
       if (canSeeMoney) DATA.jobs.forEach(j => { if (!hasTypedMoney(j)) overdueCount += (j.bills || []).filter(billIsOverdue).length; });
       let totalPhotos = 0;
@@ -723,7 +723,7 @@ Object.defineProperty(window,"dayLabel",{configurable:true,get:()=>dayLabel,set:
 
       const client = DATA.clients.find(c => c.id === job.clientId) || { name: "Client", phone: "", email: "" };
       const isOwner = DATA.currentUser.role === "Owner";
-      const canSeeMoney = isOwner || DATA.business.crewSeeMoney;
+      const canSeeMoney = isOwner || (DATA.business.crewSeeMoney && !document.body.dataset.shopRole);
 
       const stages = ["Lead", "Quoted", "Scheduled", "On site", "Waiting", "Done", "Paid"];
       const statusPillsHtml = stages.map(st => `
@@ -1059,7 +1059,7 @@ Object.defineProperty(window,"dayLabel",{configurable:true,get:()=>dayLabel,set:
 
     function renderMoneyView() {
       const isOwner = DATA.currentUser.role === "Owner";
-      const canSeeMoney = isOwner || DATA.business.crewSeeMoney;
+      const canSeeMoney = isOwner || (DATA.business.crewSeeMoney && !document.body.dataset.shopRole);
       if (!canSeeMoney) return `<div class="screen-header"><button class="back-btn" onclick="goHome()" aria-label="Back">←</button><div class="screen-title">MONEY</div></div><div class="card" style="text-align:center; padding:30px;"><div style="font-family:var(--font-display); font-size:22px; font-weight:800;">RESTRICTED TO OWNER</div><div style="color:var(--text-muted); margin-top:8px;">Dollar tracking is turned off for crew logins.</div></div>`;
 
       let totalRevenue = 0, totalExpenses = 0;

@@ -317,8 +317,9 @@
   };
 
   let plainSave = null, timer = null;
+  const cloud = Sync.createSync();
   const engine = createEngine({
-    sync: Sync.createSync(), store, kv: root.localStorage,
+    sync: cloud, store, kv: root.localStorage,
     getData: () => root.DATA,
     async applyData(merged) {
       root.DATA = merged;
@@ -343,6 +344,10 @@
     soon(1500);
   }
   root.ShopBoardCloudSync = { isOn: engine.isOn, status: engine.status, syncNow: () => engine.run(), turnOn: engine.turnOn, turnOff: engine.turnOff,
-    prepare: engine.prepare, verify: engine.verify, crewLogins: engine.crewLogins };
+    prepare: engine.prepare, verify: engine.verify, crewLogins: engine.crewLogins,
+    // Logins and people: who is signed in here, lead/crew sign-in, and the owner's people list.
+    who() { try { return JSON.parse(root.localStorage.getItem(WHO_KEY) || "null"); } catch (e) { return null; } },
+    session: force => cloud.session(force), signIn: cloud.signIn, signOutHere: cloud.signOutHere,
+    people: cloud.people, addPerson: cloud.addPerson, setPerson: cloud.setPerson };
   if (root.ShopBoardBootPromise && typeof root.ShopBoardBootPromise.then === "function") root.ShopBoardBootPromise.then(setup); else setup();
 })(typeof window !== "undefined" ? window : globalThis);

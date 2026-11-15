@@ -31,6 +31,7 @@
   const PROJECT = "https://pgnhbcauvugxbbylxzye.supabase.co";
   const KEY = "sb_publishable_xvVqeoyGvl-aVyIr8wWnDw_a8LWBtlL";
   const BUCKET = "shop-board";
+  const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   const REFRESH_KEY = "shopBoardCloudRefreshToken"; // the sign-in cloud.js saves
   const CURSOR_KEY = "shopBoardSyncCursor";
   const PAGE = 1000;
@@ -490,6 +491,91 @@
       return Array.isArray(r.data) ? r.data.length : 0;
     }
 
+    /* Sign-in for a lead or crew login (the owner still signs in through cloud.js). The password
+       goes straight to the sign-in server and is not kept; only the saved sign-in is stored. */
+    async function signIn(email, password) {
+      if (typeof email !== "string" || !email.trim() || typeof password !== "string" || !password) throw problem("Enter your email and password.", "rejected");
+      const r = await request("/auth/v1/token?grant_type=password", { method: "POST", body: { email: email.trim(), password } });
+      if (!r.ok) {
+        if (r.status === 429 || r.status >= 500) throw failed(r, "Sign-in");
+        throw problem("Email or password was not accepted.", "signed_out");
+      }
+      if (!r.data || typeof r.data.access_token !== "string" || typeof r.data.refresh_token !== "string") throw problem("Sign-in did not complete. Try again.", "signed_out");
+      try { store.setItem(REFRESH_KEY, r.data.refresh_token); } catch (e) {}
+      access = { token: r.data.access_token, expiresAt: Date.now() + (Number(r.data.expires_in) || 3600) * 1000 };
+      who = null;
+      return session(true);
+    }
+    /* Forget this phone's sign-in (and tell the server, if it can be reached). */
+    async function signOutHere() {
+      let t = access && access.token;
+      if (!t) { try { t = await token(); } catch (e) { t = null; } }
+      access = null; who = null;
+      try { store.removeItem(REFRESH_KEY); } catch (e) {}
+      if (t) { try { await request("/auth/v1/logout?scope=local", { method: "POST", token: t }); } catch (e) {} }
+    }
+
+    /* Everyone with a login in this company, matched to their name on the crew list. */
+    async function people() {
+      const s = await member(), t = await token();
+      const [m, c, co] = await Promise.all([
+        request("/rest/v1/sb_members?select=user_id,role,status,created_at&company_id=eq." + s.companyId + "&order=created_at", { token: t }),
+        request("/rest/v1/sb_crew?select=id,name,user_id&company_id=eq." + s.companyId + "&deleted_at=is.null", { token: t }),
+        request("/rest/v1/sb_companies?select=seat_limit&id=eq." + s.companyId, { token: t })]);
+      if (!m.ok) throw failed(m, "Reading the people list");
+      if (!c.ok) throw failed(c, "Reading the crew list");
+      const roster = Array.isArray(c.data) ? c.data : [];
+      const list = (Array.isArray(m.data) ? m.data : []).map(x => {
+        const r = roster.find(k => k.user_id === x.user_id);
+        return { userId: x.user_id, role: x.role, status: x.status, me: x.user_id === s.userId, crewId: r ? r.id : null, name: r ? text(r.name) : "" };
+      });
+      const limit = co.ok && Array.isArray(co.data) && co.data[0] ? Number(co.data[0].seat_limit) : null;
+      return { seatLimit: limit, used: list.filter(p => p.status === "active" && p.role !== "owner").length, people: list,
+        roster: roster.map(r => ({ id: r.id, name: text(r.name), userId: r.user_id || null })) };
+    }
+    /* Points a crew-list entry at a login, so "assigned to this person" means that login. */
+    async function linkRoster(userId, crewId) {
+      const s = await member(), t = await token(), stamp = new Date().toISOString();
+      const base = "/rest/v1/sb_crew?company_id=eq." + s.companyId;
+      // The new name is matched first, so a failure never leaves the login matched to nobody.
+      if (crewId) {
+        const on = await request(base + "&id=eq." + encodeURIComponent(crewId), { method: "PATCH", token: t, prefer: "return=representation", body: { user_id: userId, edited_at: stamp } });
+        if (!on.ok) throw failed(on, "Updating the crew list");
+        if (!Array.isArray(on.data) || !on.data.length) throw problem("That person is not on the cloud's crew list yet. Sync first, then try again.", "rejected");
+      }
+      const off = await request(base + "&user_id=eq." + userId + (crewId ? "&id=neq." + encodeURIComponent(crewId) : ""), { method: "PATCH", token: t, body: { user_id: null, edited_at: stamp } });
+      if (!off.ok) throw failed(off, "Updating the crew list");
+    }
+    /* Owner only: gives a login a place in the company as lead or crew. */
+    async function addPerson(userId, role, crewId) {
+      if (!UUID.test(String(userId || ""))) throw problem("That login code does not look right. It is 36 letters and numbers with dashes.", "rejected");
+      if (role !== "lead" && role !== "crew") throw problem("Choose Lead or Crew.", "rejected");
+      const s = await member(), t = await token();
+      if (userId.toLowerCase() === s.userId) throw problem("That is your own login code. Paste the code from the other person's phone.", "rejected");
+      const r = await request("/rest/v1/sb_members?on_conflict=company_id,user_id", { method: "POST", token: t,
+        prefer: "resolution=merge-duplicates,return=representation", body: [{ company_id: s.companyId, user_id: userId.toLowerCase(), role, status: "active" }] });
+      if (!r.ok) {
+        const e = failed(r, "Adding this login");
+        if (/crew seats/i.test(e.detail)) throw problem(e.detail, "rejected");
+        if (e.detail && /foreign key|not present/i.test(e.detail)) throw problem("No login exists with that code. Check it was copied in full.", "rejected");
+        throw e;
+      }
+      await linkRoster(userId.toLowerCase(), crewId || null);
+    }
+    /* Owner only: change a login's role, remove it from the company, or let it back in. */
+    async function setPerson(userId, change) {
+      const s = await member(), body = {};
+      if (userId === s.userId) throw problem("You cannot change your own login here.", "rejected");
+      if (change && (change.role === "lead" || change.role === "crew")) body.role = change.role;
+      if (change && (change.status === "active" || change.status === "removed")) body.status = change.status;
+      if (Object.keys(body).length) {
+        const r = await request("/rest/v1/sb_members?company_id=eq." + s.companyId + "&user_id=eq." + userId, { method: "PATCH", token: await token(), prefer: "return=representation", body });
+        if (!r.ok) { const e = failed(r, "Changing this login"); if (/crew seats|at least one owner/i.test(e.detail)) throw problem(e.detail, "rejected"); throw e; }
+        if (!Array.isArray(r.data) || !r.data.length) throw problem("That login was not found in this company.", "rejected");
+      }
+      if (change && "crewId" in change) await linkRoster(userId, change.crewId || null);
+    }
+
     /* Push, then pull, so anything the server kept instead of ours comes straight back. */
     async function pushThenPull(changes, o) {
       const report = await push(changes);
@@ -497,7 +583,8 @@
       return { report, pulled };
     }
 
-    return { session, pull, push, pushThenPull, saveCursor, downloadFile, createCompany, crewLogins, signOut() { access = null; who = null; } };
+    return { session, pull, push, pushThenPull, saveCursor, downloadFile, createCompany, crewLogins,
+      signIn, signOutHere, people, addPerson, setPerson, signOut() { access = null; who = null; } };
   }
 
   const canWrite = (role, table) => (WRITE[role] || {})[table] || null;

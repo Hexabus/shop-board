@@ -1,6 +1,6 @@
 "use strict";
 
-const VERSION = "v21"; // Change this for every future release of any app file.
+const VERSION = "v22"; // Change this for every future release of any app file.
 const BASE = new URL(self.registration.scope);
 const CACHE_PREFIX = "shop-board-shell:" + BASE.pathname + ":";
 const CACHE_NAME = CACHE_PREFIX + VERSION;
@@ -14,7 +14,7 @@ const ASSETS = [
   "addons/04-save-guard.js", "addons/05-start-screen.js", "addons/06-maps-preference.js",
   "addons/07-receipt-category.js", "addons/08-receipt-job-memory.js", "addons/09-settings-layout.js",
   "addons/10-indexeddb-prep.js", "addons/11-indexeddb-button-fix.js", "addons/12-auth-gate.js", "addons/13-paperwork.js",
-  "boot.js", "offline.js", "appinfo.js", "cloud.js", "sync.js", "syncwire.js", "synctoggle.js",
+  "boot.js", "offline.js", "appinfo.js", "cloud.js", "sync.js", "syncwire.js", "synctoggle.js", "members.js", "people.js",
   "apple-touch-icon.png", "icon-192.png", "icon-512.png"
 ].map(path => new URL(path, BASE).href);
 const APP_URL = new URL("index.html", BASE).href;

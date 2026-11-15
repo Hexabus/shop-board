@@ -903,3 +903,24 @@ img[data-thumb]:not([data-thumb-state="ready"]) { background: var(--border); }
 #shopCloudSyncPanel .shop-sync-note{font-size:14px;color:var(--text-muted);margin:10px 0;overflow-wrap:anywhere;}
 #shopCloudSyncPanel .shop-sync-note strong{color:var(--text);}
 #shopCloudSyncPanel .big-btn{margin-top:8px;}
+
+/* People section in Settings */
+#shopPeoplePanel .shop-sync-note{font-size:14px;color:var(--text-muted);margin:10px 0;overflow-wrap:anywhere;}
+#shopPeoplePanel .shop-sync-note strong{color:var(--text);}
+#shopPeoplePanel .big-btn{margin-top:12px;}
+#shopPeoplePanel .text-input{margin-bottom:12px;}
+.shop-people-list{list-style:none;margin:8px 0;padding:0;}
+.shop-people-row{display:flex;gap:10px;justify-content:space-between;align-items:center;flex-wrap:wrap;padding:10px 0;border-top:1px solid var(--border,#ccc);}
+.shop-people-row > div:first-child{min-width:0;flex:1 1 160px;overflow-wrap:anywhere;}
+.shop-people-actions .comm-btn.danger{border-color:#A82332;color:#A82332;}
+.shop-people-actions{display:flex;gap:8px;flex-wrap:wrap;}
+.shop-people-actions .comm-btn{min-height:44px;padding:4px 12px;}
+.shop-people-sub{font-family:var(--font-display);font-size:16px;text-transform:uppercase;margin:16px 0 4px;}
+
+/* Lead and crew logins: full-screen messages and My Account */
+#shopMemberCover{position:fixed;inset:0;z-index:4900;background:var(--bg);color:var(--text);display:flex;align-items:center;justify-content:center;padding:20px;overflow-y:auto;}
+.shop-member-card{max-width:420px;width:100%;}
+.shop-member-card h2{font-family:var(--font-display);font-size:24px;font-weight:900;text-transform:uppercase;margin:0 0 10px;}
+.shop-member-card p{font-size:16px;line-height:1.45;margin:0 0 12px;}
+.shop-member-card .big-btn{margin-top:10px;}
+.shop-member-code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;letter-spacing:-0.2px;font-weight:700;padding:10px;border:2px dashed var(--border-dark,#111);border-radius:8px;overflow-wrap:anywhere;user-select:all;-webkit-user-select:all;}

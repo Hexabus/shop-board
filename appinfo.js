@@ -1,8 +1,8 @@
 (function () {
   "use strict";
   if (window.ShopBoardAppInfo) return;
-const APP_VERSION = "0.8.0";
-const BUILD = "2026-11-14 — Quote and invoice PDFs, due dates, who owes you, tax export";
+const APP_VERSION = "0.9.0";
+const BUILD = "2026-11-15 — Cloud sync: opt-in switch in Settings";
   const BACKUP_FORMAT = "1";
   const EXPORT_KEY = "shopBoardLastBackupPrepared";
   let generation = 0;

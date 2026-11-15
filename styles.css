@@ -898,3 +898,8 @@ img[data-thumb]:not([data-thumb-state="ready"]) { background: var(--border); }
 .storage-warn-box { background: var(--bg, #f4f3ee); color: var(--text, #111); border: 3px solid var(--border-dark, #111); border-radius: 12px; padding: 18px; max-width: 420px; width: 100%; max-height: 85vh; overflow-y: auto; }
 .storage-warn-title { font-family: var(--font-display); font-size: 22px; font-weight: 900; text-transform: uppercase; margin-bottom: 10px; }
 .storage-warn-box p { font-size: 14px; line-height: 1.4; margin: 0 0 10px; }
+
+/* Cloud Sync section in Settings */
+#shopCloudSyncPanel .shop-sync-note{font-size:14px;color:var(--text-muted);margin:10px 0;overflow-wrap:anywhere;}
+#shopCloudSyncPanel .shop-sync-note strong{color:var(--text);}
+#shopCloudSyncPanel .big-btn{margin-top:8px;}

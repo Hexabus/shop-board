@@ -400,6 +400,19 @@
       return { rows, company: (Array.isArray(c.data) && c.data[0]) || null, cursor, role: s.role, since };
     }
 
+    /* The jobs this login can see right now. A crew login's list changes when the owner puts
+       them on a job or takes them off, without the job itself changing. */
+    async function jobIds() {
+      const s = await member(), t = await token(), out = [];
+      for (let from = 0; ; from += PAGE) { // every page, so a long job list is never mistaken for a short one
+        const r = await request("/rest/v1/sb_jobs?select=id,deleted_at&company_id=eq." + s.companyId + "&deleted_at=is.null&order=id.asc&limit=" + PAGE + "&offset=" + from, { token: t });
+        if (!r.ok) throw failed(r, "Checking your jobs");
+        const page = Array.isArray(r.data) ? r.data : [];
+        page.forEach(x => { if (x && !x.deleted_at) out.push(x.id); });
+        if (page.length < PAGE) return out;
+      }
+    }
+
     /* Sends rows up. `changes` is { rows: { sb_jobs: [...], ... }, company?, uploads? } — the shape
        toRows returns, or any subset of it. Returns a plain report:
          saved            rows the server took
@@ -600,7 +613,7 @@
       return { report, pulled };
     }
 
-    return { session, pull, push, pushThenPull, saveCursor, downloadFile, createCompany, crewLogins,
+    return { session, pull, jobIds, push, pushThenPull, saveCursor, downloadFile, createCompany, crewLogins,
       signIn, signOutHere, people, addPerson, setPerson, signOut() { access = null; who = null; } };
   }
 

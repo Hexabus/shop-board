@@ -208,6 +208,44 @@
       await o.sync.saveCursor(pulled.cursor);
     }
 
+    /* A lead or crew phone only hears about rows that changed. Being put on a job changes the
+       assignment, not the job, so the job itself never arrives that way; being taken off hides
+       it without a word. So after each sync the phone compares the jobs it may see with the
+       jobs it holds: missing ones are fetched whole, and (crew only) hidden ones are put away. */
+    async function matchJobs(who) {
+      const ids = new Set(await o.sync.jobIds());
+      let data = o.getData();
+      const have = new Set((data.jobs || []).map(j => j.id));
+      const fresh = new Set([...ids].filter(id => !have.has(id)));
+      if (fresh.size) {
+        const full = await o.sync.pull({ since: null });
+        const got = { rows: {}, company: null };
+        Sync.TABLES.forEach(t => {
+          const rows = full.rows[t] || [];
+          got.rows[t] = t === "sb_crew" || t === "sb_clients" ? rows.slice()
+            : rows.filter(r => fresh.has(t === "sb_jobs" || t === "sb_job_money" ? r.id : r.job_id));
+        });
+        const files = await fetchFiles(got, data);
+        const current = o.getData(); // read again: a note may have been added while files came down
+        const merged = Sync.mergeIntoLocal(current, got);
+        attachFiles(merged, files);
+        await o.applyData(merged);
+        adopt(state, merged, who, got);
+        await o.store.save(state);
+      }
+      data = o.getData();
+      // Anything still waiting to be sent keeps its job on the phone until it has gone up.
+      if (who.role !== "crew" || waiting()) return;
+      if (!(data.jobs || []).some(j => !ids.has(j.id))) return;
+      const next = JSON.parse(JSON.stringify(data));
+      next.jobs = next.jobs.filter(j => ids.has(j.id));
+      const used = new Set(next.jobs.map(j => j.clientId));
+      next.clients = (next.clients || []).filter(c => used.has(c.id));
+      await o.applyData(next);
+      scan(state, o.getData(), who, clock());
+      await o.store.save(state);
+    }
+
     async function cycle(opts) {
       await ready();
       const who = await o.sync.session(true);
@@ -240,6 +278,8 @@
         await o.store.save(state);
       }
       await o.sync.saveCursor(pulled.cursor);
+      // The sync itself is done by now; if this check cannot finish it simply runs again next time.
+      if (who.role !== "owner" && typeof o.sync.jobIds === "function") { try { await matchJobs(who); } catch (e) {} }
       status.phase = "idle"; status.lastSync = clock(); status.error = null;
     }
 

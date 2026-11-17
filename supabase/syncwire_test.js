@@ -223,6 +223,47 @@ test("lead and crew phones: what they may see, add, and not change", async () =>
   assert.deepStrictEqual([a.data.jobs[0].status, a.data.jobs[0].moneyBilled, a.data.jobs[0].quotes[0].items.length], ["Waiting", 900, 1]);
 });
 
+test("crew phone: a job arrives when they are put on it and goes when they are taken off", async () => {
+  const { srv, a } = await pair();
+  srv.addMember("crew");
+  srv.db.sb_crew.find(c => c.id === "c_k2").user_id = require("./sync_test.js").USERS.crew;
+  a.data.clients.push({ id: "cl_9", name: "Second client", phone: "", email: "", address: "9 Elm" });
+  a.data.jobs.push({ id: "j_9", name: "Garage", trade: "", clientId: "cl_9", address: "9 Elm", status: "Lead", startDate: "", crewAssigned: ["c1"],
+    notes: [{ id: "n_9", author: "Shop Owner", text: "Bring ladder", tag: "", timestamp: "Today", createdAt: now() }], photos: [], files: [],
+    quotes: [{ items: [], status: "Draft" }], bills: [], expenses: [] });
+  await a.save(); await a.sync();
+  // something Sam can see changes afterwards, so his phone's "last seen" time is later than the Garage job
+  a.data.jobs.find(j => j.id === "j_1").status = "Scheduled"; await a.save(); await a.sync();
+  const crew = phone(srv, "crew", empty());
+  await crew.sync(); await crew.sync(); // already signed in and up to date, as a real phone is
+  assert.deepStrictEqual(crew.data.jobs.map(j => j.id), ["j_1"]);
+  // the owner puts Sam on the second job: only the assignment changes, not the job
+  a.data.jobs.find(j => j.id === "j_9").crewAssigned.push("c_k2");
+  await a.save(); await a.sync();
+  await crew.sync();
+  const got = crew.data.jobs.find(j => j.id === "j_9");
+  assert.ok(got, "the newly assigned job reaches the crew phone on an ordinary sync");
+  assert.deepStrictEqual([got.name, got.notes.map(n => n.id), got.crewAssigned.slice().sort(), crew.data.clients.map(c => c.id).sort().includes("cl_9")], ["Garage", ["n_9"], ["c1", "c_k2"], true]);
+  checkShape(crew.data);
+  // crew adds a note there; it reaches the owner
+  got.notes.push({ id: "n_9c", author: "Sam", text: "Done", tag: "", timestamp: "Today", createdAt: now() });
+  await crew.save(); await crew.sync(); await a.sync();
+  assert.deepStrictEqual(a.data.jobs.find(j => j.id === "j_9").notes.map(n => n.id), ["n_9", "n_9c"]);
+  // taken off again: the job leaves the crew phone, and nothing is trashed in the cloud
+  const aj = a.data.jobs.find(j => j.id === "j_9"); aj.crewAssigned = aj.crewAssigned.filter(id => id !== "c_k2");
+  await a.save(); await a.sync();
+  await crew.sync();
+  assert.deepStrictEqual([crew.data.jobs.map(j => j.id), crew.data.clients.some(c => c.id === "cl_9"), crew.engine.status().waiting], [["j_1"], false, 0]);
+  assert.strictEqual(srv.db.sb_jobs.find(j => j.id === "j_9").deleted_at || null, null);
+  assert.strictEqual(srv.db.sb_notes.find(n => n.id === "n_9c").deleted_at || null, null);
+  await a.sync();
+  assert.deepStrictEqual(a.data.jobs.find(j => j.id === "j_9").notes.map(n => n.id), ["n_9", "n_9c"]);
+  // and back on: it returns whole
+  a.data.jobs.find(j => j.id === "j_9").crewAssigned.push("c_k2");
+  await a.save(); await a.sync(); await crew.sync();
+  assert.deepStrictEqual(crew.data.jobs.find(j => j.id === "j_9").notes.map(n => n.id), ["n_9", "n_9c"]);
+});
+
 (async () => {
   let failed = 0;
   for (const [name, fn] of tests) {

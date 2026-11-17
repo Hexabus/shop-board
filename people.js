@@ -52,6 +52,9 @@
     body.querySelectorAll("[data-people]").forEach(b => b.addEventListener("click", () => act(b.dataset.people, b.dataset.id, b.dataset.role)));
     const add = node("shopPeopleAdd");
     if (add) add.addEventListener("click", addLogin);
+    // Picking a name that the roster already calls a Lead sets the role to match.
+    const who = node("shopPeopleCrew"), as = node("shopPeopleRole");
+    if (who && as) who.addEventListener("change", () => { const r = info.roster.find(x => x.id === who.value); if (r) as.value = r.role === "Lead" ? "lead" : "crew"; });
   }
 
   async function load() {

@@ -545,7 +545,7 @@
       });
       const limit = co.ok && Array.isArray(co.data) && co.data[0] ? Number(co.data[0].seat_limit) : null;
       return { seatLimit: limit, used: list.filter(p => p.status === "active" && p.role !== "owner").length, people: list,
-        roster: roster.map(r => ({ id: r.id, name: text(r.name), userId: r.user_id || null })) };
+        roster: roster.map(r => ({ id: r.id, name: text(r.name), role: text(r.role), userId: r.user_id || null })) };
     }
     /* Points a crew-list entry at a login, so "assigned to this person" means that login. */
     async function linkRoster(userId, crewId, role) {

@@ -2109,9 +2109,11 @@ Sent from Shop Board`;
           <label class="input-label">Role</label>
           <select id="crRole" class="text-input">
             <option value="Crew">Crew</option>
+            <option value="Lead">Lead</option>
             <option value="Owner">Owner</option>
           </select>
         </div>
+        <div style="font-size: 13px; color: var(--text-muted); font-weight: 600; margin-bottom: 14px;">This adds a name to your roster. To give them their own login, go to Settings, then People.</div>
         <button class="big-btn" onclick="saveNewCrew()">Add to Roster</button>
       `;
       openModal(modalHtml);

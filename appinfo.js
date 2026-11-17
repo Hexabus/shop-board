@@ -1,8 +1,8 @@
 (function () {
   "use strict";
   if (window.ShopBoardAppInfo) return;
-const APP_VERSION = "0.10.2";
-const BUILD = "2026-11-16 — Newly assigned jobs reach crew phones";
+const APP_VERSION = "0.10.3";
+const BUILD = "2026-11-16 — Lead option when adding crew";
   const BACKUP_FORMAT = "1";
   const EXPORT_KEY = "shopBoardLastBackupPrepared";
   let generation = 0;

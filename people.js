@@ -16,6 +16,17 @@
     return (e && (e.code === "rejected" ? e.message : e.detail || e.message)) || "That did not go through. Try again.";
   }
 
+  // The invites still waiting for a password, with Resend and Cancel.
+  function inviteRows() {
+    const list = (info && info.invites) || [];
+    if (!list.length) return `<p class="shop-sync-note">No invites waiting.</p>`;
+    return `<ul class="shop-people-list">${list.map(i => {
+      const c = info.roster.find(r => r.id === i.crewId);
+      const state = i.expired ? "Link expired. Resend to send a new one." : "Waiting for them to set a password";
+      return `<li class="shop-people-row"><div><strong>${esc(i.email)}</strong><br><span class="shop-sync-note">${i.role === "lead" ? "Lead" : "Crew"}${c ? " • " + esc(c.name || "Unnamed") : ""} • ${state}</span></div><div class="shop-people-actions"><button type="button" class="comm-btn" data-invite="resend" data-id="${esc(i.id)}" data-email="${esc(i.email)}" data-role="${esc(i.role)}" data-crew="${esc(i.crewId || "")}">Resend</button><button type="button" class="comm-btn" data-invite="cancel" data-id="${esc(i.id)}">Cancel</button></div></li>`;
+    }).join("")}</ul>`;
+  }
+
   function render() {
     const body = node("shopPeopleBody");
     if (!body) return;
@@ -38,9 +49,22 @@
     body.innerHTML = `
       <p class="shop-sync-note">${info.seatLimit === null ? "" : `<strong>${info.used} of ${info.seatLimit} seats used.</strong> `}A Lead sees and manages every job but no money. Crew see only jobs they are assigned to and can add notes, photos and receipts.</p>
       <ul class="shop-people-list">${rows}</ul>
-      <h4 class="shop-people-sub">Add a login</h4>
+      <h4 class="shop-people-sub">Invite by email</h4>
       ${free === 0 ? `<p class="shop-sync-note">Both seats are in use. Remove someone to add another login.</p>` : `
-      <p class="shop-sync-note">Until sign-up opens, you create each login yourself: in Supabase, under Authentication → Users → Add user, enter their email and a password. Then the person signs in to Shop Board on their own phone, and it shows them a login code to send you (it is also the "User UID" Supabase shows). Paste it here.</p>
+      <p class="shop-sync-note">They get an email with a link. They choose their own password and are added with the role you pick. Nobody else can join.</p>
+      <label class="input-label" for="shopInviteEmail">Their email</label>
+      <input id="shopInviteEmail" class="text-input" type="email" autocapitalize="none" autocomplete="off" spellcheck="false">
+      <label class="input-label" for="shopInviteRole">Role</label>
+      <select id="shopInviteRole" class="text-input"><option value="crew">Crew</option><option value="lead">Lead</option></select>
+      <label class="input-label" for="shopInviteCrew">Who is this on your crew list?</label>
+      <select id="shopInviteCrew" class="text-input"><option value="">Choose a name…</option>${openNames.map(r => `<option value="${esc(r.id)}">${esc(r.name || "Unnamed")}</option>`).join("")}</select>
+      <p class="shop-sync-note">Not listed? Add them under Clients &amp; Crew first, tap Sync Now above, then come back.</p>
+      <button id="shopInviteSend" type="button" class="big-btn">Send Invite</button>`}
+      <h4 class="shop-people-sub">Invites waiting</h4>
+      ${inviteRows()}
+      <details class="shop-people-fallback"><summary>Already has a login? Add by login code</summary>
+      ${free === 0 ? `<p class="shop-sync-note">Both seats are in use. Remove someone to add another login.</p>` : `
+      <p class="shop-sync-note">Only for someone who already has a login: they sign in on their own phone, it shows them a login code, and you paste it here.</p>
       <label class="input-label" for="shopPeopleCode">Login code</label>
       <input id="shopPeopleCode" class="text-input" type="text" autocapitalize="none" autocomplete="off" spellcheck="false" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
       <label class="input-label" for="shopPeopleRole">Role</label>
@@ -48,8 +72,11 @@
       <label class="input-label" for="shopPeopleCrew">Who is this on your crew list?</label>
       <select id="shopPeopleCrew" class="text-input"><option value="">Choose a name…</option>${openNames.map(r => `<option value="${esc(r.id)}">${esc(r.name || "Unnamed")}</option>`).join("")}</select>
       <p class="shop-sync-note">Not listed? Add them under Clients &amp; Crew first, tap Sync Now above, then come back.</p>
-      <button id="shopPeopleAdd" type="button" class="big-btn secondary">Add Login</button>`}`;
+      <button id="shopPeopleAdd" type="button" class="big-btn secondary">Add Login</button>`}</details>`;
     body.querySelectorAll("[data-people]").forEach(b => b.addEventListener("click", () => act(b.dataset.people, b.dataset.id, b.dataset.role)));
+    body.querySelectorAll("[data-invite]").forEach(b => b.addEventListener("click", () => inviteAct(b.dataset.invite, b.dataset)));
+    const send = node("shopInviteSend");
+    if (send) send.addEventListener("click", sendInvite);
     const add = node("shopPeopleAdd");
     if (add) add.addEventListener("click", addLogin);
     // Picking a name that the roster already calls a Lead sets the role to match.
@@ -60,7 +87,7 @@
   async function load() {
     if (!isOwnerSyncing() || loading) { render(); return; }
     loading = true; render();
-    try { info = await api().people(); message = ""; } catch (e) { info = null; message = say(e); }
+    try { info = await fetchAll(); message = ""; } catch (e) { info = null; message = say(e); }
     // A login added before the crew list showed roles: mark its name as Lead or Crew now.
     const stale = info ? info.people.filter(p => p.status === "active" && p.role !== "owner" && p.crewId && p.rosterRole !== ROLE[p.role]) : [];
     if (stale.length) { try { for (const p of stale) { await api().setPerson(p.userId, { role: p.role }); p.rosterRole = ROLE[p.role]; } api().syncNow(); } catch (e) {} }
@@ -69,7 +96,7 @@
   async function change(work, done) {
     if (busy) return;
     busy = true; message = "Working…"; render();
-    try { await work(); message = done; try { info = await api().people(); } catch (e) {} api().syncNow(); }
+    try { await work(); message = done; try { info = await fetchAll(); } catch (e) {} api().syncNow(); }
     catch (e) { message = say(e); }
     busy = false; render();
   }
@@ -87,6 +114,24 @@
       if (!row || row.confirm) return change(() => api().setPerson(userId, { status: "removed" }), "Login removed. Their phone stops getting your jobs, and nothing more from it is accepted.");
       row.confirm = true; message = "Removing stops their phone getting your jobs. Tap again to confirm."; render();
     }
+  }
+
+  // The people list plus the invites waiting. A failure reading invites never hides the people.
+  async function fetchAll() {
+    const p = await api().people();
+    try { p.invites = await api().invites(); } catch (e) { p.invites = []; }
+    return p;
+  }
+  function sendInvite() {
+    const email = node("shopInviteEmail").value.trim(), role = node("shopInviteRole").value, crewId = node("shopInviteCrew").value;
+    if (!email) { message = "Type their email first."; return render(); }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { message = "That email does not look right."; return render(); }
+    if (role === "crew" && !crewId) { message = "Choose who this is on your crew list, so their assigned jobs reach them."; return render(); }
+    change(() => api().invitePerson(email, role, crewId), "Invite sent. They will get an email with a link to set their password.");
+  }
+  function inviteAct(kind, d) {
+    if (kind === "resend") return change(() => api().invitePerson(d.email, d.role, d.crew || null), "Invite sent again. Any older link still works until it expires.");
+    if (kind === "cancel") return change(() => api().cancelInvite(d.id), "Invite cancelled. Its link no longer works.");
   }
 
   function insertPanel() {

@@ -1,8 +1,8 @@
 (function () {
   "use strict";
   if (window.ShopBoardAppInfo) return;
-const APP_VERSION = "0.10.4";
-const BUILD = "2026-11-16 — Edit crew name, phone and role";
+const APP_VERSION = "0.11.0";
+const BUILD = "2026-11-17 — Email invites for crew and leads, forgot password";
   const BACKUP_FORMAT = "1";
   const EXPORT_KEY = "shopBoardLastBackupPrepared";
   let generation = 0;

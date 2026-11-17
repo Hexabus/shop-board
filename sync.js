@@ -518,7 +518,56 @@
       try { store.setItem(REFRESH_KEY, r.data.refresh_token); } catch (e) {}
       access = { token: r.data.access_token, expiresAt: Date.now() + (Number(r.data.expires_in) || 3600) * 1000 };
       who = null;
+      await acceptInvite(access.token);
       return session(true);
+    }
+    /* Takes up an invite waiting for this login's email, if there is one. Nothing waiting is fine. */
+    async function acceptInvite(t) {
+      try { await request("/rest/v1/rpc/sb_accept_invite", { method: "POST", token: t, body: {} }); } catch (e) {}
+    }
+    /* From an invite or reset link: sets the password the person chose, then takes up any invite. */
+    async function finishLink(accessToken, password) {
+      if (typeof password !== "string" || password.length < 8) throw problem("Use at least 8 characters for your password.", "rejected");
+      const u = await request("/auth/v1/user", { method: "PUT", token: accessToken, body: { password } });
+      if (!u.ok) { if (u.status === 400 || u.status === 422) throw problem("That password is not allowed. Try a longer one.", "rejected"); throw failed(u, "Saving the password"); }
+      const acc = await request("/rest/v1/rpc/sb_accept_invite", { method: "POST", token: accessToken, body: {} });
+      if (!acc.ok) throw failed(acc, "Adding you to the company");
+      return { email: text(u.data && u.data.email) };
+    }
+    /* "Forgot password?": Supabase emails a reset link. It never says whether the address has a login. */
+    async function requestReset(email) {
+      const clean = String(email || "").trim();
+      if (!clean) throw problem("Type your email first.", "rejected");
+      const r = await request("/auth/v1/recover?redirect_to=" + encodeURIComponent("https://hexabus.github.io/shop-board/"), { method: "POST", body: { email: clean } });
+      if (!r.ok && (r.status === 429 || r.status >= 500)) throw failed(r, "Sending the reset email");
+      if (!r.ok && r.status !== 400 && r.status !== 404 && r.status !== 422) throw failed(r, "Sending the reset email");
+    }
+    /* Owner only: emails an invite. The server sends it and checks the owner's sign-in. */
+    async function invitePerson(email, role, crewId) {
+      const s = await member();
+      const clean = String(email || "").trim().toLowerCase();
+      if (!clean) throw problem("Type their email first.", "rejected");
+      const r = await request("/functions/v1/send-invite", { method: "POST", token: await token(), body: { companyId: s.companyId, email: clean, role, crewId: crewId || null } });
+      if (!r.ok) {
+        if (r.status === 404) throw problem("Invites are not switched on yet. The invite sender still needs to be set up in Supabase.", "rejected");
+        if (r.data && r.data.error) throw problem(String(r.data.error), "rejected");
+        throw failed(r, "Sending the invite");
+      }
+      return { sent: text(r.data && r.data.sent) };
+    }
+    /* Owner only: invites not yet accepted or cancelled. */
+    async function invites() {
+      const s = await member();
+      const r = await request("/rest/v1/sb_invites?select=id,email,role,crew_id,expires_at&company_id=eq." + s.companyId + "&accepted_at=is.null&cancelled_at=is.null&order=created_at", { token: await token() });
+      if (!r.ok) throw failed(r, "Reading the invites");
+      return (Array.isArray(r.data) ? r.data : []).map(x => ({ id: text(x.id), email: text(x.email), role: x.role, crewId: x.crew_id || null, expired: Date.parse(x.expires_at) <= Date.now() }));
+    }
+    /* Owner only: withdraws an open invite, so its link stops working. */
+    async function cancelInvite(id) {
+      const s = await member();
+      const r = await request("/rest/v1/sb_invites?company_id=eq." + s.companyId + "&id=eq." + encodeURIComponent(id), { method: "PATCH", token: await token(), prefer: "return=representation", body: { cancelled_at: new Date().toISOString() } });
+      if (!r.ok) throw failed(r, "Cancelling the invite");
+      if (!Array.isArray(r.data) || !r.data.length) throw problem("That invite was not found. It may already be accepted.", "rejected");
     }
     /* Forget this phone's sign-in (and tell the server, if it can be reached). */
     async function signOutHere() {
@@ -614,7 +663,7 @@
     }
 
     return { session, pull, jobIds, push, pushThenPull, saveCursor, downloadFile, createCompany, crewLogins,
-      signIn, signOutHere, people, addPerson, setPerson, signOut() { access = null; who = null; } };
+      signIn, signOutHere, people, addPerson, setPerson, finishLink, requestReset, invitePerson, invites, cancelInvite, signOut() { access = null; who = null; } };
   }
 
   const canWrite = (role, table) => (WRITE[role] || {})[table] || null;

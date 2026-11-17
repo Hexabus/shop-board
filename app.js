@@ -270,7 +270,7 @@ Object.defineProperty(window,"dayLabel",{configurable:true,get:()=>dayLabel,set:
 
     async function switchUserRole() {
       if (DATA.currentUser.role === "Owner") {
-        const crew = DATA.crewMembers.find(c => c.role === "Crew");
+        const crew = DATA.crewMembers.find(c => c.role === "Crew") || DATA.crewMembers.find(c => c.role !== "Owner");
         DATA.currentUser.name = crew ? crew.name : "Crew";
         DATA.currentUser.role = "Crew";
         showToast(`Switched to ${DATA.currentUser.name} (Crew View)`);
@@ -781,6 +781,8 @@ Object.defineProperty(window,"dayLabel",{configurable:true,get:()=>dayLabel,set:
             ${statusPillsHtml}
           </div>
         </div>
+
+        ${window.ShopJobCrew ? window.ShopJobCrew.sectionHtml(job) : ''}
 
         <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
           <div style="font-family: var(--font-display); font-size: 18px; font-weight: 800; text-transform: uppercase;">Photos (${job.photos.length})</div>

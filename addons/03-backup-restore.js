@@ -44,7 +44,7 @@ await (async function () {
     });
     data.crewMembers.forEach(c => {
       ["name", "phone", "email"].forEach(k => text(c[k], "Crew " + k));
-      if (!["Owner", "Crew"].includes(c.role)) throw new Error("Crew role is invalid.");
+      if (!["Owner", "Lead", "Crew"].includes(c.role)) throw new Error("Crew role is invalid.");
     });
     const stats = {jobs:data.jobs.length, clients:data.clients.length, crew:data.crewMembers.length, photos:0, documents:0, receipts:0, notes:0, bills:0};
     function imageUrl(url) {

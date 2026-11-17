@@ -68,12 +68,20 @@ test("role change, removal and letting back in", async () => {
   const sam = Sync.createSync({ fetch: srv.fetch, storage: srv.signedIn("crew") });
   assert.strictEqual((await sam.session()).role, "crew");
   await sam.saveCursor((await sam.pull({ since: null })).cursor); // it has synced before, as any real phone has
+  const listed = () => srv.db.sb_crew.find(c => c.id === "c_k2").role; // what everyone sees on the crew list
+  assert.strictEqual(listed(), "Crew");
   await owner.setPerson(USERS.crew, { role: "lead" });
   assert.strictEqual((await sam.session(true)).role, "lead");
+  assert.strictEqual(listed(), "Lead");
   await owner.setPerson(USERS.crew, { status: "removed" });
   await assert.rejects(sam.session(true), e => e.code === "removed");
+  assert.strictEqual(listed(), "Crew");
   await owner.setPerson(USERS.crew, { status: "active" });
   assert.strictEqual((await sam.session(true)).role, "lead");
+  assert.strictEqual(listed(), "Lead");
+  // moving the match to another name moves the Lead mark with it
+  await owner.setPerson(USERS.crew, { crewId: "c1" });
+  assert.deepStrictEqual([listed(), (srv.db.sb_crew.find(c => c.id === "c1") || {}).role], ["Crew", "Lead"]);
 });
 
 test("only the owner can add or change people", async () => {

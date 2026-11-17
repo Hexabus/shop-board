@@ -20,7 +20,8 @@
   const BLOCKED = {
     lead: MONEY,
     crew: MONEY.concat(["openNewJobModal", "saveNewJob", "openEditJobModal", "saveJobEdits", "deleteJob", "setJobStatus", "openNewClientModal",
-      "saveNewClient", "openEditClientModal", "saveClientEdits", "deleteClient", "deleteNote", "deletePhoto", "deleteFile", "openAddFileModal", "saveRealFile"])
+      "saveNewClient", "openEditClientModal", "saveClientEdits", "deleteClient", "deleteNote", "deletePhoto", "deleteFile", "openAddFileModal", "saveRealFile",
+      "openJobCrewAdd", "addCrewToJob", "removeCrewFromJob"])
   };
   const LABEL = { lead: "Lead", crew: "Crew" };
   let role = null, wrapped = false, watcher = null;

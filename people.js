@@ -58,6 +58,9 @@
     if (!isOwnerSyncing() || loading) { render(); return; }
     loading = true; render();
     try { info = await api().people(); message = ""; } catch (e) { info = null; message = say(e); }
+    // A login added before the crew list showed roles: mark its name as Lead or Crew now.
+    const stale = info ? info.people.filter(p => p.status === "active" && p.role !== "owner" && p.crewId && p.rosterRole !== ROLE[p.role]) : [];
+    if (stale.length) { try { for (const p of stale) { await api().setPerson(p.userId, { role: p.role }); p.rosterRole = ROLE[p.role]; } api().syncNow(); } catch (e) {} }
     loading = false; render();
   }
   async function change(work, done) {

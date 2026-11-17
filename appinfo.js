@@ -1,8 +1,8 @@
 (function () {
   "use strict";
   if (window.ShopBoardAppInfo) return;
-const APP_VERSION = "0.10.0";
-const BUILD = "2026-11-15 — Crew and lead logins";
+const APP_VERSION = "0.10.1";
+const BUILD = "2026-11-16 — Add crew to jobs";
   const BACKUP_FORMAT = "1";
   const EXPORT_KEY = "shopBoardLastBackupPrepared";
   let generation = 0;

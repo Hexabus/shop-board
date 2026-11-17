@@ -17,6 +17,7 @@
     settings: wrap('<circle cx="12" cy="12" r="6.3"/><circle cx="12" cy="12" r="2.4"/><rect x="10.7" y="2.6" width="2.6" height="3.4" rx="0.6" transform="rotate(0 12 12)"/><rect x="10.7" y="2.6" width="2.6" height="3.4" rx="0.6" transform="rotate(45 12 12)"/><rect x="10.7" y="2.6" width="2.6" height="3.4" rx="0.6" transform="rotate(90 12 12)"/><rect x="10.7" y="2.6" width="2.6" height="3.4" rx="0.6" transform="rotate(135 12 12)"/><rect x="10.7" y="2.6" width="2.6" height="3.4" rx="0.6" transform="rotate(180 12 12)"/><rect x="10.7" y="2.6" width="2.6" height="3.4" rx="0.6" transform="rotate(225 12 12)"/><rect x="10.7" y="2.6" width="2.6" height="3.4" rx="0.6" transform="rotate(270 12 12)"/><rect x="10.7" y="2.6" width="2.6" height="3.4" rx="0.6" transform="rotate(315 12 12)"/>'),
 
     crown: wrap('<path d="M3 18h18M4 18l-1-9 4.5 3L12 6l4.5 6L21 9l-1 9"/>', '#F2B705'),
+    lead: wrap('<path d="M2.5 17.5h19"/><path d="M4.5 17.5V15a7.5 7.5 0 0 1 15 0v2.5"/><path d="M10 8V5h4v3"/>', '#1565C0'),
     hammer: wrap('<path d="M14.5 6.5l3-3 3.5 3.5-3 3"/><path d="M12.5 8.5l3.5 3.5L5 23l-3-3Z"/><path d="M11 9.5l3-3"/>', '#78909C'),
     map: wrap('<path d="M9 4.5 4 6.5v13l5-2m0-13 6 2m-6-2v13m6-11 5-2v13l-5 2m0-13v13"/>', '#1976D2'),
     pin: wrap('<path d="M12 21s7-7.2 7-12a7 7 0 0 0-14 0c0 4.8 7 12 7 12Z"/><circle cx="12" cy="9" r="2.4"/>', '#D32F2F'),

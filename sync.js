@@ -53,6 +53,7 @@
     crew: { sb_notes: "insert", sb_photos: "insert", sb_expenses: "insert" }
   };
 
+  const ROSTER_ROLE = { lead: "Lead", crew: "Crew" };
   function problem(message, code, extra) { return Object.assign(Error(message), { code }, extra || {}); }
   function text(v) { return typeof v === "string" ? v : ""; }
   function iso(v) { return typeof v === "string" && v && !Number.isNaN(Date.parse(v)) ? new Date(v).toISOString() : null; }
@@ -520,31 +521,38 @@
       const s = await member(), t = await token();
       const [m, c, co] = await Promise.all([
         request("/rest/v1/sb_members?select=user_id,role,status,created_at&company_id=eq." + s.companyId + "&order=created_at", { token: t }),
-        request("/rest/v1/sb_crew?select=id,name,user_id&company_id=eq." + s.companyId + "&deleted_at=is.null", { token: t }),
+        request("/rest/v1/sb_crew?select=id,name,role,user_id&company_id=eq." + s.companyId + "&deleted_at=is.null", { token: t }),
         request("/rest/v1/sb_companies?select=seat_limit&id=eq." + s.companyId, { token: t })]);
       if (!m.ok) throw failed(m, "Reading the people list");
       if (!c.ok) throw failed(c, "Reading the crew list");
       const roster = Array.isArray(c.data) ? c.data : [];
       const list = (Array.isArray(m.data) ? m.data : []).map(x => {
         const r = roster.find(k => k.user_id === x.user_id);
-        return { userId: x.user_id, role: x.role, status: x.status, me: x.user_id === s.userId, crewId: r ? r.id : null, name: r ? text(r.name) : "" };
+        return { userId: x.user_id, role: x.role, status: x.status, me: x.user_id === s.userId, crewId: r ? r.id : null, name: r ? text(r.name) : "", rosterRole: r ? text(r.role) : "" };
       });
       const limit = co.ok && Array.isArray(co.data) && co.data[0] ? Number(co.data[0].seat_limit) : null;
       return { seatLimit: limit, used: list.filter(p => p.status === "active" && p.role !== "owner").length, people: list,
         roster: roster.map(r => ({ id: r.id, name: text(r.name), userId: r.user_id || null })) };
     }
     /* Points a crew-list entry at a login, so "assigned to this person" means that login. */
-    async function linkRoster(userId, crewId) {
+    async function linkRoster(userId, crewId, role) {
       const s = await member(), t = await token(), stamp = new Date().toISOString();
       const base = "/rest/v1/sb_crew?company_id=eq." + s.companyId;
       // The new name is matched first, so a failure never leaves the login matched to nobody.
       if (crewId) {
-        const on = await request(base + "&id=eq." + encodeURIComponent(crewId), { method: "PATCH", token: t, prefer: "return=representation", body: { user_id: userId, edited_at: stamp } });
+        const on = await request(base + "&id=eq." + encodeURIComponent(crewId), { method: "PATCH", token: t, prefer: "return=representation", body: Object.assign({ user_id: userId, edited_at: stamp }, ROSTER_ROLE[role] ? { role: ROSTER_ROLE[role] } : {}) });
         if (!on.ok) throw failed(on, "Updating the crew list");
         if (!Array.isArray(on.data) || !on.data.length) throw problem("That person is not on the cloud's crew list yet. Sync first, then try again.", "rejected");
       }
-      const off = await request(base + "&user_id=eq." + userId + (crewId ? "&id=neq." + encodeURIComponent(crewId) : ""), { method: "PATCH", token: t, body: { user_id: null, edited_at: stamp } });
+      const off = await request(base + "&user_id=eq." + userId + (crewId ? "&id=neq." + encodeURIComponent(crewId) : ""), { method: "PATCH", token: t, body: { user_id: null, role: "Crew", edited_at: stamp } });
       if (!off.ok) throw failed(off, "Updating the crew list");
+    }
+    /* The crew list shows a lead as "Lead", so everyone on a job can see who is running it. */
+    async function markRoster(userId, role) {
+      if (!ROSTER_ROLE[role]) return;
+      const s = await member();
+      const r = await request("/rest/v1/sb_crew?company_id=eq." + s.companyId + "&user_id=eq." + userId, { method: "PATCH", token: await token(), body: { role: ROSTER_ROLE[role], edited_at: new Date().toISOString() } });
+      if (!r.ok) throw failed(r, "Updating the crew list");
     }
     /* Owner only: gives a login a place in the company as lead or crew. */
     async function addPerson(userId, role, crewId) {
@@ -560,11 +568,12 @@
         if (e.detail && /foreign key|not present/i.test(e.detail)) throw problem("No login exists with that code. Check it was copied in full.", "rejected");
         throw e;
       }
-      await linkRoster(userId.toLowerCase(), crewId || null);
+      await linkRoster(userId.toLowerCase(), crewId || null, role);
     }
     /* Owner only: change a login's role, remove it from the company, or let it back in. */
     async function setPerson(userId, change) {
       const s = await member(), body = {};
+      let now = null; // the role this login ends up with; a removed login counts as plain crew on the list
       if (userId === s.userId) throw problem("You cannot change your own login here.", "rejected");
       if (change && (change.role === "lead" || change.role === "crew")) body.role = change.role;
       if (change && (change.status === "active" || change.status === "removed")) body.status = change.status;
@@ -572,8 +581,16 @@
         const r = await request("/rest/v1/sb_members?company_id=eq." + s.companyId + "&user_id=eq." + userId, { method: "PATCH", token: await token(), prefer: "return=representation", body });
         if (!r.ok) { const e = failed(r, "Changing this login"); if (/crew seats|at least one owner/i.test(e.detail)) throw problem(e.detail, "rejected"); throw e; }
         if (!Array.isArray(r.data) || !r.data.length) throw problem("That login was not found in this company.", "rejected");
+        const row = r.data[0];
+        now = (row.status || body.status) === "removed" ? "crew" : row.role || body.role || null;
       }
-      if (change && "crewId" in change) await linkRoster(userId, change.crewId || null);
+      if (change && "crewId" in change && !now) { // only the match changed: keep the Lead mark with the person
+        const m = await request("/rest/v1/sb_members?select=role,status&company_id=eq." + s.companyId + "&user_id=eq." + userId, { token: await token() });
+        const row = m.ok && Array.isArray(m.data) ? m.data[0] : null;
+        if (row) now = row.status === "removed" ? "crew" : row.role;
+      }
+      if (change && "crewId" in change) await linkRoster(userId, change.crewId || null, now);
+      else if (now) await markRoster(userId, now);
     }
 
     /* Push, then pull, so anything the server kept instead of ours comes straight back. */

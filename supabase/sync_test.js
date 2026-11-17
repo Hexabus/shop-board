@@ -147,9 +147,9 @@ function fakeServer() {
       if (seatsFull(row.user_id, next)) return full();
       if (row.role === "owner" && (next.role !== "owner" || next.status !== "active")) return reply(400, { code: "P0001", message: "A company must keep at least one owner." });
       Object.assign(row, body);
-      return reply(200, [{ user_id: row.user_id }]);
+      return reply(200, [{ user_id: row.user_id, role: row.role, status: row.status }]);
     }
-    if (method === "PATCH" && table === "sb_crew" && "user_id" in body) { // matching a crew name to a login
+    if (method === "PATCH" && table === "sb_crew" && ("user_id" in body || "role" in body)) { // matching a crew name to a login
       if (roleOf(uid) !== "owner") return reply(200, []);
       const eq = k => (q.get(k) || "").startsWith("eq.") ? q.get(k).slice(3) : null, not = (q.get("id") || "").startsWith("neq.") ? q.get("id").slice(4) : null;
       const out = [];

@@ -924,3 +924,26 @@ img[data-thumb]:not([data-thumb-state="ready"]) { background: var(--border); }
 .shop-member-card p{font-size:16px;line-height:1.45;margin:0 0 12px;}
 .shop-member-card .big-btn{margin-top:10px;}
 .shop-member-code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;letter-spacing:-0.2px;font-weight:700;padding:10px;border:2px dashed var(--border-dark,#111);border-radius:8px;overflow-wrap:anywhere;user-select:all;-webkit-user-select:all;}
+
+/* Crew on a job: name tags on the job screen and the add / person sheets (jobcrew.js). */
+.job-crew-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:10px;}
+.job-crew-title{font-family:var(--font-display);font-size:18px;font-weight:800;text-transform:uppercase;}
+.job-crew-add{min-height:44px;background:var(--board-header);color:#FFF;border:2px solid var(--border-dark);border-radius:6px;padding:6px 14px;font-family:var(--font-display);font-size:15px;font-weight:800;text-transform:uppercase;cursor:pointer;flex-shrink:0;}
+.job-crew-tags{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 6px;}
+.job-crew-tag{display:inline-flex;align-items:center;gap:8px;min-height:44px;max-width:100%;padding:6px 14px;background:var(--card-bg);color:var(--text);border:2px solid var(--border-dark);border-radius:999px;font-family:var(--font-display);font-size:15px;font-weight:800;text-transform:uppercase;cursor:pointer;}
+.job-crew-tag,.job-crew-pick{box-shadow:2px 2px 0 var(--border-dark);}
+.job-crew-tag:active,.job-crew-pick:active{transform:translate(2px,2px);box-shadow:none;}
+.job-crew-add:focus-visible,.job-crew-tag:focus-visible,.job-crew-pick:focus-visible{outline:3px solid var(--highlight);outline-offset:2px;}
+.job-crew-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;}
+.job-crew-role{display:inline-flex;align-items:center;gap:4px;flex-shrink:0;padding:2px 8px;border-radius:999px;background:#E3F2FD;color:#0D47A1;border:1.5px solid #1565C0;font-family:var(--font-display);font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;}
+.is-owner .job-crew-role{background:#FFF8E1;color:#6D4C00;border-color:#B8860B;}
+.job-crew-empty{font-size:13px;color:var(--text-muted);font-weight:600;padding:6px 0;}
+.job-crew-sub{font-size:14px;color:var(--text-muted);font-weight:700;margin-bottom:14px;}
+.job-crew-pick{display:flex;align-items:center;gap:10px;width:100%;min-height:52px;margin-bottom:8px;padding:8px 12px;background:var(--card-bg);color:var(--text);border:2px solid var(--border-dark);border-radius:8px;font-family:var(--font-display);font-size:17px;font-weight:800;text-transform:uppercase;text-align:left;cursor:pointer;}
+.job-crew-pick .job-crew-name{flex:1;}
+.job-crew-plus{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:var(--highlight);color:#FFF;font-size:22px;line-height:1;flex-shrink:0;}
+.big-btn.secondary.job-crew-off{color:var(--alert);border-color:var(--alert);}
+html[data-shop-theme="dark"] .job-crew-role{background:#16324A;color:#BBDEFB;border-color:#64B5F6;}
+html[data-shop-theme="dark"] .is-owner .job-crew-role{background:#3D3312;color:#FFE082;border-color:#D4A017;}
+html[data-shop-theme="dark"] .big-btn.secondary.job-crew-off{color:var(--alert);border-color:var(--alert);}
+html[data-shop-theme="dark"] .job-crew-plus{color:#122018;}

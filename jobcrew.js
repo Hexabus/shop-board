@@ -96,6 +96,70 @@
     showToast(nameOf(c) + " taken off job");
   }
 
+  /* Owner only: change a roster person's name, phone or role. For someone with their own login
+     the role is changed on the login too, so what they can see and do follows the promotion. */
+  const isOwnerHere = () => !document.body.dataset.shopRole && Boolean(data().currentUser && data().currentUser.role === "Owner");
+  function openEditCrewModal(crewId) {
+    const c = findPerson(crewId);
+    if (!c || !isOwnerHere()) return;
+    const pick = v => `<option value="${v}"${c.role === v ? " selected" : ""}>${v}</option>`;
+    openModal(`
+      <div style="${TITLE} margin-bottom: 12px;">Edit Crew Member</div>
+      <div class="input-group">
+        <label class="input-label" for="crEditName">Name</label>
+        <input type="text" id="crEditName" class="text-input" value="${esc(c.name)}">
+      </div>
+      <div class="input-group">
+        <label class="input-label" for="crEditPhone">Phone</label>
+        <input type="tel" id="crEditPhone" class="text-input" value="${esc(c.phone || "")}">
+      </div>
+      <div class="input-group">
+        <label class="input-label" for="crEditRole">Role</label>
+        ${c.role === "Owner" ? `<input type="text" id="crEditRole" class="text-input" value="Owner" readonly style="background:#EFECE6;">`
+          : `<select id="crEditRole" class="text-input">${pick("Crew")}${pick("Lead")}</select>`}
+      </div>
+      ${c.role !== "Owner" ? `<div class="job-crew-empty">${c.userId
+        ? "This person has their own login. Changing the role changes what they can see and do, from their next sync. A Lead sees and manages every job but no money."
+        : "This person has no login yet, so the role is a label. Add a login under Settings, then People."}</div>` : ""}
+      <p id="crEditNote" class="job-crew-empty" role="status" aria-live="polite" style="color: var(--alert);"></p>
+      <button type="button" id="crEditSave" class="big-btn" onclick="saveCrewEdits('${escJs(c.id)}')">Save Changes</button>
+      <button type="button" class="big-btn secondary" onclick="closeModal()">Cancel</button>`);
+  }
+  async function saveCrewEdits(crewId) {
+    const c = findPerson(crewId);
+    if (!c || !isOwnerHere()) return;
+    const el = id => document.getElementById(id);
+    const say = msg => { const n = el("crEditNote"); if (n) n.textContent = msg; };
+    const name = el("crEditName").value.trim(), phone = el("crEditPhone").value.trim();
+    const role = c.role === "Owner" ? "Owner" : (el("crEditRole").value === "Lead" ? "Lead" : "Crew");
+    if (!name) return say("Enter a name.");
+    if (role !== c.role && c.userId) {
+      // Their login is what gives them access, so it has to change first; if it cannot, nothing does.
+      const cloud = window.ShopBoardCloudSync, btn = el("crEditSave");
+      if (!cloud || !cloud.isOn() || !cloud.setPerson) return say("Turn on Cloud Sync in Settings to change the role of someone with a login.");
+      if (btn) { btn.disabled = true; btn.textContent = "Saving…"; }
+      try { await cloud.setPerson(c.userId, { role: role.toLowerCase() }); }
+      catch (e) {
+        if (btn) { btn.disabled = false; btn.textContent = "Save Changes"; }
+        return say(e && e.code === "offline" ? "No connection right now, so the role was not changed. Try again when you're back online."
+          : (e && e.code === "rejected" && e.message) || "The role could not be changed. Try again.");
+      }
+    }
+    // Look the person up again: a sync may have swapped in fresh records while the login was changing.
+    const now = findPerson(crewId);
+    if (!now) { closeModal(); renderCurrentView(); return; }
+    now.name = name; now.phone = phone; now.role = role;
+    try { await saveData(); }
+    catch (e) {
+      const btn = el("crEditSave");
+      if (btn) { btn.disabled = false; btn.textContent = "Save Changes"; }
+      return say("Could not save on this phone. Tap Save Changes again.");
+    }
+    closeModal();
+    renderCurrentView();
+    showToast("Crew member updated");
+  }
+
   window.ShopJobCrew = { sectionHtml, canManage };
-  Object.assign(window, { openJobCrewAdd, addCrewToJob, openJobCrewPerson, removeCrewFromJob });
+  Object.assign(window, { openJobCrewAdd, addCrewToJob, openJobCrewPerson, removeCrewFromJob, openEditCrewModal, saveCrewEdits });
 })();

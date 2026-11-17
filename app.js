@@ -1166,6 +1166,7 @@ Object.defineProperty(window,"dayLabel",{configurable:true,get:()=>dayLabel,set:
                 <div style="background: var(--border-dark); color: #FFF; font-family: var(--font-display); font-size: 13px; font-weight: 800; text-transform: uppercase; padding: 2px 8px; border-radius: 4px; white-space: nowrap; flex-shrink: 0;">
                   ${esc(cr.role)}
                 </div>
+                ${(DATA.currentUser.role === 'Owner' && window.openEditCrewModal) ? `<button class="comm-btn" style="min-height:44px; padding:4px 10px; flex:0 0 auto;" onclick="openEditCrewModal('${escJs(cr.id)}')">${ShopIcon.edit} Edit</button>` : ''}
                 ${(DATA.currentUser.role === 'Owner' && cr.role !== 'Owner') ? `
                   <button style="min-height: 44px; border: 2px solid var(--alert); background: #FFF; border-radius: 6px; padding: 4px 10px; font-family: var(--font-display); font-size: 13px; font-weight: 800; color: var(--alert); cursor: pointer;" onclick="event.stopPropagation(); deleteCrewMember('${escJs(cr.id)}')">REMOVE</button>
                 ` : ''}

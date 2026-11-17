@@ -16,7 +16,7 @@
   // What each role may not do on screen. Buttons that call these are hidden, and the calls refuse.
   const MONEY = ["toggleMoneyForCrew", "openAddBillModal", "saveBill", "deleteBill", "toggleBillPaid", "openEditJobMoneyModal", "saveJobMoney",
     "useBillsForJobMoney", "openEditQuoteModal", "addQuoteLine", "deleteQuoteLine", "openQuoteEmailModal", "openBillEmailModal", "openTaxExportModal",
-    "deleteExpense", "openNewCrewModal", "saveNewCrew", "deleteCrewMember", "sendQuotePdf", "sendInvoicePdf", "exportTaxCsv"];
+    "deleteExpense", "openNewCrewModal", "saveNewCrew", "deleteCrewMember", "openEditCrewModal", "saveCrewEdits", "sendQuotePdf", "sendInvoicePdf", "exportTaxCsv"];
   const BLOCKED = {
     lead: MONEY,
     crew: MONEY.concat(["openNewJobModal", "saveNewJob", "openEditJobModal", "saveJobEdits", "deleteJob", "setJobStatus", "openNewClientModal",

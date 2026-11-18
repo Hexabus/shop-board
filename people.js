@@ -51,14 +51,14 @@
       <ul class="shop-people-list">${rows}</ul>
       <h4 class="shop-people-sub">Invite by email</h4>
       ${free === 0 ? `<p class="shop-sync-note">Both seats are in use. Remove someone to add another login.</p>` : `
-      <p class="shop-sync-note">They get an email with a link. They choose their own password and are added with the role you pick. Nobody else can join.</p>
+      <p class="shop-sync-note">They get an email with a link. They choose their own password and are added with the role you pick. Nobody else can join. Their name goes on the crew list too.</p>
+      <label class="input-label" for="shopInviteName">Their name</label>
+      <input id="shopInviteName" class="text-input" type="text" autocomplete="off" spellcheck="false" list="shopInviteNames">
+      <datalist id="shopInviteNames">${openNames.map(r => `<option value="${esc(r.name || "")}"></option>`).join("")}</datalist>
       <label class="input-label" for="shopInviteEmail">Their email</label>
       <input id="shopInviteEmail" class="text-input" type="email" autocapitalize="none" autocomplete="off" spellcheck="false">
       <label class="input-label" for="shopInviteRole">Role</label>
       <select id="shopInviteRole" class="text-input"><option value="crew">Crew</option><option value="lead">Lead</option></select>
-      <label class="input-label" for="shopInviteCrew">Who is this on your crew list?</label>
-      <select id="shopInviteCrew" class="text-input"><option value="">Choose a name…</option>${openNames.map(r => `<option value="${esc(r.id)}">${esc(r.name || "Unnamed")}</option>`).join("")}</select>
-      <p class="shop-sync-note">Not listed? Add them under Clients &amp; Crew first, tap Sync Now above, then come back.</p>
       <button id="shopInviteSend" type="button" class="big-btn">Send Invite</button>`}
       <h4 class="shop-people-sub">Invites waiting</h4>
       ${inviteRows()}
@@ -122,12 +122,17 @@
     try { p.invites = await api().invites(); } catch (e) { p.invites = []; }
     return p;
   }
+  // One step: put the name on the crew list (or reuse an existing name), then send the invite.
   function sendInvite() {
-    const email = node("shopInviteEmail").value.trim(), role = node("shopInviteRole").value, crewId = node("shopInviteCrew").value;
+    const name = node("shopInviteName").value.trim(), email = node("shopInviteEmail").value.trim(), role = node("shopInviteRole").value;
+    if (!name) { message = "Type their name first. It is how they show on jobs."; return render(); }
     if (!email) { message = "Type their email first."; return render(); }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { message = "That email does not look right."; return render(); }
-    if (role === "crew" && !crewId) { message = "Choose who this is on your crew list, so their assigned jobs reach them."; return render(); }
-    change(() => api().invitePerson(email, role, crewId), "Invite sent. They will get an email with a link to set their password.");
+    change(async () => {
+      const match = info.roster.find(r => !r.userId && r.name.trim().toLowerCase() === name.toLowerCase());
+      const crewId = match ? match.id : await api().addRosterName(name, role);
+      await api().invitePerson(email, role, crewId);
+    }, "Invite sent. They will get an email with a link to set their password.");
   }
   function inviteAct(kind, d) {
     if (kind === "resend") return change(() => api().invitePerson(d.email, d.role, d.crew || null), "Invite sent again. Any older link still works until it expires.");

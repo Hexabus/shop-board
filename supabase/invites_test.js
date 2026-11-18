@@ -52,6 +52,12 @@ function withInvites(srv, opts) {
       if (o.resetDown) return reply(500, {});
       return reply(200, {});
     }
+    if (p === "/rest/v1/sb_crew" && method === "POST") {
+      const row = Object.assign({ user_id: null, phone: "", email: "", role: "Crew" }, body);
+      (srv.db.sb_crew = srv.db.sb_crew || []).push(row);
+      calls.push({ kind: "roster", row });
+      return reply(201, [{ id: row.id }]);
+    }
     return srv.fetch(url, init);
   }
   return { fetch, calls, invites };
@@ -141,6 +147,19 @@ test("a short or refused password is stopped with a plain message, and nothing i
   assert.strictEqual(ext.calls.filter(x => x.kind === "password").length, 0, "too short: nothing sent");
   await assert.rejects(phone.finishLink("link-token", "long enough password"), e => /not allowed/.test(e.message));
   assert.strictEqual(ext.calls.filter(x => x.kind === "accept").length, 0);
+});
+
+test("a name typed on People goes on the crew list, and its invite links it to that name", async () => {
+  const { srv } = await ownerWithData();
+  const ext = withInvites(srv);
+  const owner = ownerSync(srv, ext);
+  const id = await owner.addRosterName("  Pat Lee ", "lead");
+  const row = srv.db.sb_crew.find(c => c.id === id);
+  assert.ok(row, "crew row created"); assert.strictEqual(row.name, "Pat Lee"); assert.strictEqual(row.role, "Lead");
+  await owner.invitePerson(EMAIL, "lead", id);
+  const inv = ext.invites.find(i => i.email === EMAIL);
+  assert.strictEqual(inv.crew_id, id);
+  await assert.rejects(owner.addRosterName("   ", "crew"), e => /Type their name/.test(e.message));
 });
 
 test("a link's token is read from the address bar; expired and other links say so", () => {

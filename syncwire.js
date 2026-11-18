@@ -390,7 +390,7 @@
     session: force => cloud.session(force), signIn: cloud.signIn, signOutHere: cloud.signOutHere,
     people: cloud.people, addPerson: cloud.addPerson, setPerson: cloud.setPerson,
     // Stage 3: email invites, set-password links and "Forgot password?".
-    finishLink: cloud.finishLink, requestReset: cloud.requestReset, invitePerson: cloud.invitePerson,
+    finishLink: cloud.finishLink, requestReset: cloud.requestReset, addRosterName: cloud.addRosterName, invitePerson: cloud.invitePerson,
     invites: cloud.invites, cancelInvite: cloud.cancelInvite };
   if (root.ShopBoardBootPromise && typeof root.ShopBoardBootPromise.then === "function") root.ShopBoardBootPromise.then(setup); else setup();
 })(typeof window !== "undefined" ? window : globalThis);

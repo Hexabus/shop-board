@@ -542,6 +542,16 @@
       if (!r.ok && (r.status === 429 || r.status >= 500)) throw failed(r, "Sending the reset email");
       if (!r.ok && r.status !== 400 && r.status !== 404 && r.status !== 422) throw failed(r, "Sending the reset email");
     }
+    /* Owner only: puts a name on the crew list with no login yet. Returns the new crew id. */
+    async function addRosterName(name, role) {
+      const s = await member(), clean = String(name || "").trim().slice(0, 80);
+      if (!clean) throw problem("Type their name first.", "rejected");
+      const id = "c_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+      const r = await request("/rest/v1/sb_crew?select=id", { method: "POST", token: await token(), prefer: "return=representation",
+        body: { company_id: s.companyId, id, name: clean, role: ROSTER_ROLE[role] || "Crew", edited_at: new Date().toISOString() } });
+      if (!r.ok) throw failed(r, "Adding them to the crew list");
+      return id;
+    }
     /* Owner only: emails an invite. The server sends it and checks the owner's sign-in. */
     async function invitePerson(email, role, crewId) {
       const s = await member();
@@ -663,7 +673,7 @@
     }
 
     return { session, pull, jobIds, push, pushThenPull, saveCursor, downloadFile, createCompany, crewLogins,
-      signIn, signOutHere, people, addPerson, setPerson, finishLink, requestReset, invitePerson, invites, cancelInvite, signOut() { access = null; who = null; } };
+      signIn, signOutHere, people, addPerson, setPerson, finishLink, requestReset, addRosterName, invitePerson, invites, cancelInvite, signOut() { access = null; who = null; } };
   }
 
   const canWrite = (role, table) => (WRITE[role] || {})[table] || null;

@@ -1,8 +1,8 @@
 (function () {
   "use strict";
   if (window.ShopBoardAppInfo) return;
-const APP_VERSION = "0.11.0";
-const BUILD = "2026-11-17 — Email invites for crew and leads, forgot password";
+const APP_VERSION = "0.11.1";
+const BUILD = "2026-11-18 — Invite by name and email in one step";
   const BACKUP_FORMAT = "1";
   const EXPORT_KEY = "shopBoardLastBackupPrepared";
   let generation = 0;

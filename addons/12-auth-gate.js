@@ -116,6 +116,8 @@
       lead.textContent = link.type === "invite" ? "Welcome to Shop Board. Choose a password to join your company." : "Choose a new password for Shop Board.";
       newPass.focus();
       setBtn.addEventListener("click", async () => {
+        // Too short: say so and keep what was typed, so nothing has to be retyped.
+        if (newPass.value.length < 8) { statusEl.textContent = "Use at least 8 characters for your password."; return; }
         setBtn.disabled = true; setBtn.textContent = "Saving…";
         const password = newPass.value; newPass.value = "";
         try {

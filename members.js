@@ -35,7 +35,8 @@
       return { ok: true, message: "" };
     } catch (e) {
       const code = e && e.code;
-      if (code === "removed") { try { await api().signOutHere(); } catch (_) {} } // keep no sign-in for a login that cannot be used
+      if (code === "removed" || code === "accept_failed") { try { await api().signOutHere(); } catch (_) {} } // keep no sign-in for a login that cannot be used
+      if (code === "accept_failed") return { ok: false, message: e.message }; // e.g. no free seat: say why
       return { ok: false, message: code === "removed" ? "This login was removed from the company. Ask the owner to add you back."
         : code === "offline" ? "Could not reach the cloud. Check your connection and try again."
         : code === "signed_out" ? "Email or password was not accepted." : "Sign-in failed. Try again." };

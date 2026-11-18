@@ -53,6 +53,12 @@ begin
     order by created_at desc limit 1 for update;
   if not found then return null; end if;
 
+  -- A name already on another login is never taken over: refuse, and the whole accept is undone.
+  if v_inv.crew_id is not null and exists (select 1 from public.sb_crew c
+      where c.company_id = v_inv.company_id and c.id = v_inv.crew_id and c.user_id is not null and c.user_id <> v_user) then
+    raise exception 'That name on the crew list is already linked to another login. Ask the owner to fix it on the crew list.';
+  end if;
+
   -- The seat limit is checked by the members trigger, so a full company refuses here.
   insert into public.sb_members (company_id, user_id, role, status) values (v_inv.company_id, v_user, v_inv.role, 'active')
     on conflict (company_id, user_id) do update set role = excluded.role, status = 'active'

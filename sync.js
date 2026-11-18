@@ -521,9 +521,16 @@
       await acceptInvite(access.token);
       return session(true);
     }
-    /* Takes up an invite waiting for this login's email, if there is one. Nothing waiting is fine. */
+    /* Takes up an invite waiting for this login's email. Nothing waiting is fine. A refusal (no free
+       seat, or the name is already linked to another login) is passed on; a network blip waits for the next sign-in. */
     async function acceptInvite(t) {
-      try { await request("/rest/v1/rpc/sb_accept_invite", { method: "POST", token: t, body: {} }); } catch (e) {}
+      let r;
+      try { r = await request("/rest/v1/rpc/sb_accept_invite", { method: "POST", token: t, body: {} }); } catch (e) { return; }
+      // Only the database's own rule refusals (400 family) stop sign-in. Anything else, including a
+      // missing function, lets sign-in carry on as before.
+      if (r.status === 400 || r.status === 409 || r.status === 422) {
+        throw problem(text(r.data && (r.data.message || r.data.msg)) || "Could not add you to the company. Ask the owner to check the crew list.", "accept_failed");
+      }
     }
     /* From an invite or reset link: sets the password the person chose, then takes up any invite. */
     async function finishLink(accessToken, password) {

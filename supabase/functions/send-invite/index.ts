@@ -46,6 +46,8 @@ Deno.serve(async (req) => {
   const write = open
     ? await who.from("sb_invites").update(fields).eq("id", open.id).select("id").maybeSingle()
     : await who.from("sb_invites").insert({ ...fields, company_id: companyId, email, created_by: userData.user.id }).select("id").maybeSingle();
+  // 42501 is the database saying "not allowed" (not the owner). Anything else is a real failure.
+  if (write.error && write.error.code !== "42501") return reply(500, { error: "The invite could not be saved. Try again, and tell the owner if it keeps happening." });
   if (write.error || !write.data) return reply(403, { error: "Only the owner can invite people to this company." });
 
   // New person: Supabase emails an invite link that leads to the set-password screen.

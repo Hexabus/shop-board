@@ -1,8 +1,8 @@
 (function () {
   "use strict";
   if (window.ShopBoardAppInfo) return;
-const APP_VERSION = "0.11.2";
-const BUILD = "2026-11-18 — Invite fixes: seat and name refusals, safer password entry";
+const APP_VERSION = "0.11.4";
+const BUILD = "2026-11-18 — Turn-off removes crew; shorter Settings wording";
   const BACKUP_FORMAT = "1";
   const EXPORT_KEY = "shopBoardLastBackupPrepared";
   let generation = 0;

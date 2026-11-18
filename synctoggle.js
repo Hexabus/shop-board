@@ -46,10 +46,10 @@
     if (!busy && (step === "off" || step === "on")) step = api().isOn() ? "on" : "off";
     const note = message ? `<p id="shopCloudSyncMessage" role="status" aria-live="polite" class="shop-sync-note" style="font-weight:700;"></p>` : "";
     const views = {
-      off: `<p class="shop-sync-note">Off. Your records live only on this phone. Turn this on to keep a live copy in the cloud and, later, share jobs with your crew.</p>${note}
+      off: `<p class="shop-sync-note">Off. Records are on this phone only.</p>${note}
         <button id="shopCloudSyncStart" type="button" class="big-btn secondary">Turn On Cloud Sync</button>`,
-      backup: `<p class="shop-sync-note"><strong>First, save a backup.</strong> Use <em>Export Backup</em> further down this screen and keep the file somewhere safe. Turning on does not delete anything from this phone, and the backup is your safety net.</p>
-        <label style="display:flex;gap:10px;margin:14px 0;align-items:flex-start;"><input id="shopCloudSyncBackedUp" type="checkbox" style="min-width:24px;min-height:24px;"><span>I saved a backup of this phone today.</span></label>${note}
+      backup: `<p class="shop-sync-note"><strong>Save a backup first.</strong> Use <em>Export Backup</em> below, and keep the file safe.</p>
+        <label style="display:flex;gap:10px;margin:14px 0;align-items:flex-start;"><input id="shopCloudSyncBackedUp" type="checkbox" style="min-width:24px;min-height:24px;"><span>I have saved a backup.</span></label>${note}
         <button id="shopCloudSyncContinue" type="button" class="big-btn" disabled>Continue</button>
         <button id="shopCloudSyncCancel" type="button" class="big-btn secondary">Cancel</button>`,
       checking: `<p class="shop-sync-note" role="status">Checking the cloud… keep Shop Board open.</p>`,
@@ -63,11 +63,17 @@
       on: `<p class="shop-sync-note"><strong>On.</strong> <span id="shopCloudSyncStatus"></span></p>${note}
         <button id="shopCloudSyncNow" type="button" class="big-btn secondary">Sync Now</button>
         <button id="shopCloudSyncStop" type="button" class="big-btn secondary">Turn Off Cloud Sync</button>`,
-      confirmOff: `<p class="shop-sync-note"><strong>Turn off cloud sync?</strong> Your records stay on this phone and the cloud keeps its copy, but this phone stops sending and receiving changes. Turning it on again sends this phone's records up afresh.</p>
-        ${crew ? `<p class="shop-sync-note" style="font-weight:700;">${crew} crew login${crew === 1 ? " shares" : "s share"} this company. They will stop getting your changes, and you will stop getting theirs.</p>` : ""}
-        ${crew === null ? `<p class="shop-sync-note">Could not check for crew logins right now. If crew share this company, they will stop getting your changes.</p>` : ""}
-        <button id="shopCloudSyncStopYes" type="button" class="big-btn">${crew ? "Disconnect Crew &amp; Turn Off" : "Turn Off"}</button>
-        <button id="shopCloudSyncCancel" type="button" class="big-btn secondary">Keep It On</button>`
+      confirmOff: crew === null || crew > 0
+        ? `<p class="shop-sync-note" style="font-weight:700; color:var(--alert);">${crew === null
+            ? "Could not check who has a login. Turning off may remove their access."
+            : `Turning off removes access for ${crew} ${crew === 1 ? "person" : "people"} with a login.`}</p>
+        <p class="shop-sync-note">They stay on your crew list, but they lose their jobs and cannot sign in to see anything. Turning sync back on does not restore them. You let each one back in under Settings → People.</p>
+        <p class="shop-sync-note">Your records stay on this phone and in the cloud.</p>
+        <button id="shopCloudSyncStopYes" type="button" class="big-btn" style="background:var(--alert); border-color:var(--alert); color:#FFF;">Yes, Remove Their Access</button>
+        <button id="shopCloudSyncCancel" type="button" class="big-btn secondary">Keep Sync On</button>`
+        : `<p class="shop-sync-note"><strong>Turn off cloud sync?</strong> Your records stay on this phone and in the cloud. Turning it on again sends this phone's records up.</p>
+        <button id="shopCloudSyncStopYes" type="button" class="big-btn">Turn Off</button>
+        <button id="shopCloudSyncCancel" type="button" class="big-btn secondary">Keep Sync On</button>`
     };
     body.innerHTML = views[step];
     if (message && node("shopCloudSyncMessage")) node("shopCloudSyncMessage").textContent = message;
@@ -130,9 +136,19 @@
   }
   async function stop() {
     if (busy) return;
-    busy = true;
-    try { await api().turnOff(); } catch (e) {}
-    busy = false; step = "off"; message = "Cloud sync is off. Your records are still on this phone."; render();
+    busy = true; message = "";
+    try {
+      // Remove each crew and lead login first, so they lose access. If that fails, sync stays on.
+      if (crew) {
+        const p = await api().people();
+        for (const x of p.people) if (x.role !== "owner" && x.status === "active") await api().setPerson(x.userId, { status: "removed" });
+      }
+      await api().turnOff();
+      busy = false; step = "off"; message = "Cloud sync is off. Your records are still on this phone."; render();
+    } catch (e) {
+      busy = false; step = api().isOn() ? "on" : "off";
+      message = "Crew were not removed, so sync is still on. " + explain(e, true); render();
+    }
   }
 
   function insertPanel() {

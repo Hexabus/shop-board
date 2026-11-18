@@ -33,7 +33,7 @@
     // The message line sits outside the redrawn part so screen readers hear each change.
     const note = node("shopPeopleMessage");
     if (note) note.textContent = info && isOwnerSyncing() ? message : "";
-    if (!isOwnerSyncing()) { body.innerHTML = `<p class="shop-sync-note">Turn on Cloud Sync above to give your crew their own logins.</p>`; return; }
+    if (!isOwnerSyncing()) { body.innerHTML = `<p class="shop-sync-note">Turn on Cloud Sync to give your crew logins.</p>`; return; }
     if (!info) { body.innerHTML = `<p class="shop-sync-note" role="status">${loading ? "Checking who has a login…" : esc(message || "Could not load the list.")}</p>${loading ? "" : `<button id="shopPeopleReload" type="button" class="big-btn secondary">Try Again</button>`}`; const r = node("shopPeopleReload"); if (r) r.addEventListener("click", load); return; }
     const free = info.seatLimit === null ? null : Math.max(0, info.seatLimit - info.used);
     const rows = info.people.map(p => {
@@ -47,11 +47,11 @@
     }).join("");
     const openNames = info.roster.filter(r => !r.userId);
     body.innerHTML = `
-      <p class="shop-sync-note">${info.seatLimit === null ? "" : `<strong>${info.used} of ${info.seatLimit} seats used.</strong> `}A Lead sees and manages every job but no money. Crew see only jobs they are assigned to and can add notes, photos and receipts.</p>
+      <p class="shop-sync-note">${info.seatLimit === null ? "" : `<strong>${info.used} of ${info.seatLimit} seats used.</strong> `}Leads see every job, no money. Crew see their jobs only.</p>
       <ul class="shop-people-list">${rows}</ul>
       <h4 class="shop-people-sub">Invite by email</h4>
       ${free === 0 ? `<p class="shop-sync-note">Both seats are in use. Remove someone to add another login.</p>` : `
-      <p class="shop-sync-note">They get an email with a link. They choose their own password and are added with the role you pick. Nobody else can join. Their name goes on the crew list too.</p>
+      <p class="shop-sync-note">They get an email to set a password, then they are added.</p>
       <label class="input-label" for="shopInviteName">Their name</label>
       <input id="shopInviteName" class="text-input" type="text" autocomplete="off" spellcheck="false" list="shopInviteNames">
       <datalist id="shopInviteNames">${openNames.map(r => `<option value="${esc(r.name || "")}"></option>`).join("")}</datalist>
@@ -64,14 +64,14 @@
       ${inviteRows()}
       <details class="shop-people-fallback"><summary>Already has a login? Add by login code</summary>
       ${free === 0 ? `<p class="shop-sync-note">Both seats are in use. Remove someone to add another login.</p>` : `
-      <p class="shop-sync-note">Only for someone who already has a login: they sign in on their own phone, it shows them a login code, and you paste it here.</p>
+      <p class="shop-sync-note">For someone who already has a login: paste the code from their phone.</p>
       <label class="input-label" for="shopPeopleCode">Login code</label>
       <input id="shopPeopleCode" class="text-input" type="text" autocapitalize="none" autocomplete="off" spellcheck="false" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
       <label class="input-label" for="shopPeopleRole">Role</label>
       <select id="shopPeopleRole" class="text-input"><option value="crew">Crew</option><option value="lead">Lead</option></select>
       <label class="input-label" for="shopPeopleCrew">Who is this on your crew list?</label>
       <select id="shopPeopleCrew" class="text-input"><option value="">Choose a name…</option>${openNames.map(r => `<option value="${esc(r.id)}">${esc(r.name || "Unnamed")}</option>`).join("")}</select>
-      <p class="shop-sync-note">Not listed? Add them under Clients &amp; Crew first, tap Sync Now above, then come back.</p>
+      <p class="shop-sync-note">Not listed? Add them to the crew list first.</p>
       <button id="shopPeopleAdd" type="button" class="big-btn secondary">Add Login</button>`}</details>`;
     body.querySelectorAll("[data-people]").forEach(b => b.addEventListener("click", () => act(b.dataset.people, b.dataset.id, b.dataset.role)));
     body.querySelectorAll("[data-invite]").forEach(b => b.addEventListener("click", () => inviteAct(b.dataset.invite, b.dataset)));
